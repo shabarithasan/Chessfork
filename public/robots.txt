@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Allow: /opening/
+Allow: /player/
+Disallow: /api/
+Sitemap: https://knightowl.app/sitemap.xml

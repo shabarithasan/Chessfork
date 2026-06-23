@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Chessfork logo</title>
+  <rect width="512" height="512" rx="72" fill="#ffffff"/>
+  <g fill="#050505">
+    <g id="laurel-left">
+      <path d="M85 372C43 302 45 206 101 128" fill="none" stroke="#050505" stroke-width="13" stroke-linecap="round"/>
+      <ellipse cx="83" cy="348" rx="13" ry="31" transform="rotate(-42 83 348)"/>
+      <ellipse cx="65" cy="309" rx="12" ry="29" transform="rotate(-58 65 309)"/>
+      <ellipse cx="60" cy="267" rx="12" ry="29" transform="rotate(-75 60 267)"/>
+      <ellipse cx="68" cy="224" rx="12" ry="28" transform="rotate(-98 68 224)"/>
+      <ellipse cx="86" cy="184" rx="12" ry="29" transform="rotate(-119 86 184)"/>
+      <ellipse cx="113" cy="148" rx="12" ry="29" transform="rotate(-136 113 148)"/>
+      <ellipse cx="110" cy="372" rx="12" ry="29" transform="rotate(-22 110 372)"/>
+      <ellipse cx="94" cy="326" rx="11" ry="28" transform="rotate(-32 94 326)"/>
+      <ellipse cx="90" cy="281" rx="11" ry="28" transform="rotate(-50 90 281)"/>
+      <ellipse cx="101" cy="237" rx="11" ry="27" transform="rotate(-70 101 237)"/>
+      <ellipse cx="122" cy="198" rx="11" ry="27" transform="rotate(-92 122 198)"/>
+      <ellipse cx="151" cy="163" rx="11" ry="27" transform="rotate(-112 151 163)"/>
+    </g>
+    <use href="#laurel-left" transform="translate(512 0) scale(-1 1)"/>
+    <path d="M97 399c45 17 99 25 159 25s114-8 159-25v43c-49 29-102 44-159 44S146 471 97 442v-43Z"/>
+    <path d="M123 404h266l-27 45H150l-27-45Z"/>
+    <path d="M167 364h178l33 42H134l33-42Z"/>
+    <path d="M194 347c21-52 35-110 42-171-30-10-48-35-48-64 0-21 12-40 31-52h74c19 12 31 31 31 52 0 29-18 54-48 64 7 61 21 119 42 171H194Z"/>
+    <path d="M210 113h92l-12 41h-68l-12-41Z"/>
+    <path d="M199 86h114l-13 30h-88l-13-30Z"/>
+    <path d="M208 82l10-43 26 30 14-49 20 49 26-30 10 43H208Z"/>
+    <circle cx="258" cy="20" r="7"/>
+    <circle cx="218" cy="39" r="6"/>
+    <circle cx="304" cy="39" r="6"/>
+    <rect x="212" y="151" width="88" height="15" rx="7.5"/>
+    <path d="M190 347h132l16 25H174l16-25Z"/>
+  </g>
+</svg>

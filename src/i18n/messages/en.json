@@ -1,0 +1,38 @@
+{
+  "nav": {
+    "home": "Home",
+    "analyze": "Analyze",
+    "games": "Games",
+    "puzzles": "Puzzles",
+    "coach": "Coach",
+    "pricing": "Pricing",
+    "blog": "Blog",
+    "account": "Account",
+    "auth": "Sign In"
+  },
+  "home": {
+    "headline": "Import first. Study second.",
+    "subheadline": "Fetch public games, save the report, and come back later."
+  },
+  "analysis": {
+    "quick": "Quick",
+    "deep": "Deep",
+    "accuracy": "Accuracy",
+    "opening": "Opening",
+    "criticalMoments": "Critical moments"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signUp": "Create account",
+    "email": "Email",
+    "password": "Password",
+    "displayName": "Display name"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete"
+  }
+}

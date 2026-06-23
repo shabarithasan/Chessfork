@@ -1,0 +1,23 @@
+---
+title: How hybrid chess analysis keeps mobile devices fast
+excerpt: Why a blended browser-worker pipeline beats a browser-only engine stack.
+category: Architecture
+publishedAt: 2026-05-18
+readingTime: 6 min
+---
+
+## The problem
+
+Browser-only analysis feels magical until a weaker phone starts dropping frames, overheating, or suspending a tab halfway through a deep line.
+
+## The design
+
+Chessfork routes work between three modes:
+
+- Browser for fast anonymous review on strong devices
+- Worker for deep persisted reports and premium queue jobs
+- Blended when the UI should stay responsive while a server pass refines the output
+
+## The payoff
+
+This architecture keeps quick analysis feeling instant without forcing every serious report to finish inside a single browser tab.

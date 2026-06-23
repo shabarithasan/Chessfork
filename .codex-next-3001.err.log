@@ -1,0 +1,339 @@
+⚠ Blocked cross-origin request to Next.js dev resource /_next/webpack-hmr from "127.0.0.1".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['127.0.0.1'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <ErrorBoundary errorComponent={function Error} errorStyles={<SegmentViewNode>} errorScripts={[...]}>
+      <ErrorBoundaryHandler pathname="/" errorComponent={function Error} errorStyles={<SegmentViewNode>} ...>
+        <LoadingBoundary name="/" loading={[...]}>
+          <Suspense name="/" fallback={<Fragment>}>
+            <HTTPAccessFallbackBoundary notFound={<SegmentViewNode>} forbidden={<SegmentViewNode>} ...>
+              <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<SegmentViewNode>} forbidden={<SegmentViewNode>} ...>
+                <RedirectBoundary>
+                  <RedirectErrorBoundary router={{...}}>
+                    <InnerLayoutRouter url="/" tree={[...]} params={{}} cacheNode={{rsc:{...}, ...}} segmentPath={[...]} ...>
+                      <SegmentViewNode type="page" pagePath="page.tsx">
+                        <SegmentTrieNode>
+                        <Page>
+                          <CustomCursor>
+                          <ScrollProgressBar>
+                          <main className="knightowl-...">
+                            <Navbar>
+                            <Hero>
+                            <section>
+                            <Features>
+                            <DinoSection>
+                              <div
+                                className="dino-section-root"
+                                data-dino-scroll-root={true}
+                                id="dino-bite"
+-                               style={{--dino-progress:"0.0000"}}
+                              >
+                                <section aria-label="Knightowl ..." className="dino-stage">
+                                  <div>
+                                  <header>
+                                  <div className="dino-scene">
+                                    <div className="dino-copy">
+                                      <p>
+                                      <h2 className="dino-headline">
+                                        <span>
+                                        <span className="dino-blund...">
+                                          <span className="dino-blunder" aria-label="BLUNDER">
+                                            <span
+                                              aria-hidden="true"
+                                              className="dino-blunder-letter"
+                                              data-dino-letter={true}
+                                              data-dino-r={-22}
+                                              data-dino-x={-102}
+                                              data-dino-y={-62}
+-                                             style={{opacity:"1",transform:"translate3..."}}
+                                            >
++                                             B
+                                            <span
+                                              aria-hidden="true"
+                                              className="dino-blunder-letter"
+                                              data-dino-letter={true}
+                                              data-dino-r={17}
+                                              data-dino-x={-64}
+                                              data-dino-y={86}
+-                                             style={{opacity:"1",transform:"translate3..."}}
+                                            >
++                                             L
+                                            <span
+                                              aria-hidden="true"
+                                              className="dino-blunder-letter"
+                                              data-dino-letter={true}
+                                              data-dino-r={-38}
+                                              data-dino-x={-24}
+                                              data-dino-y={-112}
+-                                             style={{opacity:"1",transform:"translate3..."}}
+                                            >
++                                             U
+                                            <span
+                                              aria-hidden="true"
+                                              className="dino-blunder-letter"
+                                              data-dino-letter={true}
+                                              data-dino-r={28}
+                                              data-dino-x={32}
+                                              data-dino-y={76}
+-                                             style={{opacity:"1",transform:"translate3..."}}
+                                            >
++                                             N
+                                            <span
+                                              aria-hidden="true"
+                                              className="dino-blunder-letter"
+                                              data-dino-letter={true}
+                                              data-dino-r={-18}
+                                              data-dino-x={78}
+                                              data-dino-y={-86}
+-                                             style={{opacity:"1",transform:"translate3..."}}
+                                            >
++                                             D
+                                            <span
+                                              aria-hidden="true"
+                                              className="dino-blunder-letter"
+                                              data-dino-letter={true}
+                                              data-dino-r={36}
+                                              data-dino-x={114}
+                                              data-dino-y={104}
+-                                             style={{opacity:"1",transform:"translate3..."}}
+                                            >
++                                             E
+                                            <span
+                                              aria-hidden="true"
+                                              className="dino-blunder-letter"
+                                              data-dino-letter={true}
+                                              data-dino-r={-29}
+                                              data-dino-x={150}
+                                              data-dino-y={-42}
+-                                             style={{opacity:"1",transform:"translate3..."}}
+                                            >
++                                             R
+                                          <svg className="dino-strike" viewBox="0 0 560 88" aria-hidden="true">
+                                            <path
+                                              d="M 16 46 C 92 34, 156 56, 236 43 S 395 31, 544 45"
+                                              data-dino-strike={true}
+                                              fill="none"
+                                              opacity="0"
+                                              stroke="#1a1a1a"
+                                              strokeDasharray="8 3"
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              strokeWidth="3"
+-                                             style={{opacity:"0",transform:"scaleX(0)"}}
+                                            >
+                                    <svg
+                                      className="dino-sketch"
+                                      id="dino"
+                                      viewBox="0 0 500 400"
+                                      aria-hidden="true"
+                                      data-dino-sketch={true}
+-                                     style={{transform:"translate3..."}}
+                                    >
+                                      <g className="dino-fill" fill="none" stroke="#1a1a1a" strokeLinecap="round" ...>
+                                        <path>
+                                        <path>
+                                        <path>
+                                        <path>
+                                        <path>
+                                        <g
+                                          data-dino-upper-jaw={true}
+                                          id="upper-jaw"
+-                                         style={{transform:"rotate(0deg)"}}
+                                        >
+                                        <g
+                                          data-dino-lower-jaw={true}
+                                          id="lower-jaw"
+-                                         style={{transform:"rotate(0deg)"}}
+                                        >
+                                        ...
+                                      ...
+                                  ...
+                                ...
+                            ...
+                      ...
+                    ...
+ 
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <ErrorBoundary errorComponent={function Error} errorStyles={<SegmentViewNode>} errorScripts={[...]}>
+      <ErrorBoundaryHandler pathname="/" errorComponent={function Error} errorStyles={<SegmentViewNode>} ...>
+        <LoadingBoundary name="/" loading={[...]}>
+          <Suspense name="/" fallback={<Fragment>}>
+            <HTTPAccessFallbackBoundary notFound={<SegmentViewNode>} forbidden={<SegmentViewNode>} ...>
+              <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<SegmentViewNode>} forbidden={<SegmentViewNode>} ...>
+                <RedirectBoundary>
+                  <RedirectErrorBoundary router={{...}}>
+                    <InnerLayoutRouter url="/" tree={[...]} params={{}} cacheNode={{rsc:{...}, ...}} segmentPath={[...]} ...>
+                      <SegmentViewNode type="page" pagePath="page.tsx">
+                        <SegmentTrieNode>
+                        <Page>
+                          <CustomCursor>
+                          <ScrollProgressBar>
+                          <main className="knightowl-...">
+                            <Navbar>
+                            <Hero>
+                            <section>
+                            <Features>
+                            <DinoSection>
+                              <div
+                                className="dino-section-root"
+                                data-dino-scroll-root={true}
+                                id="dino-bite"
+-                               style={{--dino-progress:"0.0000"}}
+                              >
+                                <section aria-label="Knightowl ..." className="dino-stage">
+                                  <div>
+                                  <header>
+                                  <div className="dino-scene">
+                                    <div className="dino-copy">
+                                      <p>
+                                      <h2 className="dino-headline">
+                                        <span>
+                                        <span className="dino-blund...">
+                                          <span className="dino-blunder" aria-label="BLUNDER">
+                                            <span
+                                              aria-hidden="true"
+                                              className="dino-blunder-letter"
+                                              data-dino-letter={true}
+                                              data-dino-r={-22}
+                                              data-dino-x={-102}
+                                              data-dino-y={-62}
+-                                             style={{opacity:"1",transform:"translate3..."}}
+                                            >
++                                             B
+                                            <span
+                                              aria-hidden="true"
+                                              className="dino-blunder-letter"
+                                              data-dino-letter={true}
+                                              data-dino-r={17}
+                                              data-dino-x={-64}
+                                              data-dino-y={86}
+-                                             style={{opacity:"1",transform:"translate3..."}}
+                                            >
++                                             L
+                                            <span
+                                              aria-hidden="true"
+                                              className="dino-blunder-letter"
+                                              data-dino-letter={true}
+                                              data-dino-r={-38}
+                                              data-dino-x={-24}
+                                              data-dino-y={-112}
+-                                             style={{opacity:"1",transform:"translate3..."}}
+                                            >
++                                             U
+                                            <span
+                                              aria-hidden="true"
+                                              className="dino-blunder-letter"
+                                              data-dino-letter={true}
+                                              data-dino-r={28}
+                                              data-dino-x={32}
+                                              data-dino-y={76}
+-                                             style={{opacity:"1",transform:"translate3..."}}
+                                            >
++                                             N
+                                            <span
+                                              aria-hidden="true"
+                                              className="dino-blunder-letter"
+                                              data-dino-letter={true}
+                                              data-dino-r={-18}
+                                              data-dino-x={78}
+                                              data-dino-y={-86}
+-                                             style={{opacity:"1",transform:"translate3..."}}
+                                            >
++                                             D
+                                            <span
+                                              aria-hidden="true"
+                                              className="dino-blunder-letter"
+                                              data-dino-letter={true}
+                                              data-dino-r={36}
+                                              data-dino-x={114}
+                                              data-dino-y={104}
+-                                             style={{opacity:"1",transform:"translate3..."}}
+                                            >
++                                             E
+                                            <span
+                                              aria-hidden="true"
+                                              className="dino-blunder-letter"
+                                              data-dino-letter={true}
+                                              data-dino-r={-29}
+                                              data-dino-x={150}
+                                              data-dino-y={-42}
+-                                             style={{opacity:"1",transform:"translate3..."}}
+                                            >
++                                             R
+                                          <svg className="dino-strike" viewBox="0 0 560 88" aria-hidden="true">
+                                            <path
+                                              d="M 16 46 C 92 34, 156 56, 236 43 S 395 31, 544 45"
+                                              data-dino-strike={true}
+                                              fill="none"
+                                              opacity="0"
+                                              stroke="#1a1a1a"
+                                              strokeDasharray="8 3"
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              strokeWidth="3"
+-                                             style={{opacity:"0",transform:"scaleX(0)"}}
+                                            >
+                                    <svg
+                                      className="dino-sketch"
+                                      id="dino"
+                                      viewBox="0 0 500 400"
+                                      aria-hidden="true"
+                                      data-dino-sketch={true}
+-                                     style={{transform:"translate3..."}}
+                                    >
+                                      <g className="dino-fill" fill="none" stroke="#1a1a1a" strokeLinecap="round" ...>
+                                        <path>
+                                        <path>
+                                        <path>
+                                        <path>
+                                        <path>
+                                        <g
+                                          data-dino-upper-jaw={true}
+                                          id="upper-jaw"
+-                                         style={{transform:"rotate(0deg)"}}
+                                        >
+                                        <g
+                                          data-dino-lower-jaw={true}
+                                          id="lower-jaw"
+-                                         style={{transform:"rotate(0deg)"}}
+                                        >
+                                        ...
+                                      ...
+                                  ...
+                                ...
+                            ...
+                      ...
+                    ...
+ 

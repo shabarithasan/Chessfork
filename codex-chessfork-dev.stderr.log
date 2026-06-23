@@ -1,0 +1,9 @@
+⚠ ./src/server/chess/opening-book.ts
+Critical dependency: the request of a dependency is an expression
+
+Import trace for requested module:
+./src/server/chess/opening-book.ts
+./src/server/chess/stockfish-report.ts
+./src/lib/platform-service.ts
+./src/components/pages.tsx
+./src/app/coach/page.tsx

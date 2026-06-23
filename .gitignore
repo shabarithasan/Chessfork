@@ -19,6 +19,7 @@
 
 # production
 /build
+/vendor/stockfish/
 
 # misc
 .DS_Store
