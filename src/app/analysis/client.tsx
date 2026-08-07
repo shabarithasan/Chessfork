@@ -372,7 +372,7 @@ export function AnalysisPageClient() {
               <Swords className="size-4 text-cyan-400" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-white">Knightowl</h1>
+              <h1 className="text-sm font-bold text-white">ChessFork</h1>
               <p className="text-[9px] font-medium uppercase tracking-widest text-cyan-400">
                 Game Analysis
               </p>
@@ -614,7 +614,7 @@ export function AnalysisPageClient() {
 
       <footer className="border-t border-[#1e1e2e] bg-[#0a0a0a]/60">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 text-[9px] text-slate-600 sm:px-6">
-          <span>Knightowl — Chess Analysis Platform</span>
+          <span>ChessFork — Chess Analysis Platform</span>
           <span>Stockfish 18 &middot; DeepSeek AI</span>
         </div>
       </footer>

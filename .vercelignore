@@ -1,0 +1,8 @@
+vendor
+e2e
+scripts
+build-ppt.mjs
+*.pptx
+*.log
+.next
+node_modules

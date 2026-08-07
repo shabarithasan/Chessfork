@@ -24,7 +24,7 @@ const features: Feature[] = [
     eyebrow: "ENGINE",
     headline: ["The world's strongest chess engine.", "In your browser. For free."],
     body:
-      "Knightowl runs Stockfish 18 — the same engine grandmasters use to prepare for world championships. Every move gets analyzed at depth 18+, giving you insights that used to cost hundreds per month.",
+      "ChessFork runs Stockfish 18 — the same engine grandmasters use to prepare for world championships. Every move gets analyzed at depth 18+, giving you insights that used to cost hundreds per month.",
     pills: ["Depth 18+", "3 Lines per move", "Stockfish 18"],
     visual: "engine",
   },
@@ -42,7 +42,7 @@ const features: Feature[] = [
     eyebrow: "SHARE",
     headline: ["Show the world", "your best games."],
     body:
-      "One click generates a beautiful report card — perfect for sharing on X, Reddit, or WhatsApp. Every card includes accuracy, opening name, move grades, and your Knightowl watermark.",
+      "One click generates a beautiful report card — perfect for sharing on X, Reddit, or WhatsApp. Every card includes accuracy, opening name, move grades, and your ChessFork watermark.",
     visual: "share",
   },
 ];
@@ -215,7 +215,7 @@ function ShareVisual() {
         <div className="relative z-10 flex h-full flex-col justify-between">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="font-mono text-xs uppercase tracking-[0.24em] text-[var(--accent)]">Knightowl report</p>
+              <p className="font-mono text-xs uppercase tracking-[0.24em] text-[var(--accent)]">ChessFork report</p>
               <h3 className="mt-3 font-display text-[clamp(2rem,5vw,4.8rem)] font-extrabold leading-none text-[var(--text-primary)]">Brilliant win</h3>
             </div>
             <div className="rounded-full border border-[#00d4aa30] bg-[#00d4aa10] px-3 py-1.5 font-mono text-xs text-[var(--accent)]">88% ACC</div>

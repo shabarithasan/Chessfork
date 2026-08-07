@@ -68,7 +68,7 @@ export function Footer() {
               <span className="grid size-11 place-items-center rounded-xl bg-[var(--accent)] font-display text-xl font-extrabold text-[var(--bg-primary)]">
                 K
               </span>
-              <span className="font-display text-2xl font-bold tracking-normal text-[var(--text-primary)]">Knightowl</span>
+              <span className="font-display text-2xl font-bold tracking-normal text-[var(--text-primary)]">ChessFork</span>
             </Link>
             <p className="mt-5 max-w-sm text-sm font-light leading-7 text-[var(--text-secondary)]">The sharpest chess analyzer on the internet.</p>
 
@@ -110,7 +110,7 @@ export function Footer() {
         </div>
 
         <div className="mt-14 flex flex-col gap-3 border-t border-[var(--border)] pt-7 text-[13px] font-normal text-[var(--text-muted)] md:flex-row md:items-center md:justify-between">
-          <p>© 2026 Knightowl. All rights reserved.</p>
+          <p>© 2026 ChessFork. All rights reserved.</p>
           <p>Made with ♥ for chess players everywhere</p>
         </div>
       </div>

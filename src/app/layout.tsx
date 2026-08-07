@@ -26,7 +26,7 @@ const syne = Syne({
   weight: ["400", "700", "800"],
 });
 
-const defaultTitle = "Knightowl — Free Chess Analysis Powered by Stockfish 18";
+const defaultTitle = "ChessFork — Free Chess Analysis Powered by Stockfish 18";
 const defaultDescription = "Analyze your chess games for free. Move grades, AI coaching, accuracy scores. No signup required. Powered by Stockfish 18.";
 
 export const metadata: Metadata = {
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     template: "%s",
   },
   description: defaultDescription,
-  applicationName: "Knightowl",
+  applicationName: "ChessFork",
   keywords: [
     "chess analysis",
     "chess puzzles",
@@ -54,13 +54,13 @@ export const metadata: Metadata = {
     url: siteConfig.url,
     images: [
       {
-        alt: "Knightowl hero landing page",
+        alt: "ChessFork hero landing page",
         height: 630,
         url: "/og-image.png",
         width: 1200,
       },
     ],
-    siteName: "Knightowl",
+    siteName: "ChessFork",
     type: "website",
   },
   twitter: {

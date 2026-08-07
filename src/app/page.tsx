@@ -12,7 +12,7 @@ import { ScrollProgressBar } from "@/components/landing/ScrollProgressBar";
 import { Stats } from "@/components/landing/Stats";
 import { Testimonials } from "@/components/landing/Testimonials";
 
-const title = "Knightowl — Free Chess Analysis Powered by Stockfish 18";
+const title = "ChessFork — Free Chess Analysis Powered by Stockfish 18";
 const description = "Analyze your chess games for free. Move grades, AI coaching, accuracy scores. No signup required. Powered by Stockfish 18.";
 
 export const metadata: Metadata = {
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     description,
     images: [
       {
-        alt: "Knightowl hero landing page",
+        alt: "ChessFork hero landing page",
         height: 630,
         url: "/og-image.png",
         width: 1200,

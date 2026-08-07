@@ -5,7 +5,7 @@ export const siteConfig = {
   shortName: "ChessFork",
   description:
     "Analyze PGNs, import public games, and turn every problem move into a perfect-move drill.",
-  url: "https://chessfork.app",
+  url: "https://chessfork.vercel.app",
   locales: ["en", "es", "fr", "hi", "ru", "ar"] satisfies Locale[],
   defaultLocale: "en" as Locale,
 };

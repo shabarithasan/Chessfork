@@ -24,7 +24,7 @@ const tweets: FakeTweet[] = [
     verified: true,
     time: "9:41 AM",
     date: "Jul 28, 2026",
-    text: "Analyzed my last 20 rapid games on Knightowl and found I blunder the same bishop trap every time in the London. The engine line with the fix is right there. This thing is free??",
+    text: "Analyzed my last 20 rapid games on ChessFork and found I blunder the same bishop trap every time in the London. The engine line with the fix is right there. This thing is free??",
     replies: "184",
     reposts: "1.2K",
     likes: "8.4K",
@@ -50,7 +50,7 @@ const tweets: FakeTweet[] = [
     verified: false,
     time: "6:02 PM",
     date: "Jul 30, 2026",
-    text: "No signup, no paywall, just paste your PGN and get a full game report with centipawn graphs. Knightowl is the first analysis tool that actually respects my time.",
+    text: "No signup, no paywall, just paste your PGN and get a full game report with centipawn graphs. ChessFork is the first analysis tool that actually respects my time.",
     replies: "41",
     reposts: "356",
     likes: "2.9K",
@@ -128,7 +128,7 @@ function FakeTweetCard({ tweet }: { tweet: FakeTweet }) {
         </span>
       </div>
 
-      <span className="text-xs text-[var(--text-muted)]">{tweet.date} · Twitter for Knightowl</span>
+      <span className="text-xs text-[var(--text-muted)]">{tweet.date} · Twitter for ChessFork</span>
     </div>
   );
 }

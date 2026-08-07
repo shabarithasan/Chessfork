@@ -47,7 +47,7 @@ function MarqueeTrack({
 
 export function Marquee() {
   return (
-    <section className="knightowl-marquee-strip border-y border-[var(--border)] bg-[rgba(17,17,17,0.55)] py-4" aria-label="Knightowl capabilities">
+    <section className="knightowl-marquee-strip border-y border-[var(--border)] bg-[rgba(17,17,17,0.55)] py-4" aria-label="ChessFork capabilities">
       <MarqueeTrack items={rowOneItems} direction="forward" />
       <MarqueeTrack items={rowTwoItems} direction="reverse" />
 

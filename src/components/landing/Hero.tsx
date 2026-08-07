@@ -149,7 +149,7 @@ export function Hero() {
 
             <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_210px]">
               <div className="rounded-2xl border border-white/[0.06] bg-[#050508] p-3">
-                <svg viewBox="0 0 352 352" role="img" aria-label="Knightowl chess analysis board" className="h-auto w-full overflow-hidden rounded-xl">
+                <svg viewBox="0 0 352 352" role="img" aria-label="ChessFork chess analysis board" className="h-auto w-full overflow-hidden rounded-xl">
                   <defs>
                     <linearGradient id="moveLine" x1="0%" x2="100%" y1="0%" y2="100%">
                       <stop offset="0%" stopColor="#00d4aa" />

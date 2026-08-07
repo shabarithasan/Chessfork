@@ -38,7 +38,7 @@ export function Navbar() {
             <span className="grid size-10 place-items-center rounded-xl bg-[var(--accent)] font-display text-xl font-extrabold text-[var(--bg-primary)]">
               K
             </span>
-            <span className="font-display text-xl font-bold tracking-normal text-[var(--text-primary)]">Knightowl</span>
+            <span className="font-display text-xl font-bold tracking-normal text-[var(--text-primary)]">ChessFork</span>
           </Link>
 
           <div className="hidden items-center gap-8 md:flex">
@@ -91,7 +91,7 @@ export function Navbar() {
                   <span className="grid size-10 place-items-center rounded-xl bg-[var(--accent)] font-display text-xl font-extrabold text-[var(--bg-primary)]">
                     K
                   </span>
-                  <span className="font-display text-xl font-bold text-[var(--text-primary)]">Knightowl</span>
+                  <span className="font-display text-xl font-bold text-[var(--text-primary)]">ChessFork</span>
                 </Link>
                 <div className="flex items-center gap-3">
                   <AnimatedThemeToggler data-cursor-hover />

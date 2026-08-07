@@ -8,7 +8,7 @@ import { MagicCard } from "@/registry/magicui/magic-card";
 const steps = [
   {
     copy:
-      "Paste a Chess.com name, load a Lichess game, or drop in a PGN. Knightowl keeps the start simple so you get to the analysis instead of setup screens.",
+      "Paste a Chess.com name, load a Lichess game, or drop in a PGN. ChessFork keeps the start simple so you get to the analysis instead of setup screens.",
     icon: Search,
     number: "01",
     title: "Enter Your Username",

@@ -3,4 +3,4 @@ Allow: /
 Allow: /opening/
 Allow: /player/
 Disallow: /api/
-Sitemap: https://knightowl.app/sitemap.xml
+Sitemap: https://chessfork.vercel.app/sitemap.xml
