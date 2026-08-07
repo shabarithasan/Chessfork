@@ -1003,6 +1003,27 @@ export function ImportWorkbench({
                 </Link>
               ) : null}
             </div>
+              )}
+            >
+              {secondaryButtonLabel}
+            </button>
+          </div>
+
+          {(message || link) && (
+            <div
+              aria-live="polite"
+              className={cn(
+                "rounded-lg border p-4",
+                link ? "border-emerald-400/20 bg-emerald-400/10" : "border-neutral-800 bg-neutral-950/60",
+              )}
+            >
+              {message ? <p className="text-sm leading-7 text-neutral-300">{message}</p> : null}
+              {link ? (
+                <Link className="mt-3 inline-flex text-sm font-semibold text-amber-400 transition hover:text-amber-300" href={link}>
+                  Open saved report
+                </Link>
+              ) : null}
+            </div>
           )}
         </form>
       </div>
@@ -1014,7 +1035,7 @@ export function ImportWorkbench({
           whitePlayer={loadingPreview.white}
           blackPlayer={loadingPreview.black}
         />
-      ) : showAnalysisOverlay ? (
+      ) : showAnalysisOverlay && !liveSession.isFinished ? (
         <AnalysisLoadingOverlay
           black={loadingPreview.black}
           depth={analysisPendingDepth}
