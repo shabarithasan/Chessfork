@@ -72,8 +72,8 @@ function ArcLine({
 function Atmosphere() {
   return (
     <mesh>
-      <sphereGeometry args={[GLOBE_RADIUS * 1.08, 64, 64]} />
-      <meshBasicMaterial color="#f3c53d" transparent opacity={0.03} side={THREE.BackSide} />
+      <sphereGeometry args={[GLOBE_RADIUS * 1.05, 64, 64]} />
+      <meshBasicMaterial color="#ffffff" transparent opacity={0.02} side={THREE.BackSide} />
     </mesh>
   );
 }
@@ -88,8 +88,8 @@ function GlobeSurface() {
       <sphereGeometry args={[GLOBE_RADIUS, 72, 72]} />
       <meshStandardMaterial
         map={mapTexture}
-        roughness={0.85}
-        metalness={0.12}
+        roughness={0.7}
+        metalness={0.05}
       />
     </mesh>
   );
@@ -135,8 +135,8 @@ export function GlobeCanvas({ highlights, selected, onDotClick, arcs }: GlobeSce
       style={{ background: "transparent" }}
       gl={{ antialias: true, alpha: true }}
     >
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[5, 3, 5]} intensity={0.8} color="#ffffff" />
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[5, 3, 5]} intensity={1} color="#ffffff" />
       <pointLight position={[-3, 1, 2]} intensity={0.3} color="#f3c53d" />
       <pointLight position={[2, -2, -3]} intensity={0.2} color="#00d4aa" />
 
