@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 
 import { AnalysisReportPage } from "@/components/pages";
@@ -11,7 +12,16 @@ type AnalysisPageProps = {
 
 export async function generateMetadata({ params }: AnalysisPageProps): Promise<Metadata> {
   const { id } = await params;
-  const analysis = await getAnalysisResponse(id);
+  let analysis;
+  try {
+    analysis = await getAnalysisResponse(id);
+  } catch {
+    return createSeoMetadata({
+      title: "Chess Analysis",
+      description: "Chessfork chess analysis report",
+      path: `/analysis/${encodeURIComponent(id)}`,
+    });
+  }
 
   if (!analysis) {
     return createSeoMetadata({
@@ -37,8 +47,18 @@ export async function generateMetadata({ params }: AnalysisPageProps): Promise<M
 
 export default async function Page({ params }: AnalysisPageProps) {
   const { id } = await params;
-  const analysis = await getAnalysisResponse(id);
-  const card = analysis ? buildReportCardDataFromAnalysis(analysis) : null;
+  let analysis;
+  try {
+    analysis = await getAnalysisResponse(id);
+  } catch {
+    redirect("/analysis");
+  }
+
+  if (!analysis) {
+    redirect("/analysis");
+  }
+
+  const card = buildReportCardDataFromAnalysis(analysis);
   const description = card
     ? `${card.whitePlayer} (${card.whiteAccuracy}%) vs ${card.blackPlayer} (${card.blackAccuracy}%) · ${card.opening} · Analyzed by Stockfish 18`
     : "Chessfork chess analysis report";
@@ -58,8 +78,8 @@ export default async function Page({ params }: AnalysisPageProps) {
                 name: "Chessfork",
               },
               description,
-              headline: `Chess Game Analysis: ${card.whitePlayer} vs ${card.blackPlayer}`,
               image: imageUrl,
+              headline: `Chess Game Analysis: ${card.whitePlayer} vs ${card.blackPlayer}`,
               mainEntityOfPage: `/analysis/${encodeURIComponent(id)}`,
             }),
           }}

@@ -13,6 +13,8 @@ export const runtime = "nodejs";
 const streamRequestSchema = z.object({
   mode: z.enum(["quick", "deep"]).default("quick"),
   pgn: z.string().min(10),
+  source: z.enum(["pgn", "chesscom", "lichess"]).optional(),
+  subject: z.string().optional(),
 });
 
 const sessions = new Map<string, z.infer<typeof streamRequestSchema> & { createdAt: number }>();
@@ -122,6 +124,8 @@ export async function GET(request: NextRequest) {
           {
             pgn: session.pgn,
             requestedDepth: session.mode,
+            source: session.source,
+            subject: session.subject,
           },
           await getCurrentUser(),
           {

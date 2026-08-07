@@ -36,6 +36,17 @@ const offlinePageCache: RuntimeCachingEntry = {
 };
 
 const nextConfig: NextConfig = {
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+          { key: "Cross-Origin-Embedder-Policy", value: "credentialless" },
+        ],
+      },
+    ];
+  },
   serverExternalPackages: ["@resvg/resvg-js"],
   images: {
     remotePatterns: [
@@ -55,6 +66,19 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     authInterrupts: true,
+  },
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals = [...config.externals, "stockfish"];
+    } else {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        os: false,
+      };
+    }
+    return config;
   },
 };
 

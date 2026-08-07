@@ -1,90 +1,47 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 
-import { winProbabilityFromCentipawns } from "@/lib/chess/rating";
-import { runAnalysisFromPgn } from "@/lib/platform-service";
-import { getCurrentUser } from "@/server/auth/session";
-import { checkRateLimit } from "@/server/rate-limiter";
-import type { AnalysisRun, MoveGrade } from "@/types/platform";
+import { evaluateFen } from "@/lib/stockfish-worker";
 
-const moveGrades: MoveGrade[] = ["Brilliant", "Great", "Best", "Excellent", "Good", "Book", "Inaccuracy", "Mistake", "Blunder"];
-
-const analyzeRequestSchema = z.object({
-  pgn: z.string().min(10),
-  mode: z.enum(["quick", "deep"]).default("quick"),
-});
-
-function buildChartData(report: AnalysisRun) {
-  return report.moveEvaluations.map((move) => ({
-    move: `${move.moveNumber}${move.side === "white" ? "." : "..."} ${move.san}`,
-    ply: move.ply,
-    winProbability: Math.round(winProbabilityFromCentipawns(move.score) * 100),
-  }));
-}
-
-function buildMoveStatistics(report: AnalysisRun) {
-  const emptyCounts = () => Object.fromEntries(moveGrades.map((grade) => [grade, 0])) as Record<MoveGrade, number>;
-  const stats = {
-    black: emptyCounts(),
-    white: emptyCounts(),
-  };
-
-  for (const move of report.moveEvaluations) {
-    stats[move.side][move.grade] += 1;
-  }
-
-  return stats;
-}
+export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
 export async function POST(request: Request) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const rateLimitResult = checkRateLimit(`analyze:${ip}`, 10, 60_000);
-
-  if (!rateLimitResult.allowed) {
-    return NextResponse.json(
-      { message: "Too many requests. Please wait before sending another analysis." },
-      { status: 429 },
-    );
-  }
-
   try {
     const body = await request.json().catch(() => null);
-    const parsed = analyzeRequestSchema.safeParse(body);
-
-    if (!parsed.success) {
-      return NextResponse.json(
-        { message: "Invalid request body.", issues: parsed.error.flatten() },
-        { status: 400 },
-      );
+    if (!body) {
+      return NextResponse.json({ message: "Invalid JSON body" }, { status: 400 });
     }
 
-    const data = await runAnalysisFromPgn(
-      {
-        pgn: parsed.data.pgn,
-        requestedDepth: parsed.data.mode,
-      },
-      await getCurrentUser(),
-    );
+    const { fen, depth: rawDepth, maxTime: rawMaxTime, multiPv: rawMultiPv } = body as Record<string, unknown>;
+
+    if (!fen || typeof fen !== "string") {
+      return NextResponse.json({ message: "FEN string is required" }, { status: 400 });
+    }
+
+    const depth = typeof rawDepth === "number" ? Math.min(Math.max(Math.round(rawDepth), 15), 20) : 20;
+    const maxTime = typeof rawMaxTime === "number" ? Math.min(Math.max(rawMaxTime, 1000), 10000) : 3000;
+    const multiPv = typeof rawMultiPv === "number" ? Math.min(Math.max(Math.round(rawMultiPv), 1), 5) : 1;
+
+    console.log(`[analyze] Analyzing FEN depth=${depth} maxTime=${maxTime} multiPv=${multiPv}`);
+
+    const result = await evaluateFen(fen, depth, maxTime, multiPv);
+
+    const mateValue = result.mate;
+    const finalEval = mateValue !== null
+      ? (mateValue > 0 ? 10000 : -10000)
+      : result.eval;
 
     return NextResponse.json({
-      ...data,
-      chartData: buildChartData(data.report),
-      game: {
-        black: data.report.black,
-        date: data.report.playedAt,
-        event: data.report.title,
-        opening: data.report.opening,
-        result: data.report.result,
-        timeControl: data.report.timeControl,
-        white: data.report.white,
-      },
-      moves: data.report.moveEvaluations,
-      statistics: buildMoveStatistics(data.report),
+      eval: finalEval,
+      mate: result.mate,
+      bestMove: result.bestMove,
+      bestLine: result.bestLine,
+      depth: result.depth,
+      topMoves: result.topMoves,
     });
   } catch (error) {
-    return NextResponse.json(
-      { message: error instanceof Error ? error.message : "Analysis failed." },
-      { status: 400 },
-    );
+    const message = error instanceof Error ? error.message : "Analysis failed";
+    console.error("[analyze] Error:", message);
+    return NextResponse.json({ message }, { status: 500 });
   }
 }

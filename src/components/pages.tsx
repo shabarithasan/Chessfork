@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PricingPage } from "@/components/pricing/pricing-page";
+import { GameAnalysisPage } from "@/components/analysis/game-analysis-page";
+import { AnalyzePageContent } from "@/components/analyze/analyze-page";
 import { MDXRemote } from "next-mdx-remote/rsc";
 
 import { AccountPage as AccountRoutePage } from "@/components/account/account-page";
-import { AnalysisReportWorkbench } from "@/components/analysis/analysis-report-workbench";
 import { ChessDnaCard, type ChessDnaProfile } from "@/components/analysis/chess-dna-card";
 import { ChessBoard } from "@/components/analysis/chess-board";
 import { ChessVillainCard, type ChessVillainProfile } from "@/components/analysis/chess-villain-card";
@@ -1086,92 +1088,17 @@ export async function AnalyzePage() {
     viewer ? getAccountProfile(viewer.id) : Promise.resolve(null),
   ]);
   const recentRuns = runs.slice(0, 3);
-  const sourceCount = new Set(runs.map((run) => run.source)).size;
-  const deepCount = runs.filter((run) => run.depth === "deep").length;
-  const averageRunAccuracy =
-    runs.length > 0 ? Math.round(runs.reduce((total, run) => total + averageAccuracy(run), 0) / runs.length) : 0;
   const linkedAccounts = Object.fromEntries(
     (accountProfile?.linkedAccounts ?? []).map((account) => [account.source, account.username]),
   );
 
   return (
-    <div className="mx-auto w-full max-w-7xl py-10 sm:py-16 lg:py-20">
-      <section className="grid min-w-0 gap-10 lg:grid-cols-[0.92fr_1.08fr] lg:gap-12">
-        <div className="min-w-0">
-          <SectionLabel>Analyze</SectionLabel>
-          <SectionTitle>Start with a quick pass, then deepen only when the game is worth it.</SectionTitle>
-          <SectionCopy>
-            Import public games or paste PGN, generate a saved report, and turn each mistake into something you can revisit later.
-          </SectionCopy>
-
-          <div className="mt-10 grid gap-5 sm:grid-cols-3">
-            {[
-              { label: "Saved reports", value: runs.length.toString().padStart(2, "0") },
-              { label: "Import sources live", value: sourceCount.toString() },
-              { label: "Average report accuracy", value: `${averageRunAccuracy}%` },
-            ].map((item) => (
-              <Surface key={item.label} className="bg-slate-950/55">
-                <p className="text-3xl font-semibold tracking-tight text-white">{item.value}</p>
-                <p className="mt-2 text-sm text-slate-400">{item.label}</p>
-              </Surface>
-            ))}
-          </div>
-
-          <div className="mt-10 grid gap-5">
-            {[
-              {
-                title: "1. Import from wherever the game already lives",
-                copy: "Paste PGN, pull a public Chess.com game, or grab a public Lichess game without changing the rest of the workflow.",
-              },
-              {
-                title: "2. Save the report instead of showing disposable output",
-                copy: "Every run gets a stable destination page with move-by-move review, critical moments, and opening context.",
-              },
-              {
-                title: "3. Deepen only when the game deserves it",
-                copy: `${deepCount} deep reports are already queued or stored, so the UI stays quick without hiding the premium path.`,
-              },
-            ].map((step) => (
-              <Surface key={step.title} className="bg-slate-950/45">
-                <p className="text-lg font-semibold tracking-tight text-white">{step.title}</p>
-                <p className="mt-3 text-sm leading-7 text-slate-300/90">{step.copy}</p>
-              </Surface>
-            ))}
-          </div>
-        </div>
-
-        <ImportWorkbench
-          linkedAccounts={linkedAccounts}
-          viewerDisplayName={viewer?.displayName}
-          signInHref="/auth"
-        />
-      </section>
-
-      <section className="mt-20">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <SectionLabel>Recent reports</SectionLabel>
-            <SectionTitle>Imported games should immediately feel reusable.</SectionTitle>
-          </div>
-          <Link href="/games" className="text-sm font-semibold text-amber-300 transition hover:text-amber-200 hover:underline">
-            View all saved games &rarr;
-          </Link>
-        </div>
-
-        <div className="mt-10 grid gap-6 lg:grid-cols-3">
-          {recentRuns.length > 0 ? (
-            recentRuns.map((run) => <ReportCard key={run.id} run={run} />)
-          ) : (
-            <Surface className="lg:col-span-3">
-              <p className="text-lg font-semibold tracking-tight text-white">No reports yet</p>
-              <p className="mt-3 text-sm leading-7 text-slate-300">
-                Your first import will appear here with a permanent report page and an entry in the saved games library.
-              </p>
-            </Surface>
-          )}
-        </div>
-      </section>
-    </div>
+    <AnalyzePageContent
+      linkedAccounts={linkedAccounts}
+      viewerDisplayName={viewer?.displayName}
+      recentRuns={recentRuns as any}
+      runs={{ length: runs.length }}
+    />
   );
 }
 
@@ -1366,7 +1293,7 @@ export async function AnalysisReportPage({ analysisId }: { analysisId: string })
       </div>
 
       <div className="mt-5">
-        <AnalysisReportWorkbench analysis={analysis} />
+        <GameAnalysisPage analysis={analysis} />
       </div>
     </div>
   );
@@ -2210,109 +2137,7 @@ export function WrappedPage({ year }: { year: number }) {
   );
 }
 
-export function PricingPage() {
-  return (
-    <section className="mx-auto w-full max-w-7xl px-5 py-16 sm:px-8">
-      <div className="grid gap-10 lg:grid-cols-[0.92fr_1.08fr]">
-        <div>
-          <SectionLabel>Pricing</SectionLabel>
-          <SectionTitle>Serious chess workflow pricing without burying the value.</SectionTitle>
-          <SectionCopy>
-            The monetization layer should feel as intentional as the product: a useful free path, paid depth where the reports start
-            compounding, and no ad clutter on the screens people study on.
-          </SectionCopy>
-          <div className="mt-6 flex flex-wrap gap-2">
-            {pricingProofNotes.map((note) => (
-              <span
-                key={note}
-                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-300"
-              >
-                {note}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <Surface className="bg-[linear-gradient(180deg,rgba(245,158,11,0.12),rgba(15,23,42,0.92)_32%,rgba(2,6,23,0.98))]">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-amber-300/80">Packaging principle</p>
-          <p className="mt-3 text-2xl font-semibold text-white">Free gets you in. Paid depth keeps the report stack compounding.</p>
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            {[
-              { label: "Free entry", value: "Daily + quick" },
-              { label: "Power path", value: "Saved + deep" },
-              { label: "Premium layer", value: "Coach + share" },
-            ].map((item) => (
-              <div key={item.label} className="rounded-[1.3rem] border border-white/10 bg-slate-950/75 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{item.label}</p>
-                <p className="mt-2 text-lg font-semibold text-white">{item.value}</p>
-              </div>
-            ))}
-          </div>
-        </Surface>
-      </div>
-
-      <div className="mt-10 grid gap-6 lg:grid-cols-3">
-        {pricingTiers.map((tier) => {
-          const isPopular = tier.name === "Pro";
-          const isPremium = tier.name === "Coach";
-
-          return (
-            <Surface
-              key={tier.name}
-              className={cn(
-                "h-full",
-                isPopular ? "border-amber-300/40 bg-[linear-gradient(180deg,rgba(245,158,11,0.1),rgba(15,23,42,0.88)_34%,rgba(2,6,23,0.96))]" : "",
-                isPremium ? "border-fuchsia-300/20" : "",
-              )}
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-xl font-semibold text-white">{tier.name}</p>
-                  <p className="mt-3 text-4xl font-semibold text-amber-300">
-                    {tier.price}
-                    <span className="ml-2 text-sm font-medium text-slate-400">/ month</span>
-                  </p>
-                </div>
-                {isPopular ? (
-                  <span className="rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-100">
-                    Most popular
-                  </span>
-                ) : null}
-                {isPremium ? (
-                  <span className="rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-fuchsia-100">
-                    Premium
-                  </span>
-                ) : null}
-              </div>
-
-              <p className="mt-4 text-sm leading-7 text-slate-300">{tier.description}</p>
-
-              <div className="mt-6 space-y-3">
-                {(pricingTierFeatures[tier.name] ?? []).map((feature) => (
-                  <div key={feature} className="rounded-[1.2rem] border border-white/10 bg-slate-950/65 px-4 py-3 text-sm text-slate-200">
-                    {feature}
-                  </div>
-                ))}
-              </div>
-
-              <Link
-                href={tier.name === "Free" ? "/analyze" : "/auth"}
-                className={cn(
-                  "mt-6 inline-flex rounded-full px-5 py-3 text-sm font-semibold transition",
-                  isPopular
-                    ? "bg-amber-300 text-slate-950 hover:bg-amber-200"
-                    : "border border-white/15 bg-white/5 text-slate-100 hover:bg-white/10",
-                )}
-              >
-                {tier.name === "Free" ? "Start analyzing" : tier.name === "Coach" ? "Unlock coach" : "Choose Pro"}
-              </Link>
-            </Surface>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
+export { PricingPage } from "@/components/pricing/pricing-page";
 
 export async function BlogIndexPage() {
   const posts = await getBlogPostSummaries().catch(() => featuredBlogPosts);

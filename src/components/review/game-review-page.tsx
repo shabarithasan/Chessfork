@@ -14,24 +14,38 @@ import {
   Copy,
   FlipHorizontal2,
   Home,
+  Loader2,
   Pause,
   Play,
+  RefreshCw,
   RotateCcw,
+  Search,
   Share2,
   SkipBack,
   SkipForward,
+  Swords,
 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type TouchEvent } from "react";
 
 import { detectOpeningFromPgn } from "@/lib/chess/eco-database";
 import { formatOpeningName } from "@/lib/chess/openings";
 import { readHeaders } from "@/lib/chess/pgn";
+import { mergeGamePages } from "@/lib/chess/game-utils";
 import { winProbabilityFromCentipawns } from "@/lib/chess/rating";
 import { recordAnalysisAndCheckBadges, recordShareAndCheckBadges } from "@/lib/badgeChecker";
 import { hashAnalysisInput, readCachedAnalysis, writeCachedAnalysis } from "@/lib/client/analysis-cache";
 import { saveGuestAnalysis } from "@/lib/guestSession";
 import { cn } from "@/lib/utils";
-import type { AnalysisRun, MoveEvaluation, MoveGrade, OpeningTag } from "@/types/platform";
+import type {
+  AnalysisRun,
+  ImportGameLibraryFilters,
+  ImportGameLibraryResponse,
+  ImportGameResultFilter,
+  ImportableGameOption,
+  MoveEvaluation,
+  MoveGrade,
+  OpeningTag,
+} from "@/types/platform";
 
 import type { WinProbabilityPoint } from "@/components/review/win-probability-chart";
 
@@ -61,6 +75,71 @@ type AnalysisResponse = {
 };
 
 type ReviewMode = "deep" | "quick";
+
+type ImportBrowserResponse = Partial<ImportGameLibraryResponse> & {
+  analysisId?: string;
+  message?: string;
+  pgn?: string;
+  shareUrl?: string;
+};
+
+const defaultBrowserFilters: ImportGameLibraryFilters = {
+  search: "",
+  result: "all",
+  timeClass: "all",
+};
+
+function normalizeBrowserUsername(value: string) {
+  return value.trim().toLowerCase();
+}
+
+async function readBrowserResponse(response: Response) {
+  const body = await response.text();
+
+  try {
+    return JSON.parse(body) as ImportBrowserResponse;
+  } catch {
+    return { message: body || "The server returned an unreadable response." } as ImportBrowserResponse;
+  }
+}
+
+function formatPlayedShort(value: string) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(parsed);
+}
+
+function describeOutcome(game: ImportableGameOption) {
+  const side = game.playerColor === "white" ? "as White" : "as Black";
+
+  if (game.outcome === "win") return `Won ${side}`;
+  if (game.outcome === "loss") return `Lost ${side}`;
+  return `Drew ${side}`;
+}
+
+function describeGameLine(game: Pick<ImportableGameOption, "black" | "result" | "white">) {
+  if (game.result === "1-0") return `${game.white} won`;
+  if (game.result === "0-1") return `${game.black} won`;
+  return "Draw";
+}
+
+function ratingLineValue(game: Pick<ImportableGameOption, "blackRating" | "playerColor" | "whiteRating">) {
+  const playerRating = game.playerColor === "white" ? game.whiteRating : game.blackRating;
+  const opponentRating = game.playerColor === "white" ? game.blackRating : game.whiteRating;
+
+  if (!playerRating && !opponentRating) {
+    return null;
+  }
+
+  return `${playerRating ?? "?"} vs ${opponentRating ?? "?"}`;
+}
 
 type PreviewMove = Pick<MoveEvaluation, "fenAfter" | "fenBefore" | "from" | "moveNumber" | "ply" | "san" | "side" | "to">;
 
@@ -364,7 +443,7 @@ function AccuracyRing({
   );
 }
 
-export function GameReviewPage({ initialPgn }: { initialPgn: string }) {
+export function GameReviewPage({ initialPgn = "" }: { initialPgn?: string }) {
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
   const [autoPlay, setAutoPlay] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
@@ -381,18 +460,49 @@ export function GameReviewPage({ initialPgn }: { initialPgn: string }) {
   const [streamedMoves, setStreamedMoves] = useState<Map<number, MoveEvaluation>>(() => new Map());
   const boardTouchStartRef = useRef<{ x: number; y: number } | null>(null);
 
-  const previewMoves = useMemo(() => buildPreviewMoves(initialPgn), [initialPgn]);
-  const previewHeaders = useMemo(() => readHeaders(initialPgn), [initialPgn]);
+  const [pgn, setPgn] = useState(initialPgn);
+  const [showPicker, setShowPicker] = useState(initialPgn.length === 0);
+  const [pickerTab, setPickerTab] = useState<"pgn" | "chesscom">("chesscom");
+  const [pgnDraft, setPgnDraft] = useState("");
+  const [browserError, setBrowserError] = useState<string | null>(null);
+  const [browserMessage, setBrowserMessage] = useState<string | null>(null);
+  const [browserUsername, setBrowserUsername] = useState("");
+  const [loadedUsername, setLoadedUsername] = useState<string | null>(null);
+  const [archiveGames, setArchiveGames] = useState<ImportableGameOption[]>([]);
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+  const [filteredGameCount, setFilteredGameCount] = useState(0);
+  const [nextPage, setNextPage] = useState<number | null>(null);
+  const [gameStats, setGameStats] = useState<ImportGameLibraryResponse["stats"] | null>(null);
+  const [archiveSearch, setArchiveSearch] = useState("");
+  const [archiveResultFilter, setArchiveResultFilter] = useState<ImportGameResultFilter>("all");
+  const [archiveTimeFilter, setArchiveTimeFilter] = useState("all");
+  const [appliedArchiveFilters, setAppliedArchiveFilters] = useState<ImportGameLibraryFilters>(defaultBrowserFilters);
+  const [isFetchingArchive, setIsFetchingArchive] = useState(false);
+  const [isLoadingGame, setIsLoadingGame] = useState(false);
+
+  const normalizedBrowserUsername = normalizeBrowserUsername(browserUsername);
+  const canBrowse = normalizedBrowserUsername.length >= 2;
+  const hasLoadedLibrary = loadedUsername === normalizedBrowserUsername && gameStats !== null;
+  const selectedArchiveGame = archiveGames.find((game) => game.id === selectedGameId) ?? archiveGames[0] ?? null;
+  const hasPendingFilterChanges =
+    hasLoadedLibrary &&
+    (appliedArchiveFilters.search !== archiveSearch.trim() ||
+      appliedArchiveFilters.result !== archiveResultFilter ||
+      appliedArchiveFilters.timeClass !== archiveTimeFilter);
+  const archiveTimeClassOptions = gameStats?.timeClasses ?? [];
+
+  const previewMoves = useMemo(() => buildPreviewMoves(pgn), [pgn]);
+  const previewHeaders = useMemo(() => readHeaders(pgn), [pgn]);
   const instantOpening = useMemo(() => {
     try {
-      return detectOpeningFromPgn(initialPgn);
+      return detectOpeningFromPgn(pgn);
     } catch {
       return {
         eco: previewHeaders.ECO ?? "A00",
         name: previewHeaders.Opening ?? "Identifying opening",
       } satisfies OpeningTag;
     }
-  }, [initialPgn, previewHeaders.ECO, previewHeaders.Opening]);
+  }, [pgn, previewHeaders.ECO, previewHeaders.Opening]);
 
   useEffect(() => {
     let cancelled = false;
@@ -409,7 +519,11 @@ export function GameReviewPage({ initialPgn }: { initialPgn: string }) {
         setStreamOpening(instantOpening);
         setStreamedMoves(new Map());
 
-        const cacheKey = await hashAnalysisInput(initialPgn, mode);
+        if (pgn.trim().length < 10) {
+          return;
+        }
+
+        const cacheKey = await hashAnalysisInput(pgn, mode);
         const cached = await readCachedAnalysis(cacheKey);
 
         if (cancelled) {
@@ -429,7 +543,7 @@ export function GameReviewPage({ initialPgn }: { initialPgn: string }) {
         }
 
         const sessionResponse = await fetch("/api/analyze-stream", {
-          body: JSON.stringify({ mode, pgn: initialPgn }),
+          body: JSON.stringify({ mode, pgn }),
           headers: { "Content-Type": "application/json" },
           method: "POST",
         });
@@ -503,7 +617,7 @@ export function GameReviewPage({ initialPgn }: { initialPgn: string }) {
       cancelled = true;
       eventSource?.close();
     };
-  }, [initialPgn, instantOpening, mode]);
+  }, [pgn, instantOpening, mode]);
 
   const report = analysis?.report ?? null;
   const displayMoves = useMemo<DisplayMove[]>(() => {
@@ -544,9 +658,9 @@ export function GameReviewPage({ initialPgn }: { initialPgn: string }) {
     }
 
     return [
-      sanToArrow(fen, arrowSourceMove.engineLines?.[0]?.san ?? arrowSourceMove.bestMove, "#2fa84f"),
-      sanToArrow(fen, arrowSourceMove.engineLines?.[1]?.san, "#e6c200"),
-      sanToArrow(fen, arrowSourceMove.engineLines?.[2]?.san, "#e02727"),
+      sanToArrow(fen, arrowSourceMove.engineLines?.[0]?.san ?? arrowSourceMove.bestMove, "rgba(0, 212, 170, 0.94)"),
+      sanToArrow(fen, arrowSourceMove.engineLines?.[1]?.san, "rgba(0, 212, 170, 0.56)"),
+      sanToArrow(fen, arrowSourceMove.engineLines?.[2]?.san, "rgba(0, 212, 170, 0.38)"),
     ].filter((arrow): arrow is Arrow => Boolean(arrow));
   }, [arrowSourceMove, fen]);
   const bestLine = arrowSourceMove?.engineLines?.[0]?.line ?? arrowSourceMove?.principalVariation ?? [];
@@ -657,6 +771,148 @@ export function GameReviewPage({ initialPgn }: { initialPgn: string }) {
     }
   }
 
+  function resetArchiveLibrary() {
+    setLoadedUsername(null);
+    setArchiveGames([]);
+    setSelectedGameId(null);
+    setFilteredGameCount(0);
+    setNextPage(null);
+    setGameStats(null);
+    setAppliedArchiveFilters(defaultBrowserFilters);
+    setBrowserMessage(null);
+    setBrowserError(null);
+  }
+
+  async function loadArchiveGames(options?: { append?: boolean; page?: number }) {
+    if (!canBrowse) {
+      setBrowserError("Enter a Chess.com username first.");
+      return;
+    }
+
+    const page = options?.page ?? 0;
+    setIsFetchingArchive(true);
+    setBrowserError(null);
+
+    try {
+      const response = await fetch("/api/import/chesscom", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: normalizedBrowserUsername,
+          intent: "list",
+          requestedDepth: "quick",
+          page,
+          pageSize: 24,
+          search: archiveSearch.trim() || undefined,
+          result: archiveResultFilter,
+          timeClass: archiveTimeFilter !== "all" ? archiveTimeFilter : undefined,
+        }),
+      });
+
+      const data = await readBrowserResponse(response);
+
+      if (!response.ok) {
+        throw new Error(data.message ?? "Unable to fetch Chess.com games.");
+      }
+
+      const incomingGames = data.games ?? [];
+      const nextGames = options?.append ? mergeGamePages(archiveGames, incomingGames) : incomingGames;
+
+      setArchiveGames(nextGames);
+      setSelectedGameId((current) => (current && nextGames.some((game) => game.id === current) ? current : nextGames[0]?.id ?? null));
+      setLoadedUsername(normalizedBrowserUsername);
+      setFilteredGameCount(data.filteredCount ?? nextGames.length);
+      setNextPage(data.hasMore ? (data.page ?? page) + 1 : null);
+      setGameStats(data.stats ?? null);
+      setAppliedArchiveFilters(
+        data.filters ?? {
+          search: archiveSearch.trim(),
+          result: archiveResultFilter,
+          timeClass: archiveTimeFilter,
+        },
+      );
+      setBrowserMessage(
+        data.message ??
+          (nextGames.length > 0
+            ? `Loaded ${Math.min(nextGames.length, data.filteredCount ?? nextGames.length)} games for ${normalizedBrowserUsername}.`
+            : `No public Chess.com games matched ${normalizedBrowserUsername}.`),
+      );
+    } catch (error) {
+      resetArchiveLibrary();
+      setBrowserMessage(null);
+      setBrowserError(error instanceof Error ? error.message : "Unable to import Chess.com games.");
+    } finally {
+      setIsFetchingArchive(false);
+    }
+  }
+
+  async function reviewArchivedGame(game: ImportableGameOption) {
+    if (!game.archiveUrl) {
+      setBrowserError("This game does not have a playable record. Try another game.");
+      return;
+    }
+
+    setIsLoadingGame(true);
+    setBrowserError(null);
+    setBrowserMessage(null);
+
+    try {
+      const response = await fetch("/api/import/chesscom", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: normalizedBrowserUsername,
+          archiveUrl: game.archiveUrl,
+          gameId: game.id,
+          intent: "fetch-pgn",
+          requestedDepth: "quick",
+        }),
+      });
+
+      const data = await readBrowserResponse(response);
+
+      if (!response.ok) {
+        throw new Error(data.message ?? "Unable to load the selected game.");
+      }
+
+      const gamePgn = data.pgn ?? (data.analysisId ? data.message : null);
+      if (!gamePgn) {
+        throw new Error("The selected game did not return a playable PGN.");
+      }
+
+      setCurrentPly(0);
+      setProgress(0);
+      setShowPicker(false);
+      setPgn(gamePgn);
+    } catch (error) {
+      setBrowserError(error instanceof Error ? error.message : "Unable to load the selected game.");
+    } finally {
+      setIsLoadingGame(false);
+    }
+  }
+
+  function reviewPgnDraft() {
+    if (pgnDraft.trim().length < 10) {
+      setBrowserError("Paste a longer PGN before reviewing.");
+      return;
+    }
+
+    setPgn(pgnDraft.trim());
+    setShowPicker(false);
+    setCurrentPly(0);
+    setProgress(0);
+  }
+
+  const openPicker = useCallback(() => {
+    setShowPicker(true);
+    setBrowserError(null);
+    setBrowserMessage(null);
+  }, []);
+
   if (error) {
     return (
       <section className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-3xl items-center px-4 py-10">
@@ -676,16 +932,320 @@ export function GameReviewPage({ initialPgn }: { initialPgn: string }) {
     );
   }
 
+  if (showPicker) {
+    return (
+      <section className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-5xl items-center px-4 py-10">
+        <div className="w-full rounded-xl border border-[#1e1e2e] bg-[#0a0a0f] p-4 shadow-[0_0_20px_rgba(0,212,170,0.12),0_28px_90px_rgba(0,0,0,0.38)] sm:p-6">
+          <header className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#00d4aa]">Game review</p>
+              <h1 className="mt-2 text-3xl font-semibold text-white">Pick the game to review</h1>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                Paste a PGN, or browse a public Chess.com archive and narrow it down to the exact game you want to review.
+              </p>
+            </div>
+            <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-[#00d4aa]">
+              <ArrowLeft className="size-4" />
+              Back home
+            </Link>
+          </header>
+
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            {(["pgn", "chesscom"] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => {
+                  setPickerTab(tab);
+                  setBrowserError(null);
+                  setBrowserMessage(null);
+                }}
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition active:scale-[0.97]",
+                  pickerTab === tab
+                    ? "bg-[#00d4aa] text-slate-950"
+                    : "border border-white/10 bg-white/5 text-slate-300 hover:text-white",
+                )}
+              >
+                {tab === "pgn" ? <Clipboard className="size-4" /> : <Search className="size-4" />}
+                {tab === "pgn" ? "Paste PGN" : "Chess.com archive"}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-5 space-y-5">
+            {pickerTab === "pgn" ? (
+              <div className="space-y-3">
+                <textarea
+                  value={pgnDraft}
+                  onChange={(event) => {
+                    setPgnDraft(event.target.value);
+                    setBrowserError(null);
+                  }}
+                  placeholder="Paste a full PGN here, then review it move by move with Stockfish."
+                  className="min-h-56 w-full rounded-xl border border-neutral-800 bg-[#111118] px-4 py-4 text-sm leading-6 text-neutral-100 outline-none transition focus:border-[#00d4aa]/70"
+                />
+                <button
+                  type="button"
+                  onClick={reviewPgnDraft}
+                  className="rounded-lg bg-[#00d4aa] px-5 py-2.5 text-sm font-bold text-slate-950 shadow-[0_0_20px_rgba(0,212,170,0.2)] transition hover:bg-[#26e8c1] active:scale-[0.98]"
+                >
+                  Review PGN
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                  <input
+                    value={browserUsername}
+                    onChange={(event) => {
+                      setBrowserUsername(event.target.value);
+                      setBrowserError(null);
+                      resetArchiveLibrary();
+                    }}
+                    placeholder="Enter a Chess.com username, e.g. MagnusCarlsen"
+                    className="h-14 w-full rounded-xl border border-neutral-800 bg-[#111118] px-4 text-sm text-neutral-100 outline-none transition focus:border-[#00d4aa]/70"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void loadArchiveGames({ page: 0 })}
+                    disabled={!canBrowse || isFetchingArchive}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#00d4aa] px-5 py-2.5 text-sm font-bold text-slate-950 shadow-[0_0_20px_rgba(0,212,170,0.2)] transition hover:bg-[#26e8c1] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isFetchingArchive ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />}
+                    Browse archive
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                  <span>Try it out:</span>
+                  {["MagnusCarlsen", "GothamChess", "Hikaru"].map((handle) => (
+                    <button
+                      key={handle}
+                      type="button"
+                      onClick={() => {
+                        setBrowserUsername(handle);
+                        setBrowserError(null);
+                        resetArchiveLibrary();
+                      }}
+                      className="rounded-lg border border-neutral-700 bg-neutral-800/40 px-3 py-2 text-xs font-medium text-slate-200 transition hover:bg-neutral-700/40"
+                    >
+                      {handle}
+                    </button>
+                  ))}
+                </div>
+
+                {hasLoadedLibrary ? (
+                  <>
+                    <div className="grid gap-3 rounded-xl border border-neutral-800 bg-[#111118] p-4 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+                      <input
+                        value={archiveSearch}
+                        onChange={(event) => {
+                          setArchiveSearch(event.target.value);
+                          setBrowserError(null);
+                        }}
+                        placeholder="Search opponent, ECO, opening, or date"
+                        className="h-12 min-w-0 rounded-lg border border-neutral-800 bg-[#0a0a0a] px-4 text-sm text-neutral-100 outline-none transition focus:border-[#00d4aa]/70"
+                      />
+                      <select
+                        value={archiveResultFilter}
+                        onChange={(event) => setArchiveResultFilter(event.target.value as ImportGameResultFilter)}
+                        className="h-12 min-w-0 rounded-lg border border-neutral-800 bg-[#0a0a0a] px-4 text-sm text-neutral-100 outline-none transition focus:border-[#00d4aa]/70"
+                      >
+                        <option value="all">All results</option>
+                        <option value="win">Wins</option>
+                        <option value="loss">Losses</option>
+                        <option value="draw">Draws</option>
+                      </select>
+                      <select
+                        value={archiveTimeFilter}
+                        onChange={(event) => setArchiveTimeFilter(event.target.value)}
+                        className="h-12 min-w-0 rounded-lg border border-neutral-800 bg-[#0a0a0a] px-4 text-sm text-neutral-100 outline-none transition focus:border-[#00d4aa]/70"
+                      >
+                        <option value="all">All time classes</option>
+                        {archiveTimeClassOptions.map((timeClass) => (
+                          <option key={timeClass} value={timeClass}>
+                            {timeClass}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => void loadArchiveGames({ page: 0 })}
+                        disabled={isFetchingArchive}
+                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-700 bg-neutral-800/40 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-300 transition hover:bg-neutral-700/40 hover:text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-3"
+                      >
+                        <RefreshCw className={cn("size-3.5", isFetchingArchive && "animate-spin")} />
+                        {hasPendingFilterChanges ? "Apply filters" : "Refresh archive"}
+                      </button>
+                    </div>
+
+                    {selectedArchiveGame ? (
+                      <div className="rounded-lg border border-[#00d4aa]/25 bg-[#00d4aa]/10 p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-white">vs {selectedArchiveGame.opponent}</p>
+                            <p className="mt-1 break-words text-sm text-[#9fffea]">
+                              {selectedArchiveGame.white} vs {selectedArchiveGame.black} / {formatPlayedShort(selectedArchiveGame.playedAt)}
+                            </p>
+                          </div>
+                          <span className="rounded-lg border border-neutral-700 bg-neutral-800/40 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-100">
+                            {describeOutcome(selectedArchiveGame)}
+                          </span>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <span className="rounded-lg border border-neutral-700 bg-neutral-800/40 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
+                            {selectedArchiveGame.timeClass ?? "chess"} / {selectedArchiveGame.timeControl}
+                          </span>
+                          {selectedArchiveGame.eco ? (
+                            <span className="rounded-lg border border-neutral-700 bg-neutral-800/40 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
+                              {selectedArchiveGame.eco}
+                            </span>
+                          ) : null}
+                          {selectedArchiveGame.openingName ? (
+                            <span className="rounded-lg border border-neutral-700 bg-neutral-800/40 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
+                              {selectedArchiveGame.openingName}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-300">
+                          <span>{describeGameLine(selectedArchiveGame)}</span>
+                          {ratingLineValue(selectedArchiveGame) ? <span>Ratings {ratingLineValue(selectedArchiveGame)}</span> : null}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => void reviewArchivedGame(selectedArchiveGame)}
+                          disabled={isLoadingGame}
+                          className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#00d4aa] px-5 py-2.5 text-sm font-bold text-slate-950 shadow-[0_0_20px_rgba(0,212,170,0.2)] transition hover:bg-[#26e8c1] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {isLoadingGame ? <Loader2 className="size-4 animate-spin" /> : <Swords className="size-4" />}
+                          Review this game
+                        </button>
+                      </div>
+                    ) : null}
+
+                    {filteredGameCount > 0 ? (
+                      <div className="space-y-3">
+                        <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                          Showing {archiveGames.length} of {filteredGameCount} matching games
+                        </p>
+                        <div className="max-h-80 space-y-3 overflow-y-auto pr-1">
+                          {archiveGames.map((game) => (
+                            <button
+                              key={game.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedGameId(game.id);
+                                setBrowserError(null);
+                              }}
+                              className={cn(
+                                "w-full rounded-lg border p-4 text-left transition",
+                                selectedArchiveGame?.id === game.id
+                                  ? "border-[#00d4aa]/40 bg-[#00d4aa]/10"
+                                  : "border-neutral-800 bg-[#111118] hover:border-neutral-700 hover:bg-neutral-800/40",
+                              )}
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-white">vs {game.opponent}</p>
+                                  <p className="mt-1 break-words text-sm text-slate-400">
+                                    {game.white} vs {game.black}
+                                  </p>
+                                </div>
+                                <span className="text-xs uppercase tracking-[0.2em] text-slate-500">{formatPlayedShort(game.playedAt)}</span>
+                              </div>
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                <span className="rounded-lg border border-neutral-700 bg-neutral-950/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
+                                  {describeOutcome(game)}
+                                </span>
+                                <span className="rounded-lg border border-neutral-700 bg-neutral-950/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
+                                  {game.timeClass ?? "chess"}
+                                </span>
+                                <span className="rounded-lg border border-neutral-700 bg-neutral-950/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
+                                  {game.timeControl}
+                                </span>
+                                {game.eco ? (
+                                  <span className="rounded-lg border border-neutral-700 bg-neutral-950/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
+                                    {game.eco}
+                                  </span>
+                                ) : null}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+
+                        {nextPage !== null ? (
+                          <button
+                            type="button"
+                            onClick={() => void loadArchiveGames({ append: true, page: nextPage })}
+                            disabled={isFetchingArchive}
+                            className="rounded-lg border border-neutral-700 bg-neutral-800/40 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-300 transition hover:bg-neutral-700/40 hover:text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {isFetchingArchive ? "Loading more..." : "Load 24 more games"}
+                          </button>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <p className="text-sm leading-7 text-slate-300">
+                        The archive loaded, but nothing matched your current filters. Loosen the search, result, or time-class filters and try again.
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm leading-7 text-slate-400">
+                    No archive loaded yet. Enter a public username and click <span className="font-semibold text-[#9fffea]">Browse archive</span> to
+                    load their recent games, then narrow down by opponent, result, or time class.
+                  </p>
+                )}
+
+                {gameStats ? (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {[
+                      { label: "Total games", value: gameStats.totalGames.toLocaleString() },
+                      { label: "Wins", value: gameStats.wins.toLocaleString() },
+                      { label: "Losses", value: gameStats.losses.toLocaleString() },
+                      { label: "Draws", value: gameStats.draws.toLocaleString() },
+                    ].map((metric) => (
+                      <div key={metric.label} className="rounded-lg border border-neutral-800 bg-[#111118] p-4">
+                        <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{metric.label}</p>
+                        <p className="mt-2 text-lg font-semibold text-white">{metric.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
+                {browserMessage ? (
+                  <div aria-live="polite" className="rounded-lg border border-[#00d4aa]/20 bg-[#00d4aa]/10 p-4 text-sm leading-6 text-[#d8fff6]">
+                    {browserMessage}
+                  </div>
+                ) : null}
+                {browserError ? (
+                  <div aria-live="polite" className="rounded-lg border border-red-400/25 bg-red-400/10 p-4 text-sm leading-6 text-red-100">
+                    {browserError}
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="min-h-screen px-0 py-2 text-slate-100 sm:px-2">
       <div className="mx-auto w-full max-w-[1600px] rounded-xl border border-[#1e1e2e] bg-[#0a0a0f] p-3 shadow-[0_0_20px_rgba(0,212,170,0.1)]">
         <header className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#1e1e2e] bg-[#111118] px-4 py-3 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-[#00d4aa]">
+              <button
+                type="button"
+                onClick={openPicker}
+                className="inline-flex items-center gap-2 text-sm font-semibold text-[#00d4aa] transition hover:text-[#26e8c1]"
+              >
                 <ArrowLeft className="size-4" />
-                New PGN
-              </Link>
+                New review
+              </button>
               <span className="rounded-full border border-[#00d4aa]/20 bg-[#00d4aa]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#9fffea]">
                 Detected: {opening.eco}
               </span>

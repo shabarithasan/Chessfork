@@ -1,27 +1,15 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
-
-function subscribeToHydrationStore() {
-  return () => {};
-}
-
-function getClientHydrationSnapshot() {
-  return true;
-}
-
-function getServerHydrationSnapshot() {
-  return false;
-}
+import { useEffect, useState } from "react";
 
 export function useStablePathname() {
   const pathname = usePathname();
-  const hydrated = useSyncExternalStore(
-    subscribeToHydrationStore,
-    getClientHydrationSnapshot,
-    getServerHydrationSnapshot,
-  );
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   return hydrated ? pathname : null;
 }

@@ -55,7 +55,7 @@ const ease: [number, number, number, number] = [0.16, 1, 0.3, 1];
 export function Footer() {
   return (
     <motion.footer
-      className="knightowl-footer border-t border-[var(--border)] bg-[var(--bg-primary)] px-5 py-20 md:px-8 lg:px-12"
+      className="knightowl-footer border-t border-[var(--border)] px-5 py-20 md:px-8 lg:px-12"
       initial={{ opacity: 0, y: 40 }}
       transition={{ duration: 0.8, ease }}
       viewport={{ once: true, margin: "-80px" }}

@@ -28,12 +28,14 @@ import type {
 const analysisRequestSchema = z.object({
   pgn: z.string().min(10),
   requestedDepth: z.enum(["quick", "deep"]).default("quick"),
+  source: z.enum(["pgn", "chesscom", "lichess"]).optional(),
+  subject: z.string().optional(),
 });
 
 const importRequestSchema = z.object({
   username: z.string().min(2),
   requestedDepth: z.enum(["quick", "deep"]).default("quick"),
-  intent: z.enum(["list", "analyze"]).default("analyze"),
+  intent: z.enum(["list", "analyze", "fetch-pgn"]).default("analyze"),
   archiveUrl: z.string().url().optional(),
   gameId: z.string().min(1).optional(),
   page: z.number().int().min(0).default(0),
@@ -64,16 +66,17 @@ export async function runAnalysisFromPgn(
   const run = await analyzePgnWithBestEngine(payload.pgn, {
     onMoveAnalyzed: options?.onMoveAnalyzed,
     requestedDepth: payload.requestedDepth,
-    source: "pgn",
+    source: payload.source ?? "pgn",
+    subject: payload.subject,
   });
-  await persistAnalysisRun(run, "pgn", viewer?.id);
+  await persistAnalysisRun(run, payload.source ?? "pgn", viewer?.id);
 
   if (payload.requestedDepth === "deep") {
     await enqueueAnalysisRun({
       analysisId: run.id,
       pgn: payload.pgn,
       depth: payload.requestedDepth,
-      source: "pgn",
+      source: payload.source ?? "pgn",
     });
   }
 
@@ -124,7 +127,7 @@ type ChessComPlayerProfileResponse = {
   username?: string;
 };
 
-const CHESSCOM_CACHE_TTL_MS = 60 * 1000;
+const CHESSCOM_CACHE_TTL_MS = 5 * 60 * 1000;
 const CHESSCOM_PROFILE_CACHE_TTL_MS = 10 * 60 * 1000;
 const globalForPlatformCache = globalThis as typeof globalThis & {
   __knightowlChessComGameCache?: Map<string, { expiresAt: number; games: ImportableGameOption[] }>;
@@ -383,6 +386,7 @@ async function fetchChessComArchives(username: string) {
   const archivesResponse = await fetch(`https://api.chess.com/pub/player/${username}/games/archives`, {
     headers: chessComHeaders(),
     next: { revalidate: 0 },
+    signal: AbortSignal.timeout(10000),
   });
 
   if (!archivesResponse.ok) {
@@ -397,6 +401,7 @@ async function fetchChessComArchiveGames(archiveUrl: string) {
   const gamesResponse = await fetch(archiveUrl, {
     headers: chessComHeaders(),
     next: { revalidate: 0 },
+    signal: AbortSignal.timeout(10000),
   });
 
   if (!gamesResponse.ok) {
@@ -428,7 +433,7 @@ async function getAllChessComGames(username: string) {
     throw new Error("No public Chess.com archives found");
   }
 
-  const archiveUrls = [...archives].reverse();
+  const archiveUrls = [...archives].reverse().slice(0, 24);
   const archiveEntries: Array<{ archiveUrl: string; game: ChessComApiGame }> = [];
   const concurrency = 6;
 
@@ -628,6 +633,10 @@ export async function importFromSource(
     }
 
     pgn = samplePgn;
+  }
+
+  if (payload.intent === "fetch-pgn") {
+    return { pgn, source, message: liveImport ? "Fetched PGN successfully." : "Fell back to sample PGN." };
   }
 
   const run = await analyzePgnWithBestEngine(pgn, {

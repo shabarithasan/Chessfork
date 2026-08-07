@@ -141,24 +141,21 @@ export function RoastCard({
   }
 
   return (
-    <section
-      id="roast-card"
-      className="rounded-[1.55rem] border border-amber-300/16 bg-[linear-gradient(135deg,rgba(69,26,3,0.56),rgba(15,23,42,0.82)_44%,rgba(2,6,23,0.92))] p-4 shadow-[0_20px_60px_rgba(0,0,0,0.22)] sm:p-5"
-    >
-      <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
+    <section id="roast-card" className="py-8">
+      <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-amber-300/25 bg-amber-300/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-100">
+            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-amber-400/70">
               <Flame className="size-3.5" />
               Roast My Game
             </span>
-            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
+            <span className="text-xs font-medium uppercase tracking-[0.2em] text-neutral-500">
               {moment.grade}
             </span>
           </div>
 
           <p className="mt-4 text-2xl font-semibold tracking-tight text-white">This is the shareable turning point.</p>
-          <p className="mt-3 text-sm leading-7 text-slate-300">{roast}</p>
+          <p className="mt-3 text-sm leading-7 text-neutral-400">{roast}</p>
 
           <div className="mt-5 flex flex-wrap gap-2">
             {(Object.keys(toneLabels) as RoastTone[]).map((key) => (
@@ -170,10 +167,10 @@ export function RoastCard({
                   setStatus(null);
                   setManualTextVisible(false);
                 }}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                className={`rounded-lg px-4 py-2 text-sm font-medium transition active:scale-[0.97] ${
                   tone === key
-                    ? "bg-amber-300 text-slate-950"
-                    : "border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10"
+                    ? "bg-amber-400 text-[#0a0a0a]"
+                    : "text-neutral-500 hover:text-white"
                 }`}
               >
                 {toneLabels[key]}
@@ -182,23 +179,23 @@ export function RoastCard({
           </div>
         </div>
 
-        <div className="rounded-[1.25rem] border border-white/10 bg-slate-950/55 p-4">
+        <div>
           <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-[1rem] border border-white/10 bg-white/[0.03] p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Problem</p>
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-neutral-500">Problem</p>
               <p className="mt-2 break-words text-lg font-semibold text-white">{moment.problemMove}</p>
             </div>
-            <div className="rounded-[1rem] border border-emerald-300/15 bg-emerald-300/8 p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-emerald-200">Perfect</p>
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-emerald-400/70">Perfect</p>
               <p className="mt-2 break-words text-lg font-semibold text-white">{moment.perfectMove}</p>
             </div>
-            <div className="rounded-[1rem] border border-white/10 bg-white/[0.03] p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Heat</p>
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-neutral-500">Heat</p>
               <p className="mt-2 text-lg font-semibold text-white">{heat}%</p>
             </div>
           </div>
 
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+          <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-neutral-800">
             <div className="h-full rounded-full bg-[linear-gradient(90deg,#fbbf24,#fb7185)]" style={{ width: `${heat}%` }} />
           </div>
 
@@ -206,7 +203,7 @@ export function RoastCard({
             <button
               type="button"
               onClick={copyRoast}
-              className="inline-flex items-center gap-2 rounded-full bg-amber-300 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-amber-200"
+              className="inline-flex items-center gap-2 rounded-lg bg-amber-400 px-4 py-2.5 text-sm font-semibold text-[#0a0a0a] transition hover:bg-amber-500 active:scale-[0.98]"
             >
               <Clipboard className="size-4" />
               Copy roast
@@ -214,25 +211,25 @@ export function RoastCard({
             <button
               type="button"
               onClick={shareRoast}
-              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:bg-white/10"
+              className="inline-flex items-center gap-2 rounded-lg border border-neutral-700 bg-neutral-800/50 px-4 py-2.5 text-sm font-medium text-neutral-200 transition hover:bg-neutral-700/50 hover:text-white active:scale-[0.98]"
             >
               <Share2 className="size-4" />
               Share
             </button>
             <Link
               href="/puzzles#share-studio"
-              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:bg-white/10"
+              className="inline-flex items-center gap-2 rounded-lg border border-neutral-700 bg-neutral-800/50 px-4 py-2.5 text-sm font-medium text-neutral-200 transition hover:bg-neutral-700/50 hover:text-white active:scale-[0.98]"
             >
               <Sparkles className="size-4" />
               Make Perfect
             </Link>
-            {status ? <p className="text-sm text-slate-200">{status}</p> : null}
+            {status ? <p className="text-sm text-neutral-400">{status}</p> : null}
           </div>
           {manualTextVisible ? (
             <textarea
               readOnly
               value={shareText}
-              className="mt-4 min-h-36 w-full rounded-[1rem] border border-white/10 bg-slate-950/80 p-4 text-sm leading-6 text-slate-100 outline-none focus:border-amber-300/60"
+              className="mt-4 min-h-36 w-full rounded-xl border border-neutral-800 bg-[#0a0a0a] p-4 text-sm leading-6 text-neutral-100 outline-none transition focus:border-amber-400/70"
             />
           ) : null}
         </div>

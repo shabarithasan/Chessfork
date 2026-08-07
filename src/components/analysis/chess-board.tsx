@@ -5,6 +5,7 @@ import Image from "next/image";
 
 import { expandFenBoard } from "@/lib/chess/fen";
 import { clamp, cn } from "@/lib/utils";
+import { SquareOverlayInline } from "@/components/chess/SquareOverlay";
 
 const pieceAssetMap: Record<string, string> = {
   p: "/pieces/wikimedia/bP.svg",
@@ -23,8 +24,8 @@ const pieceAssetMap: Record<string, string> = {
 
 const files = ["a", "b", "c", "d", "e", "f", "g", "h"] as const;
 const ranks = [8, 7, 6, 5, 4, 3, 2, 1] as const;
-const lightSquareColor = "#e8d5b0";
-const darkSquareColor = "#6b8cae";
+const lightSquareColor = "#eeeed2";
+const darkSquareColor = "#769656";
 
 const boardThemes = {
   graphite: {
@@ -32,7 +33,7 @@ const boardThemes = {
     frameBorder: "border-[#1e1e2e]",
     light: lightSquareColor,
     dark: darkSquareColor,
-    gridLine: "rgba(0,212,170,0.08)",
+    gridLine: "rgba(119,184,43,0.08)",
     railDark: "#07070b",
     railLight: "#f1f5f9",
   },
@@ -41,7 +42,7 @@ const boardThemes = {
     frameBorder: "border-[#1e1e2e]",
     light: lightSquareColor,
     dark: darkSquareColor,
-    gridLine: "rgba(0,212,170,0.07)",
+    gridLine: "rgba(119,184,43,0.07)",
     railDark: "#07070b",
     railLight: "#f1f5f9",
   },
@@ -50,7 +51,7 @@ const boardThemes = {
     frameBorder: "border-[#1b3b35]",
     light: lightSquareColor,
     dark: darkSquareColor,
-    gridLine: "rgba(0,212,170,0.09)",
+    gridLine: "rgba(119,184,43,0.09)",
     railDark: "#06100d",
     railLight: "#e8fff8",
   },
@@ -59,7 +60,7 @@ const boardThemes = {
     frameBorder: "border-[#32283f]",
     light: lightSquareColor,
     dark: darkSquareColor,
-    gridLine: "rgba(0,194,255,0.08)",
+    gridLine: "rgba(119,184,43,0.08)",
     railDark: "#08070b",
     railLight: "#f6f0ff",
   },
@@ -68,7 +69,7 @@ const boardThemes = {
     frameBorder: "border-[#3a2b2b]",
     light: lightSquareColor,
     dark: darkSquareColor,
-    gridLine: "rgba(245,158,11,0.08)",
+    gridLine: "rgba(119,184,43,0.08)",
     railDark: "#0e0808",
     railLight: "#fff3ef",
   },
@@ -111,38 +112,38 @@ export type BoardPlayer = {
 };
 
 const highlightToneClasses: Record<BoardHighlightTone, string> = {
-  focus: "border-[#00c2ff]/85 bg-[#00c2ff]/18",
-  from: "border-[#00d4aa]/85 bg-[#00d4aa]/12",
-  to: "border-[#00d4aa]/85 bg-[#00d4aa]/20",
+  focus: "border-[#77b82b]/85 bg-[#77b82b]/18",
+  from: "border-[#77b82b]/85 bg-[#77b82b]/12",
+  to: "border-[#77b82b]/85 bg-[#77b82b]/20",
 };
 
 const arrowToneStyles: Record<BoardArrowTone, { glow: string; markerSize: number; opacity: number; stroke: string; width: number }> = {
   best: {
-    glow: "drop-shadow-[0_0_7px_rgba(0,212,170,0.24)]",
+    glow: "drop-shadow-[0_0_7px_rgba(119,184,43,0.24)]",
     markerSize: 7.2,
     opacity: 0.94,
-    stroke: "#00d4aa",
+    stroke: "#77b82b",
     width: 8.5,
   },
   candidate: {
-    glow: "drop-shadow-[0_0_5px_rgba(0,194,255,0.16)]",
+    glow: "drop-shadow-[0_0_5px_rgba(119,184,43,0.16)]",
     markerSize: 5.8,
     opacity: 0.56,
-    stroke: "#00c2ff",
+    stroke: "#77b82b",
     width: 5.2,
   },
   candidateSoft: {
-    glow: "drop-shadow-[0_0_4px_rgba(0,194,255,0.12)]",
+    glow: "drop-shadow-[0_0_4px_rgba(119,184,43,0.12)]",
     markerSize: 5.2,
     opacity: 0.38,
-    stroke: "#00c2ff",
+    stroke: "#77b82b",
     width: 4.6,
   },
   played: {
-    glow: "drop-shadow-[0_0_4px_rgba(245,158,11,0.1)]",
+    glow: "drop-shadow-[0_0_4px_rgba(85,139,47,0.1)]",
     markerSize: 4.2,
     opacity: 0.38,
-    stroke: "#df9c3a",
+    stroke: "#558b2f",
     width: 2.25,
   },
   refutation: {
@@ -307,9 +308,9 @@ function PlayerStrip({
   meta,
 }: BoardPlayer) {
   return (
-    <div className="flex min-w-0 items-center justify-between gap-2 rounded-lg border border-[#1e1e2e] bg-[#111118] px-3 py-2.5 text-white shadow-[0_0_20px_rgba(0,212,170,0.08),inset_0_1px_0_rgba(255,255,255,0.04)] sm:gap-3 sm:px-4 sm:py-3">
+    <div className="flex min-w-0 items-center justify-between gap-2 rounded-lg border border-[#1e1e2e] bg-[#111118] px-3 py-2.5 text-white shadow-[0_0_20px_rgba(119,184,43,0.08),inset_0_1px_0_rgba(255,255,255,0.04)] sm:gap-3 sm:px-4 sm:py-3">
       <div className="flex min-w-0 items-center gap-3">
-        <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-[#00d4aa]/12 text-xs font-semibold tracking-[0.2em] text-[#9fffea] sm:size-9">
+        <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-[#77b82b]/12 text-xs font-semibold tracking-[0.2em] text-[#b8e680] sm:size-9">
           {initialsForName(name) || "P"}
         </div>
         <div className="min-w-0">
@@ -346,6 +347,8 @@ export function ChessBoard({
   topPlayer,
   bottomPlayer,
   variant = "simple",
+  cornerBrackets = [],
+  centerDots = [],
 }: {
   fen: string;
   highlightSquares?: string[];
@@ -365,6 +368,8 @@ export function ChessBoard({
   topPlayer?: BoardPlayer;
   bottomPlayer?: BoardPlayer;
   variant?: "analysis" | "simple";
+  cornerBrackets?: string[];
+  centerDots?: string[];
 }) {
   const board = expandFenBoard(fen);
   const highlightMap = new Map<string, BoardHighlightTone>();
@@ -637,6 +642,14 @@ export function ChessBoard({
                     />
                   </span>
                 ) : null}
+
+                <SquareOverlayInline
+                  square={square}
+                  showBrackets={cornerBrackets.includes(square)}
+                  showCenterDot={centerDots.includes(square)}
+                  bracketType={cornerBrackets.includes(square) && square === cornerBrackets[0] ? "selected" : "legal-target"}
+                  dotType={centerDots.includes(square) ? "last-move" : "last-move"}
+                />
               </div>
             );
           }),

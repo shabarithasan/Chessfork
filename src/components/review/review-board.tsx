@@ -6,8 +6,8 @@ import { Chessboard, type Arrow, type PieceRenderObject } from "react-chessboard
 
 const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
 const ranks = ["8", "7", "6", "5", "4", "3", "2", "1"];
-const boardLightSquare = "#e8d5b0";
-const boardDarkSquare = "#6b8cae";
+const boardLightSquare = "#eeeed2";
+const boardDarkSquare = "#769656";
 const reviewPieceAssets: Record<string, string> = {
   bB: "/pieces/wikimedia/bB.svg",
   bK: "/pieces/wikimedia/bK.svg",
@@ -86,8 +86,8 @@ export const ReviewBoard = memo(function ReviewBoard({
     }
 
     return {
-      [currentMove.from]: { backgroundColor: "rgba(0, 212, 170, 0.36)" },
-      [currentMove.to]: { backgroundColor: "rgba(0, 194, 255, 0.42)" },
+      [currentMove.from]: { backgroundColor: "rgba(119, 184, 43, 0.36)" },
+      [currentMove.to]: { backgroundColor: "rgba(119, 184, 43, 0.42)" },
     };
   }, [currentMove]);
 
@@ -96,7 +96,7 @@ export const ReviewBoard = memo(function ReviewBoard({
 
   return (
     <div
-      className="review-board-shell relative rounded-xl border border-[#1e1e2e] bg-[linear-gradient(135deg,#111118,#0a0a0f)] p-3 shadow-[0_0_20px_rgba(0,212,170,0.12),0_28px_90px_rgba(0,0,0,0.38)]"
+      className="review-board-shell relative rounded-xl border border-[#1e1e2e] bg-[linear-gradient(135deg,#111118,#0a0a0f)] p-3 shadow-[0_0_20px_rgba(119,184,43,0.12),0_28px_90px_rgba(0,0,0,0.38)]"
       onContextMenu={(event) => {
         event.preventDefault();
         onOpenContextMenu(event.clientX, event.clientY, null);

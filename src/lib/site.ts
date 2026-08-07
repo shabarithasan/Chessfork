@@ -1,8 +1,8 @@
 import type { Locale, NavLink } from "@/types/platform";
 
 export const siteConfig = {
-  name: "Chessfork",
-  shortName: "Chessfork",
+  name: "ChessFork",
+  shortName: "ChessFork",
   description:
     "Analyze PGNs, import public games, and turn every problem move into a perfect-move drill.",
   url: "https://chessfork.app",
@@ -18,6 +18,7 @@ export const primaryNav: NavLink[] = [
   { label: "Coach", href: "/coach" },
   { label: "More", href: "/more" },
   { label: "Pricing", href: "/pricing" },
+  { label: "Shop", href: "/shop" },
   { label: "Blog", href: "/blog" },
 ];
 

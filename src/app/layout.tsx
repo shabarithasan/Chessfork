@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Mono, DM_Sans, Syne } from "next/font/google";
 
 import { SiteShell } from "@/components/shell/site-shell";
+import { ThemeProvider } from "@/components/theme-provider";
 import { SmoothScroll } from "@/components/ui/SmoothScroll";
 import { siteConfig } from "@/lib/site";
 
@@ -90,16 +91,18 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#00d4aa" />
+        <meta name="theme-color" content="#77b82b" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Chessfork" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
-      <body className="min-h-full bg-[var(--background)] text-slate-100" suppressHydrationWarning>
-        <SmoothScroll />
-        <SiteShell>{children}</SiteShell>
+      <body className="min-h-full bg-[var(--background)] text-[var(--text-primary)]" suppressHydrationWarning>
+        <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange>
+          <SmoothScroll />
+          <SiteShell>{children}</SiteShell>
+        </ThemeProvider>
       </body>
     </html>
   );

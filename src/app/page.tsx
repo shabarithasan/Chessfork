@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { CTA } from "@/components/landing/CTA";
 import { Features } from "@/components/landing/Features";
+import { FlowField } from "@/components/landing/FlowField";
 import { Footer } from "@/components/landing/Footer";
 import { Hero } from "@/components/landing/Hero";
 import { HowItWorks } from "@/components/landing/HowItWorks";
@@ -42,16 +43,19 @@ export default function Page() {
   return (
     <>
       <ScrollProgressBar />
-      <main className="knightowl-landing min-h-screen overflow-x-hidden bg-[var(--bg-primary)] text-[var(--text-primary)]">
-        <Navbar />
-        <Hero />
-        <Marquee />
-        <Features />
-        <HowItWorks />
-        <Stats />
-        <Testimonials />
-        <CTA />
-        <Footer />
+      <main className="knightowl-landing relative min-h-screen overflow-x-hidden bg-[var(--bg-primary)] text-[var(--text-primary)]">
+        <FlowField theme="chess" density="medium" className="fixed inset-0 z-0" />
+        <div className="relative z-10">
+          <Navbar />
+          <Hero />
+          <Marquee />
+          <Features />
+          <HowItWorks />
+          <Stats />
+          <Testimonials />
+          <CTA />
+          <Footer />
+        </div>
       </main>
     </>
   );

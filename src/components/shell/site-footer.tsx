@@ -12,6 +12,7 @@ const platformLinks = [
   { label: "Analyze", href: "/analyze" },
   { label: "Perfects", href: "/puzzles" },
   { label: "Coach", href: "/coach" },
+  { label: "Shop", href: "/shop" },
   { label: "Pricing", href: "/pricing" },
   { label: "Blog", href: "/blog" },
 ];

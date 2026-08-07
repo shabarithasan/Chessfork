@@ -40,6 +40,8 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   BACKEND_DRIVER: z.enum(["memory", "database", "hybrid"]).default("hybrid"),
   DATABASE_URL: z.string().optional().default(""),
+  MONGODB_URI: z.string().optional().default(""),
+  MONGODB_DB: z.string().optional().default("chessfork"),
   REDIS_URL: z.string().optional().default(""),
   AUTH_SESSION_SECRET: z.string(),
   STOCKFISH_PATH: z.string().optional().default(""),
@@ -67,6 +69,10 @@ const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().optional().default(""),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional().default(""),
   STRIPE_SECRET_KEY: z.string().optional().default(""),
+  GOOGLE_CLIENT_ID: z.string().optional().default(""),
+  GOOGLE_CLIENT_SECRET: z.string().optional().default(""),
+  GITHUB_CLIENT_ID: z.string().optional().default(""),
+  GITHUB_CLIENT_SECRET: z.string().optional().default(""),
 });
 
 const rawAuthSecret = process.env.AUTH_SESSION_SECRET;
@@ -81,6 +87,8 @@ const parsedEnv = envSchema.parse({
   NODE_ENV: process.env.NODE_ENV,
   BACKEND_DRIVER: process.env.BACKEND_DRIVER,
   DATABASE_URL: process.env.DATABASE_URL,
+  MONGODB_URI: process.env.MONGODB_URI,
+  MONGODB_DB: process.env.MONGODB_DB,
   REDIS_URL: process.env.REDIS_URL,
   AUTH_SESSION_SECRET: rawAuthSecret || "dev-secret-do-not-use-in-production",
   STOCKFISH_PATH: process.env.STOCKFISH_PATH,
@@ -108,6 +116,10 @@ const parsedEnv = envSchema.parse({
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+  GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
+  GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
 });
 const openingBookPath =
   parsedEnv.BOOK_PATH || parsedEnv.OPENING_BOOK_PATH || parsedEnv.STOCKFISH_OPENING_BOOK_PATH || defaultOpeningBookPath;
@@ -120,6 +132,10 @@ export const env = {
 
 export function databaseEnabled() {
   return env.BACKEND_DRIVER !== "memory" && env.DATABASE_URL.length > 0;
+}
+
+export function mongoDatabaseEnabled() {
+  return env.MONGODB_URI.length > 0;
 }
 
 export function redisEnabled() {

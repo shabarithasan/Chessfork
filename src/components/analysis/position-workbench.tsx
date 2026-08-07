@@ -318,14 +318,14 @@ export function PositionWorkbench({
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,25rem)]">
-      <div className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(41,41,38,0.96),rgba(24,24,24,0.98))] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-6">
+      <div className="rounded-xl border border-neutral-800 bg-[linear-gradient(180deg,rgba(41,41,38,0.96),rgba(24,24,24,0.98))] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-amber-300">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-amber-400">
               {mode === "board" ? "Live analysis board" : mode === "editor" ? "Position editor" : "Best move engine"}
             </p>
             <h2 className="text-2xl font-semibold text-white">Move pieces and watch the engine respond.</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-neutral-300">
               Click a legal move on the board. The position updates, Stockfish/fallback analysis refreshes, and the top candidate
               arrows come only from the returned engine lines.
             </p>
@@ -339,8 +339,8 @@ export function PositionWorkbench({
                 onClick={() => setRequestedDepth(depth)}
                 className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                   requestedDepth === depth
-                    ? "bg-amber-300 text-slate-950"
-                    : "border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10"
+                    ? "bg-amber-400 text-[#0a0a0a]"
+                    : "border border-neutral-800 bg-neutral-800/30 text-neutral-200 hover:bg-neutral-700/40"
                 }`}
               >
                 {depth === "quick" ? "Quick" : "Deep"}
@@ -350,26 +350,26 @@ export function PositionWorkbench({
         </div>
 
         <div className="mt-5 grid gap-3 min-[520px]:grid-cols-3">
-          <div className="rounded-[1.15rem] border border-white/10 bg-black/18 px-4 py-3">
-            <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-slate-500">Position</p>
+          <div className="rounded-lg border border-neutral-800 bg-black/18 px-4 py-3">
+            <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-neutral-500">Position</p>
             <p className="mt-1 font-semibold text-white">{describePosition(chess)}</p>
           </div>
-          <div className="rounded-[1.15rem] border border-white/10 bg-black/18 px-4 py-3">
-            <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-slate-500">Engine</p>
+          <div className="rounded-lg border border-neutral-800 bg-black/18 px-4 py-3">
+            <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-neutral-500">Engine</p>
             <p className="mt-1 font-semibold text-white">{pending ? "Analyzing..." : result ? result.mode : isLiveMode ? "Live ready" : "Manual"}</p>
           </div>
-          <div className="rounded-[1.15rem] border border-white/10 bg-black/18 px-4 py-3">
-            <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-slate-500">Eval</p>
+          <div className="rounded-lg border border-neutral-800 bg-black/18 px-4 py-3">
+            <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-neutral-500">Eval</p>
             <p className="mt-1 font-semibold text-white">{result ? formatEngineScore(result.score) : "Waiting"}</p>
           </div>
         </div>
 
         <label className="mt-5 block">
-          <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">FEN</span>
+          <span className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">FEN</span>
           <textarea
             value={fen}
             onChange={(event) => handleFenChange(event.target.value)}
-            className="mt-2 min-h-24 w-full rounded-[1.25rem] border border-white/10 bg-slate-950/75 px-4 py-4 font-mono text-xs leading-6 text-slate-100 outline-none transition focus:border-amber-300/70"
+            className="mt-2 min-h-24 w-full rounded-lg border border-neutral-800 bg-neutral-950/75 px-4 py-4 font-mono text-xs leading-6 text-neutral-100 outline-none transition focus:border-amber-400/70"
           />
         </label>
 
@@ -378,27 +378,27 @@ export function PositionWorkbench({
             type="button"
             disabled={pending || !chess}
             onClick={() => void evaluatePosition(fen, "manual")}
-            className="rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-full bg-amber-400 px-5 py-3 text-sm font-semibold text-[#0a0a0a] transition hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {pending ? "Analyzing..." : "Analyze now"}
           </button>
           <button
             type="button"
             onClick={undoMove}
-            className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.08]"
+            className="rounded-full border border-neutral-800 bg-neutral-800/30 px-4 py-3 text-sm font-semibold text-neutral-200 transition hover:bg-neutral-700/40"
           >
             Undo move
           </button>
           <button
             type="button"
             onClick={resetBoard}
-            className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.08]"
+            className="rounded-full border border-neutral-800 bg-neutral-800/30 px-4 py-3 text-sm font-semibold text-neutral-200 transition hover:bg-neutral-700/40"
           >
             Reset
           </button>
         </div>
 
-        <div className="mt-4 rounded-[1.1rem] border border-white/10 bg-white/[0.035] px-4 py-3 text-sm leading-6 text-slate-300">
+        <div className="mt-4 rounded-lg border border-neutral-800 bg-neutral-900/30 px-4 py-3 text-sm leading-6 text-neutral-300">
           {error ?? message}
         </div>
       </div>
@@ -414,14 +414,14 @@ export function PositionWorkbench({
           className="mx-auto max-w-none"
         />
 
-        <div className="rounded-[1.5rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.035))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+        <div className="rounded-lg border border-neutral-800 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.035))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-lime-300">Engine lines</p>
-              <p className="mt-1 text-sm text-slate-400">Best line is solid, alternatives are lighter.</p>
+              <p className="mt-1 text-sm text-neutral-400">Best line is solid, alternatives are lighter.</p>
             </div>
             {result ? (
-              <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs font-semibold text-slate-300">
+              <span className="rounded-full border border-neutral-800 bg-black/20 px-3 py-1 text-xs font-semibold text-neutral-300">
                 Depth {result.depth} / {formatNodes(result.nodes)} nodes
               </span>
             ) : null}
@@ -430,21 +430,21 @@ export function PositionWorkbench({
           <div className="mt-4 space-y-2">
             {engineLines.length > 0 ? (
               engineLines.slice(0, 5).map((line) => (
-                <div key={`${line.rank}-${line.san}`} className="rounded-[1rem] border border-white/10 bg-black/16 px-3 py-3">
+                <div key={`${line.rank}-${line.san}`} className="rounded-[1rem] border border-neutral-800 bg-black/16 px-3 py-3">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-slate-500">{lineLabel(line.rank)}</p>
+                      <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-neutral-500">{lineLabel(line.rank)}</p>
                       <p className="mt-1 truncate text-lg font-semibold text-white">{line.san}</p>
                     </div>
-                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-xs font-semibold text-slate-300">
+                    <span className="rounded-full border border-neutral-800 bg-neutral-800/30 px-2 py-1 text-xs font-semibold text-neutral-300">
                       {formatEngineScore(line.score)}
                     </span>
                   </div>
-                  <p className="mt-2 truncate text-sm text-slate-400">{line.line.join(" ") || "No stored continuation"}</p>
+                  <p className="mt-2 truncate text-sm text-neutral-400">{line.line.join(" ") || "No stored continuation"}</p>
                 </div>
               ))
             ) : (
-              <div className="rounded-[1rem] border border-white/10 bg-black/16 px-3 py-3 text-sm leading-6 text-slate-400">
+              <div className="rounded-[1rem] border border-neutral-800 bg-black/16 px-3 py-3 text-sm leading-6 text-neutral-400">
                 {pending ? "Waiting for engine output..." : "Move a piece or click Analyze now to generate engine lines."}
               </div>
             )}

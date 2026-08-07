@@ -1,11 +1,14 @@
 "use client";
 
 import { FileText, Globe, Search } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { AnalysisLoadingOverlay } from "@/components/analysis/analysis-loading-overlay";
+import { LiveAnalysisScreen } from "@/components/analysis/live-analysis-screen";
+import { useLiveAnalysisSession } from "@/hooks/useLiveAnalysisSession";
 import { samplePgn } from "@/data/sample-data";
 import { readHeaders } from "@/lib/chess/pgn";
 import { buildGameLoadingPreview } from "@/lib/chess/pgn-preview";
@@ -25,6 +28,7 @@ type ImportResponse = Partial<ImportGameLibraryResponse> & {
   message?: string;
   analysisId?: string;
   shareUrl?: string;
+  pgn?: string;
 };
 
 function getResponsePath(response: Response) {
@@ -75,7 +79,7 @@ const sourceDetails: Record<
   }
 > = {
   pgn: {
-    accent: "border-sky-300/25 bg-sky-300/10 text-sky-100",
+    accent: "border-sky-400/25 bg-sky-400/10 text-sky-400",
     label: "PGN",
     shortCopy: "Paste moves and go straight into a saved report.",
     placeholder: "Paste PGN here",
@@ -84,7 +88,7 @@ const sourceDetails: Record<
     note: "Include the headers and move list when you can. That gives the report the opening, result, and final position immediately.",
   },
   chesscom: {
-    accent: "border-amber-300/25 bg-amber-300/10 text-amber-100",
+    accent: "border-amber-400/25 bg-amber-400/10 text-amber-400",
     label: "Chess.com",
     shortCopy: "Fetch recent public games before choosing one.",
     placeholder: "Enter a Chess.com username",
@@ -93,7 +97,7 @@ const sourceDetails: Record<
     note: "Enter a public username, browse the public archive, and analyze the exact game you want instead of relying on a single latest-game import.",
   },
   lichess: {
-    accent: "border-white/15 bg-white/[0.04] text-slate-100",
+    accent: "border-neutral-700 bg-neutral-800/30 text-neutral-100",
     label: "Lichess",
     shortCopy: "Pull a public game without changing the workflow.",
     placeholder: "Enter a Lichess username",
@@ -190,6 +194,8 @@ export function ImportWorkbench({
   const [showAnalysisOverlay, setShowAnalysisOverlay] = useState(false);
   const navigatingToReportRef = useRef(false);
 
+  const liveSession = useLiveAnalysisSession();
+
   const details = sourceDetails[source];
   const isSpotlight = variant === "spotlight";
   const normalizedInput = input.trim();
@@ -219,14 +225,14 @@ export function ImportWorkbench({
   const timeClassOptions = gameStats?.timeClasses ?? [];
   const statusTone =
     isPending
-      ? "border-sky-300/20 bg-sky-300/10 text-sky-100"
+      ? "border-sky-400/20 bg-sky-400/10 text-sky-400"
       : source === "chesscom" && hasPendingFilterChanges
-        ? "border-amber-300/20 bg-amber-300/10 text-amber-100"
+        ? "border-amber-400/20 bg-amber-400/10 text-amber-400"
         : source === "chesscom" && hasLoadedChessComLibrary
-          ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-100"
+          ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-400"
           : canSubmit
-            ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-100"
-            : "border-white/10 bg-slate-950/55 text-slate-300";
+            ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-400"
+            : "border-neutral-800 bg-neutral-950/55 text-neutral-300";
   const statusLabel = isPending
     ? source === "chesscom" && !selectedGame
       ? "Loading games"
@@ -247,6 +253,10 @@ export function ImportWorkbench({
     chesscom: Search,
     lichess: Globe,
   } satisfies Record<SourceType, typeof FileText>;
+  const sourceLogos: Partial<Record<SourceType, { src: string; alt: string }>> = {
+    chesscom: { src: "/images/platforms/chesscom.svg", alt: "Chess.com" },
+    lichess: { src: "/images/platforms/lichess.svg", alt: "Lichess" },
+  };
   const sampleHandles =
     source === "chesscom"
       ? ["MagnusCarlsen", "GothamChess", "Hikaru"]
@@ -328,6 +338,15 @@ export function ImportWorkbench({
       white: normalizedInput || "Player",
     };
   }, [normalizedInput, pgnHeaders, selectedGame, source]);
+
+  useEffect(() => {
+    if (liveSession.isFinished && liveSession.analysisId) {
+      const reportLink = `/analysis/${liveSession.analysisId}`;
+      navigatingToReportRef.current = true;
+      void router.prefetch(reportLink);
+      router.push(reportLink);
+    }
+  }, [liveSession.isFinished, liveSession.analysisId, router]);
 
   function linkedUsernameForSource(option: SourceType) {
     return option === "pgn" ? "" : linkedAccounts?.[option] ?? "";
@@ -435,6 +454,14 @@ export function ImportWorkbench({
       return;
     }
 
+    if (source === "pgn") {
+      setShowAnalysisOverlay(true);
+      setIsPending(true);
+      clearFeedback();
+      await liveSession.startAnalysis(normalizedInput, depth);
+      return;
+    }
+
     const startedAt = Date.now();
     navigatingToReportRef.current = false;
     setAnalysisPendingDepth(depth);
@@ -442,9 +469,10 @@ export function ImportWorkbench({
     setIsPending(true);
     clearFeedback();
 
+    let handedOffToLive = false;
+
     try {
-      const endpoint =
-        source === "pgn" ? "/api/analysis/run" : source === "chesscom" ? "/api/import/chesscom" : "/api/import/lichess";
+      const endpoint = source === "chesscom" ? "/api/import/chesscom" : "/api/import/lichess";
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -452,21 +480,18 @@ export function ImportWorkbench({
           "Content-Type": "application/json",
         },
         body: JSON.stringify(
-          source === "pgn"
+          source === "chesscom"
             ? {
-                pgn: normalizedInput,
+                username: normalizedInput,
                 requestedDepth: depth,
+                intent: "fetch-pgn",
+                archiveUrl: selectedGame?.archiveUrl,
+                gameId: selectedGame?.id,
               }
-            : source === "chesscom"
-              ? {
+            : {
                   username: normalizedInput,
                   requestedDepth: depth,
-                  archiveUrl: selectedGame?.archiveUrl,
-                  gameId: selectedGame?.id,
-                }
-              : {
-                  username: normalizedInput,
-                  requestedDepth: depth,
+                  intent: "fetch-pgn",
                 },
         ),
       });
@@ -475,6 +500,12 @@ export function ImportWorkbench({
 
       if (!response.ok) {
         throw new Error(data.message ?? "Import failed.");
+      }
+
+      if (data.pgn) {
+        handedOffToLive = true;
+        await liveSession.startAnalysis(data.pgn, depth, source, normalizedInput);
+        return;
       }
 
       const reportLink = data.shareUrl ?? (data.analysisId ? `/analysis/${data.analysisId}` : null);
@@ -501,7 +532,7 @@ export function ImportWorkbench({
       navigatingToReportRef.current = false;
       setMessage(error instanceof Error ? error.message : "The request failed. Check your payload and try again.");
     } finally {
-      if (!navigatingToReportRef.current) {
+      if (!navigatingToReportRef.current && !handedOffToLive) {
         setShowAnalysisOverlay(false);
         setIsPending(false);
       }
@@ -510,17 +541,11 @@ export function ImportWorkbench({
 
   return (
     <>
-      <div
-        className={cn(
-          "min-w-0 rounded-[1.5rem] border border-white/10 shadow-[0_30px_90px_rgba(0,0,0,0.28)] backdrop-blur sm:rounded-[2rem]",
-          isSpotlight
-            ? "bg-[linear-gradient(180deg,rgba(48,42,37,0.96),rgba(29,25,22,0.98))] p-5 sm:p-6"
-            : "bg-white/5 p-4 sm:p-6",
-        )}
-      >
-      <div className={cn("min-w-0 gap-3", isSpotlight ? "grid grid-cols-1 sm:grid-cols-3" : "flex flex-wrap items-center")}>
-        {(["chesscom", "lichess", "pgn"] as SourceType[]).map((option) => {
+      <div className={cn("min-w-0", isSpotlight && "rounded-xl border border-white/10 bg-[#202020] p-4 shadow-[0_12px_35px_rgba(0,0,0,0.16)] sm:p-6")}>
+      <div className={cn("flex min-w-0 flex-wrap items-center gap-2", isSpotlight ? "grid grid-cols-3 gap-3" : "")}>
+        {(["pgn", "chesscom", "lichess"] as SourceType[]).map((option) => {
           const Icon = sourceIcons[option];
+          const logo = sourceLogos[option];
 
           return (
             <button
@@ -533,63 +558,57 @@ export function ImportWorkbench({
                 resetChessComSelection();
               }}
               className={cn(
-                "transition",
-                isSpotlight
-                  ? "rounded-[1.35rem] border px-4 py-4 text-left"
-                  : "rounded-full px-4 py-2 text-sm font-medium",
+                "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition active:scale-[0.97]",
+                isSpotlight && "relative min-h-24 flex-col justify-center gap-2 border px-2 py-4 text-center sm:min-h-28",
                 source === option
                   ? isSpotlight
-                    ? `${sourceDetails[option].accent} border-current`
-                    : "bg-amber-300 text-slate-950"
+                    ? "border-[#ffc629] bg-[#ffc629]/10 text-[#ffc629] shadow-[inset_0_0_0_1px_rgba(255,198,41,0.22)]"
+                    : "bg-amber-400 text-[#0a0a0a]"
                   : isSpotlight
-                    ? "border-white/10 bg-black/10 text-slate-300 hover:border-white/20 hover:bg-white/[0.05]"
-                    : "bg-white/10 text-slate-300 hover:bg-white/15",
+                    ? "border-white/10 bg-white/[0.015] text-neutral-300 hover:border-white/20 hover:bg-white/[0.04] hover:text-white"
+                    : "text-neutral-500 hover:text-white",
               )}
             >
-              <span className="flex items-center gap-3">
-                <Icon className="size-4" />
-                <span className="font-medium">{sourceDetails[option].label}</span>
-              </span>
-              {isSpotlight ? <p className="mt-3 text-xs leading-6 text-slate-400">{sourceDetails[option].shortCopy}</p> : null}
+              {logo ? (
+                <Image
+                  alt={logo.alt}
+                  className={cn("size-4 rounded", isSpotlight && "size-7")}
+                  height={28}
+                  src={logo.src}
+                  width={28}
+                />
+              ) : (
+                <Icon className={cn("size-4", isSpotlight && "size-7 stroke-[1.7]")} />
+              )}
+              {sourceDetails[option].label}
+              {isSpotlight && source === option ? <span className="absolute right-2 top-2 size-2 rounded-full bg-[#ffc629]" /> : null}
             </button>
           );
         })}
         <span
           aria-live="polite"
           className={cn(
-            "rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em]",
+            "rounded-full px-3 py-1 text-xs uppercase tracking-[0.2em]",
+            isSpotlight && "hidden",
             statusTone,
-            isSpotlight ? "justify-self-start sm:col-span-3" : "",
           )}
         >
           {statusLabel}
         </span>
       </div>
-
-      <div
-        className={cn(
-          "rounded-[1.4rem] border border-white/10 px-4 py-3 text-sm leading-7 text-slate-300",
-          isSpotlight ? "mt-5 bg-black/15" : "mt-4 bg-slate-950/45",
-        )}
-      >
+      <div className={cn("mt-3 flex flex-wrap items-center gap-2 text-xs text-neutral-500", isSpotlight && "hidden")}>
         {viewerDisplayName ? (
-          <span>
-            Signed in as <span className="font-semibold text-white">{viewerDisplayName}</span>. Linked public usernames can be
-            reused here automatically.
-          </span>
+          <span>Importing for <span className="font-semibold text-neutral-300">{viewerDisplayName}</span></span>
         ) : (
-          <span>
-            <Link href={signInHref} className="font-semibold text-amber-300 transition hover:text-amber-200">
-              Sign in
-            </Link>{" "}
-            to save imports to an account and remember your Chess.com or Lichess usernames.
-          </span>
+          <Link href={signInHref} className="font-semibold text-amber-300 transition hover:text-amber-200">
+            Sign in to keep this report in your library
+          </Link>
         )}
       </div>
 
-      <div className={cn("mt-6 grid min-w-0 gap-5 sm:gap-6", isSpotlight ? "2xl:grid-cols-[1.2fr_0.8fr]" : "")}>
+      <div className="mt-6 grid min-w-0 gap-5 sm:gap-6">
         <form
-          className="min-w-0 space-y-4"
+          className={cn("min-w-0 space-y-4", isSpotlight && "space-y-3")}
           onSubmit={(event) => {
             event.preventDefault();
 
@@ -607,20 +626,20 @@ export function ImportWorkbench({
           }}
         >
           <div>
-            <label htmlFor="import-workbench-input" className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
+            <label htmlFor="import-workbench-input" className={cn("text-xs font-semibold uppercase tracking-[0.25em] text-neutral-500", isSpotlight && "normal-case tracking-normal text-sm text-neutral-200")}>
               {helperLabel}
             </label>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <p className="text-sm leading-7 text-slate-300">{details.note}</p>
+            <div className={cn("mt-2 flex flex-wrap items-center gap-2", isSpotlight && "mt-1")}>
+              <p className={cn("text-sm leading-7 text-neutral-300", isSpotlight && "hidden")}>{details.note}</p>
               {linkedDefault && source !== "pgn" ? (
-                <span className="rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-100">
+                <span className="rounded-lg border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-400">
                   Previously used
                 </span>
               ) : null}
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+          <div className={cn("flex flex-wrap items-center gap-2 text-xs text-neutral-400", isSpotlight && "hidden")}>
             {source === "pgn" ? (
               <>
                 <button
@@ -629,7 +648,7 @@ export function ImportWorkbench({
                     setInput(samplePgn);
                     clearFeedback();
                   }}
-                  className="rounded-full border border-white/10 bg-white/5 px-3 py-2 font-medium text-slate-200 hover:bg-white/10"
+                  className="rounded-lg border border-neutral-700 bg-neutral-800/30 px-3 py-2 font-medium text-neutral-300 transition hover:bg-neutral-700/40 hover:text-white active:scale-[0.98]"
                 >
                   Load sample PGN
                 </button>
@@ -639,7 +658,7 @@ export function ImportWorkbench({
                     setInput("");
                     clearFeedback();
                   }}
-                  className="rounded-full border border-white/10 bg-white/5 px-3 py-2 font-medium text-slate-200 hover:bg-white/10"
+                  className="rounded-lg border border-neutral-700 bg-neutral-800/30 px-3 py-2 font-medium text-neutral-300 transition hover:bg-neutral-700/40 hover:text-white active:scale-[0.98]"
                 >
                   Clear input
                 </button>
@@ -652,12 +671,12 @@ export function ImportWorkbench({
                   clearFeedback();
                   resetChessComSelection();
                 }}
-                className="rounded-full border border-white/10 bg-white/5 px-3 py-2 font-medium text-slate-200 hover:bg-white/10"
+                className="rounded-lg border border-neutral-700 bg-neutral-800/30 px-3 py-2 font-medium text-neutral-300 transition hover:bg-neutral-700/40 hover:text-white active:scale-[0.98]"
               >
                 Use linked username
               </button>
             ) : (
-              <span className="rounded-full border border-white/10 bg-slate-950/45 px-3 py-2">
+              <span className="rounded-lg border border-neutral-800 bg-neutral-950/45 px-3 py-2">
                 Public usernames work best for first-run imports.
               </span>
             )}
@@ -671,7 +690,7 @@ export function ImportWorkbench({
                 setInput(event.target.value);
                 clearFeedback();
               }}
-              className="min-h-64 w-full rounded-[1.5rem] border border-white/10 bg-slate-950/80 px-4 py-4 text-sm leading-6 text-slate-100 outline-none transition focus:border-amber-300/70"
+              className="min-h-64 w-full rounded-xl border border-neutral-800 bg-[#0a0a0a] px-4 py-4 text-sm leading-6 text-neutral-100 outline-none transition focus:border-amber-400/70"
               placeholder={details.placeholder}
             />
           ) : (
@@ -686,14 +705,14 @@ export function ImportWorkbench({
                   resetChessComSelection();
                 }
               }}
-              className="h-14 w-full rounded-[1.5rem] border border-white/10 bg-slate-950/80 px-4 text-sm text-slate-100 outline-none transition focus:border-amber-300/70"
+              className={cn("h-14 w-full rounded-xl border border-neutral-800 bg-[#0a0a0a] px-4 text-sm text-neutral-100 outline-none transition focus:border-amber-400/70", isSpotlight && "h-12 border-[#ffc629]/55 bg-[#414141] text-base focus:border-[#ffc629]")}
               placeholder={linkedDefault || details.placeholder}
             />
           )}
 
           {sampleHandles.length > 0 ? (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-slate-500">Try it out:</span>
+              <span className="text-xs text-neutral-500">Try it out:</span>
               {sampleHandles.map((handle) => (
                 <button
                   key={handle}
@@ -706,7 +725,7 @@ export function ImportWorkbench({
                       resetChessComSelection();
                     }
                   }}
-                  className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-slate-200 transition hover:bg-white/[0.08]"
+                  className={cn("rounded-lg border border-neutral-700 bg-neutral-800/40 px-3 py-2 text-xs font-medium text-neutral-200 transition hover:bg-neutral-700/40", isSpotlight && "rounded-full px-3 py-1.5")}
                 >
                   {handle}
                 </button>
@@ -715,11 +734,11 @@ export function ImportWorkbench({
           ) : null}
 
           {source === "chesscom" ? (
-            <div className={cn("min-w-0 rounded-[1.5rem] border border-white/10 p-4 sm:p-5", isSpotlight ? "bg-black/15" : "bg-slate-950/55")}>
+            <div className={cn("min-w-0 rounded-xl border border-neutral-800 p-4 sm:p-5", isSpotlight ? "bg-neutral-950/50" : "bg-neutral-950/55")}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Game browser</p>
-                  <p className="mt-2 text-sm leading-7 text-slate-300">
+                  <p className="text-sm font-semibold uppercase tracking-[0.24em] text-neutral-500">Game browser</p>
+                  <p className="mt-2 text-sm leading-7 text-neutral-300">
                     {hasLoadedChessComLibrary
                       ? `Loaded ${availableGames.length} games on screen from ${filteredGameCount} matches. Filter the archive, choose a game, then analyze it.`
                       : "Fetch recent games first, or browse the public archive when you want a different opponent or time control."}
@@ -727,7 +746,7 @@ export function ImportWorkbench({
                 </div>
 
                 {gameStats ? (
-                  <span className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-100">
+                  <span className="rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
                     {gameStats.totalGames.toLocaleString()} total games
                   </span>
                 ) : null}
@@ -740,7 +759,7 @@ export function ImportWorkbench({
                     setGameSearch(event.target.value);
                     clearFeedback();
                   }}
-                  className="h-12 min-w-0 rounded-[1.15rem] border border-white/10 bg-slate-950/80 px-4 text-sm text-slate-100 outline-none transition focus:border-amber-300/70 md:col-span-2"
+                  className="h-12 min-w-0 rounded-lg border border-neutral-800 bg-[#0a0a0a] px-4 text-sm text-neutral-100 outline-none transition focus:border-amber-400/70 md:col-span-2"
                   placeholder="Search opponent, ECO, opening, or date"
                 />
 
@@ -750,7 +769,7 @@ export function ImportWorkbench({
                     setGameResultFilter(event.target.value as ImportGameResultFilter);
                     clearFeedback();
                   }}
-                  className="h-12 min-w-0 rounded-[1.15rem] border border-white/10 bg-slate-950/80 px-4 text-sm text-slate-100 outline-none transition focus:border-amber-300/70"
+                  className="h-12 min-w-0 rounded-lg border border-neutral-800 bg-[#0a0a0a] px-4 text-sm text-neutral-100 outline-none transition focus:border-amber-400/70"
                 >
                   <option value="all">All results</option>
                   <option value="win">Wins</option>
@@ -764,7 +783,7 @@ export function ImportWorkbench({
                     setGameTimeClassFilter(event.target.value);
                     clearFeedback();
                   }}
-                  className="h-12 min-w-0 rounded-[1.15rem] border border-white/10 bg-slate-950/80 px-4 text-sm text-slate-100 outline-none transition focus:border-amber-300/70"
+                  className="h-12 min-w-0 rounded-lg border border-neutral-800 bg-[#0a0a0a] px-4 text-sm text-neutral-100 outline-none transition focus:border-amber-400/70"
                 >
                   <option value="all">All time classes</option>
                   {timeClassOptions.map((timeClass) => (
@@ -780,7 +799,7 @@ export function ImportWorkbench({
                     void loadChessComGames({ page: 0 });
                   }}
                   disabled={isPending || !canSubmit}
-                  className="w-full rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 md:col-span-2"
+                  className="w-full rounded-lg border border-neutral-700 bg-neutral-800/40 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-neutral-300 transition hover:bg-neutral-700/40 hover:text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 md:col-span-2"
                 >
                   {isPending && !hasLoadedChessComLibrary
                     ? "Loading..."
@@ -798,8 +817,8 @@ export function ImportWorkbench({
                     { label: "Draws", value: gameStats.draws.toLocaleString() },
                     { label: "Matches", value: filteredGameCount.toLocaleString() },
                   ].map((metric) => (
-                    <div key={metric.label} className="rounded-[1.2rem] border border-white/10 bg-white/[0.03] p-4">
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{metric.label}</p>
+                    <div key={metric.label} className="rounded-lg border border-neutral-800 bg-neutral-900/30 p-4">
+                      <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">{metric.label}</p>
                       <p className="mt-2 text-lg font-semibold text-white">{metric.value}</p>
                     </div>
                   ))}
@@ -807,39 +826,39 @@ export function ImportWorkbench({
               ) : null}
 
               {selectedGame ? (
-                <div className="mt-4 rounded-[1.3rem] border border-amber-300/20 bg-amber-300/10 p-4">
+                <div className="mt-4 rounded-lg border border-amber-400/20 bg-amber-400/10 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="min-w-0">
                       <p className="font-semibold text-white">vs {selectedGame.opponent}</p>
-                      <p className="mt-1 break-words text-sm text-amber-100">
+                      <p className="mt-1 break-words text-sm text-amber-400">
                         {selectedGame.white} vs {selectedGame.black} / {formatPlayedAt(selectedGame.playedAt)}
                       </p>
                     </div>
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-100">
+                    <span className="rounded-lg border border-neutral-700 bg-neutral-800/40 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-100">
                       {describePlayerOutcome(selectedGame)}
                     </span>
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
+                    <span className="rounded-lg border border-neutral-700 bg-neutral-800/40 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-200">
                       {selectedGame.timeClass ?? "chess"} / {selectedGame.timeControl}
                     </span>
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
+                    <span className="rounded-lg border border-neutral-700 bg-neutral-800/40 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-200">
                       {selectedGame.rated ? "Rated" : "Casual"}
                     </span>
                     {selectedGame.eco ? (
-                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
+                      <span className="rounded-lg border border-neutral-700 bg-neutral-800/40 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-200">
                         {selectedGame.eco}
                       </span>
                     ) : null}
                     {selectedGame.openingName ? (
-                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
+                      <span className="rounded-lg border border-neutral-700 bg-neutral-800/40 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-200">
                         {selectedGame.openingName}
                       </span>
                     ) : null}
                   </div>
 
-                  <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-300">
+                  <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-neutral-300">
                     <span>{describeGameResult(selectedGame)}</span>
                     {formatRatingLine(selectedGame) ? <span>Ratings {formatRatingLine(selectedGame)}</span> : null}
                   </div>
@@ -849,7 +868,7 @@ export function ImportWorkbench({
                       href={selectedGame.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-3 inline-flex text-xs font-medium uppercase tracking-[0.18em] text-slate-400 transition hover:text-slate-200"
+                      className="mt-3 inline-flex text-xs font-medium uppercase tracking-[0.18em] text-neutral-400 transition hover:text-neutral-200"
                     >
                       View original on Chess.com
                     </a>
@@ -860,7 +879,7 @@ export function ImportWorkbench({
               {hasLoadedChessComLibrary ? (
                 filteredGameCount > 0 ? (
                   <div className="mt-4 space-y-3">
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                    <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">
                       Showing {availableGames.length} of {filteredGameCount} matching games
                     </p>
                     <div className="max-h-80 space-y-3 overflow-y-auto pr-1">
@@ -873,33 +892,33 @@ export function ImportWorkbench({
                             clearFeedback();
                           }}
                           className={cn(
-                            "w-full rounded-[1.25rem] border p-4 text-left transition",
+                            "w-full rounded-lg border p-4 text-left transition",
                             selectedGame?.id === game.id
-                              ? "border-amber-300/35 bg-amber-300/10"
-                              : "border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06]",
+                              ? "border-amber-400/35 bg-amber-400/10"
+                              : "border-neutral-800 bg-neutral-900/30 hover:border-neutral-700 hover:bg-neutral-800/40",
                           )}
                         >
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <div className="min-w-0">
                               <p className="font-semibold text-white">vs {game.opponent}</p>
-                              <p className="mt-1 break-words text-sm text-slate-400">
+                              <p className="mt-1 break-words text-sm text-neutral-400">
                                 {game.white} vs {game.black}
                               </p>
                             </div>
-                            <span className="text-xs uppercase tracking-[0.2em] text-slate-500">{formatPlayedAt(game.playedAt)}</span>
+                            <span className="text-xs uppercase tracking-[0.2em] text-neutral-500">{formatPlayedAt(game.playedAt)}</span>
                           </div>
                           <div className="mt-3 flex flex-wrap gap-2">
-                            <span className="rounded-full border border-white/10 bg-slate-950/75 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
+                            <span className="rounded-lg border border-neutral-700 bg-neutral-950/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-200">
                               {describePlayerOutcome(game)}
                             </span>
-                            <span className="rounded-full border border-white/10 bg-slate-950/75 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
+                            <span className="rounded-lg border border-neutral-700 bg-neutral-950/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-200">
                               {game.timeClass ?? "chess"}
                             </span>
-                            <span className="rounded-full border border-white/10 bg-slate-950/75 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
+                            <span className="rounded-lg border border-neutral-700 bg-neutral-950/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-200">
                               {game.timeControl}
                             </span>
                             {game.eco ? (
-                              <span className="rounded-full border border-white/10 bg-slate-950/75 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
+                              <span className="rounded-lg border border-neutral-700 bg-neutral-950/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-200">
                                 {game.eco}
                               </span>
                             ) : null}
@@ -915,32 +934,32 @@ export function ImportWorkbench({
                           void loadChessComGames({ append: true, page: nextPage });
                         }}
                         disabled={isPending}
-                        className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-lg border border-neutral-700 bg-neutral-800/40 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-neutral-300 transition hover:bg-neutral-700/40 hover:text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {isPending ? "Loading more..." : "Load 24 more games"}
                       </button>
                     ) : null}
                   </div>
                 ) : (
-                  <p className="mt-4 text-sm leading-7 text-slate-300">
+                  <p className="mt-4 text-sm leading-7 text-neutral-300">
                     The archive loaded, but nothing matched your current filters. Loosen the search, result, or time-class filters and try again.
                   </p>
                 )
               ) : (
-                <p className="mt-4 text-sm leading-7 text-slate-300">
+                <p className="mt-4 text-sm leading-7 text-neutral-300">
                   No game library loaded yet. Click Load archive to browse the public archive, then filter or select the exact game you want to review.
                 </p>
               )}
             </div>
           ) : null}
 
-          <div className={cn("gap-3", isSpotlight ? "grid min-[420px]:grid-cols-[minmax(0,1fr)_auto]" : "flex flex-wrap")}>
+          <div className={cn("gap-3", isSpotlight ? "grid" : "flex flex-wrap")}>
             <button
               type="submit"
               disabled={isPending || !canSubmit || (source === "chesscom" && hasLoadedChessComLibrary && (!selectedGame || hasPendingFilterChanges))}
               className={cn(
-                "w-full rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto",
-                isSpotlight ? "min-[420px]:w-full" : "",
+                "w-full rounded-lg bg-amber-400 px-5 py-2.5 text-sm font-semibold text-[#0a0a0a] transition hover:bg-amber-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto",
+                isSpotlight ? "w-full bg-[#ffc629] py-3 text-base hover:bg-[#ffd152]" : "",
               )}
             >
               {primaryButtonLabel}
@@ -961,8 +980,8 @@ export function ImportWorkbench({
                 (source === "chesscom" && hasLoadedChessComLibrary && (!selectedGame || hasPendingFilterChanges))
               }
               className={cn(
-                "w-full rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto",
-                isSpotlight ? "min-[420px]:w-auto" : "",
+                "w-full rounded-lg border border-neutral-700 bg-neutral-800/50 px-5 py-2.5 text-sm font-medium text-neutral-200 transition hover:bg-neutral-700/50 hover:text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto",
+                isSpotlight ? "hidden" : "",
               )}
             >
               {secondaryButtonLabel}
@@ -973,54 +992,29 @@ export function ImportWorkbench({
             <div
               aria-live="polite"
               className={cn(
-                "rounded-[1.4rem] border p-4",
-                link ? "border-emerald-300/20 bg-emerald-300/10" : "border-white/10 bg-slate-950/60",
+                "rounded-lg border p-4",
+                link ? "border-emerald-400/20 bg-emerald-400/10" : "border-neutral-800 bg-neutral-950/60",
               )}
             >
-              {message ? <p className="text-sm leading-7 text-slate-300">{message}</p> : null}
+              {message ? <p className="text-sm leading-7 text-neutral-300">{message}</p> : null}
               {link ? (
-                <Link className="mt-3 inline-flex text-sm font-semibold text-amber-200 transition hover:text-amber-100" href={link}>
+                <Link className="mt-3 inline-flex text-sm font-semibold text-amber-400 transition hover:text-amber-300" href={link}>
                   Open saved report
                 </Link>
               ) : null}
             </div>
           )}
         </form>
-
-        <div className={cn("min-w-0 rounded-[1.5rem] border border-white/10 p-4 sm:p-5", isSpotlight ? "bg-black/15" : "bg-slate-950/55")}>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-300/80">
-            {isSpotlight ? "What happens next" : `${details.label} import`}
-          </p>
-          <p className="mt-3 text-2xl font-semibold text-white">
-            {isSpotlight ? "Pick a source, fetch a game, and turn it into a reusable report." : details.title}
-          </p>
-          <p className="mt-4 text-sm leading-7 text-slate-300">{details.copy}</p>
-
-          <div className="mt-6 grid gap-3">
-            {(
-              source === "chesscom"
-                ? [
-                    "Fetch recent public games first when all you need is the same fast flow as a real game browser.",
-                    "Filter by result, time class, opponent, ECO, or date before you commit to analysis.",
-                    "Open the saved report immediately after quick analysis instead of landing on a throwaway screen.",
-                    "Queue a deeper pass only for games that deserve more study time.",
-                  ]
-                : [
-                    "Stable report page you can revisit later.",
-                    "Opening, turning points, and accuracy in one pass.",
-                    "Quick first pass, deeper analysis only when it matters.",
-                  ]
-            ).map((item) => (
-              <div key={item} className="rounded-[1.2rem] border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-300">
-                {item}
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
       </div>
 
-      {showAnalysisOverlay ? (
+      {showAnalysisOverlay && liveSession.isAnalyzing ? (
+        <LiveAnalysisScreen
+          session={liveSession}
+          whitePlayer={loadingPreview.white}
+          blackPlayer={loadingPreview.black}
+        />
+      ) : showAnalysisOverlay ? (
         <AnalysisLoadingOverlay
           black={loadingPreview.black}
           depth={analysisPendingDepth}

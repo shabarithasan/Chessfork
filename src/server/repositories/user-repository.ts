@@ -1,10 +1,13 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
 import { getDb } from "@/server/db/client";
 import { chessAccounts, identities, subscriptions, userCredentials, users } from "@/server/db/schema";
 import { databaseEnabled } from "@/server/env";
+import { mongoDatabaseEnabled } from "@/server/env";
+import { ensureMongoUserIndexes, getMongoUsersCollection, type MongoOAuthIdentity, type MongoUser } from "@/server/mongodb/client";
 import { hashPassword, verifyPassword } from "@/server/auth/password";
+import type { OAuthProvider } from "@/server/auth/oauth";
 import type { AccountProfile, LinkedChessAccount, Locale, SubscriptionTier, UserAccount } from "@/types/platform";
 
 const globalForUserFallback = globalThis as typeof globalThis & {
@@ -12,6 +15,7 @@ const globalForUserFallback = globalThis as typeof globalThis & {
   __knightowlUserEmailIndex?: Map<string, string>;
   __knightowlUserCredentials?: Map<string, string>;
   __knightowlUserChessAccounts?: Map<string, LinkedChessAccount>;
+  __knightowlOAuthIdentities?: Map<string, string>;
 };
 
 function getUserStore() {
@@ -46,6 +50,14 @@ function getChessAccountStore() {
   return globalForUserFallback.__knightowlUserChessAccounts;
 }
 
+function getOAuthIdentityStore() {
+  if (!globalForUserFallback.__knightowlOAuthIdentities) {
+    globalForUserFallback.__knightowlOAuthIdentities = new Map();
+  }
+
+  return globalForUserFallback.__knightowlOAuthIdentities;
+}
+
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
@@ -73,6 +85,17 @@ function toUserAccount(row: {
     locale: (row.locale || "en") as Locale,
     createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : row.createdAt,
     subscriptionTier: row.subscriptionTier ?? "free",
+  };
+}
+
+function toMongoUserAccount(user: MongoUser): UserAccount {
+  return {
+    id: user._id,
+    email: user.email,
+    displayName: user.displayName,
+    locale: user.locale,
+    createdAt: user.createdAt.toISOString(),
+    subscriptionTier: user.subscriptionTier,
   };
 }
 
@@ -124,6 +147,47 @@ async function authenticateFallbackUser(email: string, password: string) {
   }
 
   return (await verifyPassword(password, passwordHash)) ? user : null;
+}
+
+function makeOAuthIdentityKey(provider: OAuthProvider, providerUserId: string) {
+  return `${provider}:${providerUserId}`;
+}
+
+async function findOrCreateFallbackOAuthUser(input: { provider: OAuthProvider; providerUserId: string; email: string; displayName: string }) {
+  const identityKey = makeOAuthIdentityKey(input.provider, input.providerUserId);
+  const identityStore = getOAuthIdentityStore();
+
+  const identityUserId = identityStore.get(identityKey);
+  if (identityUserId) {
+    const existing = getUserStore().get(identityUserId);
+    if (existing) {
+      return existing;
+    }
+  }
+
+  const email = normalizeEmail(input.email);
+  const emailUserId = getUserEmailIndex().get(email);
+  if (emailUserId) {
+    const existing = getUserStore().get(emailUserId);
+    if (existing) {
+      identityStore.set(identityKey, existing.id);
+      return existing;
+    }
+  }
+
+  const user: UserAccount = {
+    id: randomUUID(),
+    email,
+    displayName: input.displayName.trim(),
+    locale: "en",
+    createdAt: new Date().toISOString(),
+    subscriptionTier: "free",
+  };
+
+  getUserStore().set(user.id, user);
+  getUserEmailIndex().set(email, user.id);
+  identityStore.set(identityKey, user.id);
+  return user;
 }
 
 async function updateFallbackUser(userId: string, updates: { displayName: string; locale: Locale }) {
@@ -209,6 +273,221 @@ async function createDatabaseUser(input: {
       subscriptionTier: "free",
     });
   });
+}
+
+async function findOrCreateDatabaseOAuthUser(input: { provider: OAuthProvider; providerUserId: string; email: string; displayName: string }) {
+  const db = getDb();
+  const email = normalizeEmail(input.email);
+
+  return db.transaction(async (tx) => {
+    const identityRows = await tx
+      .select({ userId: identities.userId })
+      .from(identities)
+      .where(and(eq(identities.provider, input.provider), eq(identities.providerUserId, input.providerUserId)))
+      .limit(1);
+
+    let userId = identityRows[0]?.userId;
+    if (!userId) {
+      const emailRows = await tx.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+      if (emailRows[0]) {
+        await tx.insert(identities).values({
+          userId: emailRows[0].id,
+          provider: input.provider,
+          providerUserId: input.providerUserId,
+        });
+        userId = emailRows[0].id;
+      }
+    }
+
+    if (!userId) {
+      const createdUsers = await tx
+        .insert(users)
+        .values({ email, displayName: input.displayName.trim(), locale: "en" })
+        .returning({
+          id: users.id,
+          email: users.email,
+          displayName: users.displayName,
+          locale: users.locale,
+          createdAt: users.createdAt,
+        });
+      userId = createdUsers[0].id;
+
+      await tx.insert(identities).values({
+        userId,
+        provider: input.provider,
+        providerUserId: input.providerUserId,
+      });
+      await tx.insert(subscriptions).values({
+        userId,
+        tier: "free",
+        status: "active",
+      });
+    }
+
+    const rows = await tx
+      .select({
+        id: users.id,
+        email: users.email,
+        displayName: users.displayName,
+        locale: users.locale,
+        createdAt: users.createdAt,
+        subscriptionTier: subscriptions.tier,
+      })
+      .from(users)
+      .leftJoin(subscriptions, eq(subscriptions.userId, users.id))
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    const row = rows[0];
+    if (!row) {
+      throw new Error("Account not found.");
+    }
+
+    return toUserAccount(row);
+  });
+}
+
+async function createMongoUser(input: {
+  displayName: string;
+  email: string;
+  password: string;
+  locale: Locale;
+}) {
+  await ensureMongoUserIndexes();
+  const now = new Date();
+  const user: MongoUser = {
+    _id: randomUUID(),
+    email: normalizeEmail(input.email),
+    displayName: input.displayName.trim(),
+    locale: input.locale,
+    passwordHash: await hashPassword(input.password),
+    subscriptionTier: "free",
+    linkedAccounts: [],
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  try {
+    await getMongoUsersCollection().insertOne(user);
+  } catch (error) {
+    if (typeof error === "object" && error && "code" in error && error.code === 11000) {
+      throw new Error("An account with that email already exists.");
+    }
+    throw error;
+  }
+
+  return toMongoUserAccount(user);
+}
+
+async function findOrCreateMongoOAuthUser(input: { provider: OAuthProvider; providerUserId: string; email: string; displayName: string }) {
+  await ensureMongoUserIndexes();
+  const users = getMongoUsersCollection();
+  const email = normalizeEmail(input.email);
+
+  const byIdentity = await users.findOne({
+    "oauthIdentities.provider": input.provider,
+    "oauthIdentities.providerUserId": input.providerUserId,
+  });
+  if (byIdentity) {
+    return toMongoUserAccount(byIdentity);
+  }
+
+  const identity: MongoOAuthIdentity = {
+    provider: input.provider,
+    providerUserId: input.providerUserId,
+    email,
+    name: input.displayName.trim(),
+  };
+
+  const byEmail = await users.findOne({ email });
+  if (byEmail) {
+    const alreadyLinked = (byEmail.oauthIdentities ?? []).some(
+      (entry) => entry.provider === input.provider && entry.providerUserId === input.providerUserId,
+    );
+    if (!alreadyLinked) {
+      await users.updateOne(
+        { _id: byEmail._id },
+        { $push: { oauthIdentities: identity }, $set: { updatedAt: new Date() } },
+      );
+    }
+    return toMongoUserAccount(byEmail);
+  }
+
+  const now = new Date();
+  const user: MongoUser = {
+    _id: randomUUID(),
+    email,
+    displayName: identity.name,
+    locale: "en",
+    passwordHash: "",
+    subscriptionTier: "free",
+    linkedAccounts: [],
+    oauthIdentities: [identity],
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  try {
+    await users.insertOne(user);
+  } catch (error) {
+    if (typeof error === "object" && error && "code" in error && error.code === 11000) {
+      const winner = await users.findOne({
+        "oauthIdentities.provider": input.provider,
+        "oauthIdentities.providerUserId": input.providerUserId,
+      });
+      if (winner) {
+        return toMongoUserAccount(winner);
+      }
+    }
+    throw error;
+  }
+
+  return toMongoUserAccount(user);
+}
+
+async function authenticateMongoUser(email: string, password: string) {
+  const user = await getMongoUsersCollection().findOne({ email: normalizeEmail(email) });
+  if (!user || !(await verifyPassword(password, user.passwordHash))) return null;
+  return toMongoUserAccount(user);
+}
+
+async function findMongoUserById(userId: string) {
+  const user = await getMongoUsersCollection().findOne({ _id: userId });
+  return user ? toMongoUserAccount(user) : null;
+}
+
+async function updateMongoUser(userId: string, updates: { displayName: string; locale: Locale }) {
+  const users = getMongoUsersCollection();
+  const result = await users.findOneAndUpdate(
+    { _id: userId },
+    { $set: { displayName: updates.displayName.trim(), locale: updates.locale, updatedAt: new Date() } },
+    { returnDocument: "after" },
+  );
+  if (!result) throw new Error("Account not found.");
+  return toMongoUserAccount(result);
+}
+
+async function listMongoChessAccounts(userId: string): Promise<LinkedChessAccount[]> {
+  const user = await getMongoUsersCollection().findOne({ _id: userId }, { projection: { linkedAccounts: 1 } });
+  return (user?.linkedAccounts ?? [])
+    .map((account) => ({ id: account.id, source: account.source, username: account.username, linkedAt: account.linkedAt.toISOString() }))
+    .sort((left, right) => left.source.localeCompare(right.source));
+}
+
+async function upsertMongoChessAccount(userId: string, params: { source: LinkedChessAccount["source"]; username: string }) {
+  const users = getMongoUsersCollection();
+  const user = await users.findOne({ _id: userId }, { projection: { linkedAccounts: 1 } });
+  if (!user) throw new Error("Account not found.");
+
+  const existing = user.linkedAccounts.find((account) => account.source === params.source);
+  const linkedAccount: MongoUser["linkedAccounts"][number] = existing
+    ? { ...existing, username: params.username.trim() }
+    : { id: randomUUID(), source: params.source, username: params.username.trim(), linkedAt: new Date() };
+  const linkedAccounts = existing
+    ? user.linkedAccounts.map((account) => (account.source === params.source ? linkedAccount : account))
+    : [...user.linkedAccounts, linkedAccount];
+  await users.updateOne({ _id: userId }, { $set: { linkedAccounts, updatedAt: new Date() } });
+  return { id: linkedAccount.id, source: linkedAccount.source, username: linkedAccount.username, linkedAt: linkedAccount.linkedAt.toISOString() } satisfies LinkedChessAccount;
 }
 
 async function authenticateDatabaseUser(email: string, password: string) {
@@ -353,6 +632,16 @@ export async function createUserAccount(input: {
   password: string;
   locale: Locale;
 }) {
+  if (mongoDatabaseEnabled()) {
+    try {
+      return await createMongoUser(input);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("already exists")) throw error;
+      console.warn("MongoDB user database unavailable, falling back to memory:", error);
+      return createFallbackUser(input);
+    }
+  }
+
   if (!databaseEnabled()) {
     return createFallbackUser(input);
   }
@@ -369,7 +658,43 @@ export async function createUserAccount(input: {
   }
 }
 
+export async function findOrCreateOAuthUser(input: { provider: OAuthProvider; providerUserId: string; email: string; displayName: string }) {
+  if (mongoDatabaseEnabled()) {
+    try {
+      return await findOrCreateMongoOAuthUser(input);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("already exists")) throw error;
+      console.warn("MongoDB user database unavailable, falling back to memory:", error);
+      return findOrCreateFallbackOAuthUser(input);
+    }
+  }
+
+  if (!databaseEnabled()) {
+    return findOrCreateFallbackOAuthUser(input);
+  }
+
+  try {
+    return await findOrCreateDatabaseOAuthUser(input);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Account not found")) {
+      throw error;
+    }
+
+    console.warn("User database unavailable, falling back to memory:", error);
+    return findOrCreateFallbackOAuthUser(input);
+  }
+}
+
 export async function authenticateUserAccount(input: { email: string; password: string }) {
+  if (mongoDatabaseEnabled()) {
+    try {
+      return await authenticateMongoUser(input.email, input.password);
+    } catch (error) {
+      console.warn("MongoDB user database unavailable, falling back to memory:", error);
+      return authenticateFallbackUser(input.email, input.password);
+    }
+  }
+
   if (!databaseEnabled()) {
     return authenticateFallbackUser(input.email, input.password);
   }
@@ -383,6 +708,15 @@ export async function authenticateUserAccount(input: { email: string; password: 
 }
 
 export async function findUserById(userId: string) {
+  if (mongoDatabaseEnabled()) {
+    try {
+      return await findMongoUserById(userId);
+    } catch (error) {
+      console.warn("MongoDB user database unavailable, falling back to memory:", error);
+      return getUserStore().get(userId) ?? null;
+    }
+  }
+
   if (!databaseEnabled()) {
     return getUserStore().get(userId) ?? null;
   }
@@ -396,6 +730,16 @@ export async function findUserById(userId: string) {
 }
 
 export async function updateUserAccount(userId: string, updates: { displayName: string; locale: Locale }) {
+  if (mongoDatabaseEnabled()) {
+    try {
+      return await updateMongoUser(userId, updates);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("Account not found")) throw error;
+      console.warn("MongoDB user database unavailable, falling back to memory:", error);
+      return updateFallbackUser(userId, updates);
+    }
+  }
+
   if (!databaseEnabled()) {
     return updateFallbackUser(userId, updates);
   }
@@ -413,6 +757,15 @@ export async function updateUserAccount(userId: string, updates: { displayName: 
 }
 
 export async function listLinkedChessAccounts(userId: string): Promise<LinkedChessAccount[]> {
+  if (mongoDatabaseEnabled()) {
+    try {
+      return await listMongoChessAccounts(userId);
+    } catch (error) {
+      console.warn("MongoDB user database unavailable, falling back to memory:", error);
+      return getFallbackLinkedAccounts(userId);
+    }
+  }
+
   if (!databaseEnabled()) {
     return getFallbackLinkedAccounts(userId);
   }
@@ -426,6 +779,16 @@ export async function listLinkedChessAccounts(userId: string): Promise<LinkedChe
 }
 
 export async function upsertLinkedChessAccount(userId: string, params: { source: LinkedChessAccount["source"]; username: string }) {
+  if (mongoDatabaseEnabled()) {
+    try {
+      return await upsertMongoChessAccount(userId, params);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("Account not found")) throw error;
+      console.warn("MongoDB user database unavailable, falling back to memory:", error);
+      return upsertFallbackChessAccount(userId, params);
+    }
+  }
+
   if (!databaseEnabled()) {
     return upsertFallbackChessAccount(userId, params);
   }

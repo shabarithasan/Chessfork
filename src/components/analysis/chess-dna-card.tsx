@@ -132,34 +132,34 @@ export function ChessDnaCard({
   return (
     <section
       id="chess-dna"
-      className="overflow-hidden rounded-[1.7rem] border border-cyan-200/15 bg-[linear-gradient(115deg,rgba(34,211,238,0.16),transparent_34%),linear-gradient(135deg,rgba(7,46,51,0.68),rgba(15,23,42,0.9)_46%,rgba(2,6,23,0.96))] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.22)]"
+      className="overflow-hidden rounded-lg border border-cyan-400/15 bg-[linear-gradient(115deg,rgba(34,211,238,0.16),transparent_34%),linear-gradient(135deg,rgba(7,46,51,0.68),rgba(15,23,42,0.9)_46%,rgba(2,6,23,0.96))] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.22)]"
     >
       <div className="grid gap-6 lg:grid-cols-[0.88fr_1.12fr]">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-cyan-200/25 bg-cyan-200/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-100">
+            <span className="inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-100">
               <Dna className="size-3.5" />
               Chess DNA
             </span>
-            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
+            <span className="rounded-full border border-neutral-800 bg-neutral-800/30 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-neutral-300">
               {dna.code}
             </span>
           </div>
 
-          <p className="mt-5 text-sm font-semibold uppercase tracking-[0.2em] text-cyan-200">{dna.playerName}</p>
+          <p className="mt-5 text-sm font-semibold uppercase tracking-[0.2em] text-cyan-400">{dna.playerName}</p>
           <h3 className="mt-2 text-3xl font-semibold tracking-tight text-white">{dna.archetype}</h3>
-          <p className="mt-3 text-sm leading-7 text-slate-300">{dna.headline}</p>
+          <p className="mt-3 text-sm leading-7 text-neutral-300">{dna.headline}</p>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-[1rem] border border-white/10 bg-white/[0.04] p-4">
-              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+            <div className="rounded-[1rem] border border-neutral-800 bg-neutral-800/30 p-4">
+              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">
                 <Target className="size-4" />
                 Signature
               </p>
               <p className="mt-2 break-words text-sm font-semibold leading-6 text-white">{dna.signature}</p>
             </div>
-            <div className="rounded-[1rem] border border-white/10 bg-white/[0.04] p-4">
-              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+            <div className="rounded-[1rem] border border-neutral-800 bg-neutral-800/30 p-4">
+              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">
                 <Activity className="size-4" />
                 Proof
               </p>
@@ -168,10 +168,10 @@ export function ChessDnaCard({
           </div>
         </div>
 
-        <div className="rounded-[1.25rem] border border-white/10 bg-slate-950/55 p-4">
+        <div className="rounded-lg border border-neutral-800 bg-neutral-950/55 p-4">
           <div className="grid gap-3 sm:grid-cols-2">
             {dna.traits.map((trait) => (
-              <div key={trait.key} className="rounded-[1rem] border border-white/10 bg-white/[0.03] p-4">
+              <div key={trait.key} className="rounded-[1rem] border border-neutral-800 bg-neutral-900/30 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-white">{trait.label}</p>
                   <p className="text-sm font-semibold text-cyan-100">{trait.score}%</p>
@@ -182,24 +182,24 @@ export function ChessDnaCard({
                     style={{ width: `${trait.score}%` }}
                   />
                 </div>
-                <p className="mt-3 text-xs leading-6 text-slate-400">{trait.description}</p>
+                <p className="mt-3 text-xs leading-6 text-neutral-400">{trait.description}</p>
               </div>
             ))}
           </div>
 
-          <div className="mt-4 rounded-[1rem] border border-emerald-300/15 bg-emerald-300/8 p-4">
-            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">
+          <div className="mt-4 rounded-[1rem] border border-emerald-400/15 bg-emerald-400/8 p-4">
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">
               <Sparkles className="size-4" />
               Next quest
             </p>
-            <p className="mt-2 text-sm leading-7 text-slate-100">{dna.nextQuest}</p>
+            <p className="mt-2 text-sm leading-7 text-neutral-100">{dna.nextQuest}</p>
           </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={copyDna}
-              className="inline-flex items-center gap-2 rounded-full bg-cyan-200 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-100"
+              className="inline-flex items-center gap-2 rounded-full bg-cyan-400 px-4 py-2.5 text-sm font-semibold text-[#0a0a0a] transition hover:bg-cyan-500"
             >
               <Clipboard className="size-4" />
               Copy DNA
@@ -207,26 +207,26 @@ export function ChessDnaCard({
             <button
               type="button"
               onClick={shareDna}
-              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:bg-white/10"
+              className="inline-flex items-center gap-2 rounded-full border border-neutral-700 bg-neutral-800/30 px-4 py-2.5 text-sm font-semibold text-neutral-100 transition hover:bg-neutral-700/40"
             >
               <Share2 className="size-4" />
               Share
             </button>
             <Link
               href="/wrapped/2025"
-              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:bg-white/10"
+              className="inline-flex items-center gap-2 rounded-full border border-neutral-700 bg-neutral-800/30 px-4 py-2.5 text-sm font-semibold text-neutral-100 transition hover:bg-neutral-700/40"
             >
               <Sparkles className="size-4" />
               Build wrapped
             </Link>
-            {status ? <p className="text-sm text-slate-200">{status}</p> : null}
+            {status ? <p className="text-sm text-neutral-200">{status}</p> : null}
           </div>
 
           {manualTextVisible ? (
             <textarea
               readOnly
               value={manualText ?? fallbackShareText}
-              className="mt-4 min-h-36 w-full rounded-[1rem] border border-white/10 bg-slate-950/80 p-4 text-sm leading-6 text-slate-100 outline-none focus:border-cyan-200/60"
+              className="mt-4 min-h-36 w-full rounded-[1rem] border border-neutral-800 bg-neutral-950/80 p-4 text-sm leading-6 text-neutral-100 outline-none focus:border-cyan-400/60"
             />
           ) : null}
         </div>

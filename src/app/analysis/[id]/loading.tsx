@@ -1,15 +1,5 @@
-import { AnalysisLoadingExperience } from "@/components/analysis/analysis-loading-overlay";
+import { AnalysisReportLoadingWorkspace } from "@/components/analysis/analysis-report-loading-workspace";
 
 export default function Loading() {
-  return (
-    <AnalysisLoadingExperience
-      black="Black"
-      depth="quick"
-      openingLabel="Loading saved report"
-      presentation="page"
-      source="pgn"
-      timeControl="10:00"
-      white="White"
-    />
-  );
+  return <AnalysisReportLoadingWorkspace />;
 }

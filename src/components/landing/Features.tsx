@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useRef } from "react";
 
 import { cn } from "@/lib/utils";
+import { MagicCard } from "@/registry/magicui/magic-card";
 
 const FeatureEffects = dynamic(() => import("./FeatureEffects").then((mod) => mod.FeatureEffects), { ssr: false });
 
@@ -64,9 +65,16 @@ function FeatureHeadline({ lines }: { lines: string[] }) {
 
 function EngineVisual() {
   return (
-    <div className="knightowl-engine-card knightowl-feature-visual relative overflow-hidden rounded-[20px] border border-[var(--border)] bg-[var(--bg-card)] p-6">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,#00d4aa18,transparent_34%)]" />
-      <div className="relative z-10">
+    <MagicCard
+      gradientColor="#00d4aa"
+      gradientFrom="#00d4aa40"
+      gradientTo="#6366f140"
+      gradientOpacity={1}
+      className="knightowl-engine-card knightowl-feature-visual relative rounded-[20px] border border-[var(--border)] bg-[var(--bg-card)]"
+    >
+      <div className="relative h-full p-6">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,#00d4aa18,transparent_34%)]" />
+        <div className="relative z-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="rounded-full border border-[#00c2ff40] bg-[#00c2ff10] px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent-2)]">
             BRILLIANT ⭐
@@ -128,8 +136,9 @@ function EngineVisual() {
             ))}
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </MagicCard>
   );
 }
 
@@ -156,8 +165,15 @@ function CoachVisual() {
   ];
 
   return (
-    <div className="knightowl-feature-visual knightowl-coach-phone relative mx-auto w-full max-w-[430px] rounded-[28px] border border-[var(--border)] bg-[linear-gradient(180deg,#15151f,#08080d)] p-4 shadow-[0_40px_80px_rgba(0,0,0,0.55)]">
-      <div className="rounded-[22px] border border-white/[0.06] bg-[#050508] p-5">
+    <MagicCard
+      gradientColor="#00d4aa"
+      gradientFrom="#00d4aa40"
+      gradientTo="#6366f140"
+      gradientOpacity={1}
+      className="knightowl-feature-visual knightowl-coach-phone relative mx-auto w-full max-w-[430px] rounded-[28px] border border-[var(--border)] bg-[linear-gradient(180deg,#15151f,#08080d)] shadow-[0_40px_80px_rgba(0,0,0,0.55)]"
+    >
+      <div className="relative h-full p-4">
+        <div className="rounded-[22px] border border-white/[0.06] bg-[#050508] p-5">
         <p className="font-mono text-xs uppercase tracking-[0.24em] text-[var(--accent)]">Coach report</p>
         <h3 className="mt-4 font-display text-4xl font-extrabold leading-none text-[var(--text-primary)]">Next climb plan</h3>
 
@@ -179,14 +195,22 @@ function CoachVisual() {
           ))}
         </div>
       </div>
-    </div>
+      </div>
+    </MagicCard>
   );
 }
 
 function ShareVisual() {
   return (
     <div className="knightowl-feature-visual">
-      <div className="knightowl-share-card relative mx-auto aspect-[1200/630] w-full max-w-[720px] overflow-hidden rounded-[20px] border border-[var(--border)] bg-[linear-gradient(135deg,#111118,#050508_52%,#0d0d14)] p-6 shadow-[0_40px_80px_rgba(0,0,0,0.55)]">
+      <MagicCard
+        gradientColor="#00d4aa"
+        gradientFrom="#00d4aa40"
+        gradientTo="#6366f140"
+        gradientOpacity={1}
+        className="knightowl-share-card relative mx-auto aspect-[1200/630] w-full max-w-[720px] rounded-[20px] border border-[var(--border)] bg-[linear-gradient(135deg,#111118,#050508_52%,#0d0d14)] shadow-[0_40px_80px_rgba(0,0,0,0.55)]"
+      >
+        <div className="relative h-full p-6">
         <div className="knightowl-share-shine" />
         <div className="relative z-10 flex h-full flex-col justify-between">
           <div className="flex items-start justify-between gap-4">
@@ -227,6 +251,7 @@ function ShareVisual() {
           </div>
         </div>
       </div>
+      </MagicCard>
     </div>
   );
 }

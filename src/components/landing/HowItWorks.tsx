@@ -3,6 +3,8 @@
 import { Cpu, Search, Trophy } from "lucide-react";
 import { motion } from "framer-motion";
 
+import { MagicCard } from "@/registry/magicui/magic-card";
+
 const steps = [
   {
     copy:
@@ -31,7 +33,7 @@ export function HowItWorks() {
   return (
     <motion.section
       id="workflow"
-      className="relative overflow-hidden bg-[var(--bg-primary)] px-5 py-20 md:px-8 md:py-32 lg:px-12 lg:py-40"
+      className="relative overflow-hidden px-5 py-20 md:px-8 md:py-32 lg:px-12 lg:py-40"
       initial={{ opacity: 0, y: 40 }}
       transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
       viewport={{ once: true, margin: "-80px" }}
@@ -54,19 +56,29 @@ export function HowItWorks() {
 
             return (
               <motion.article
-                className="relative z-10 min-h-[22rem] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] px-8 py-10 transition-all duration-300 will-change-transform hover:-translate-y-1 hover:border-[rgba(0,212,170,0.3)] hover:bg-[#131320]"
+                className="relative z-10 transition-all duration-300 will-change-transform hover:-translate-y-1"
                 initial={{ y: 60, opacity: 0 }}
                 key={step.title}
                 transition={{ duration: 0.7, delay: index * 0.15, ease: [0.16, 1, 0.3, 1] }}
                 viewport={{ once: true, margin: "-100px" }}
                 whileInView={{ y: 0, opacity: 1 }}
               >
-                <span className="pointer-events-none absolute right-6 top-4 font-mono text-[64px] leading-none text-[#00d4aa10]">{step.number}</span>
-                <span className="inline-grid size-16 place-items-center rounded-xl bg-[#00d4aa15] text-[var(--accent)]">
-                  <Icon className="size-10" />
-                </span>
-                <h3 className="mt-9 font-display text-[22px] font-bold tracking-normal text-[var(--text-primary)]">{step.title}</h3>
-                <p className="mt-4 text-[15px] font-normal leading-7 text-[var(--text-secondary)] md:text-[17px]">{step.copy}</p>
+                <MagicCard
+                  gradientColor="#00d4aa"
+                  gradientFrom="#00d4aa40"
+                  gradientTo="#6366f140"
+                  gradientOpacity={1}
+                  className="relative min-h-[22rem] rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)]"
+                >
+                  <div className="relative h-full px-8 py-10">
+                  <span className="pointer-events-none absolute right-6 top-4 font-mono text-[64px] leading-none text-[#00d4aa10]">{step.number}</span>
+                  <span className="inline-grid size-16 place-items-center rounded-xl bg-[#00d4aa15] text-[var(--accent)]">
+                    <Icon className="size-10" />
+                  </span>
+                  <h3 className="mt-9 font-display text-[22px] font-bold tracking-normal text-[var(--text-primary)]">{step.title}</h3>
+                  <p className="mt-4 text-[15px] font-normal leading-7 text-[var(--text-secondary)] md:text-[17px]">{step.copy}</p>
+                  </div>
+                </MagicCard>
               </motion.article>
             );
           })}

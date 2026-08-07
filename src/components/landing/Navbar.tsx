@@ -5,6 +5,9 @@ import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
+import { AnimatedThemeToggler } from "@/registry/magicui/animated-theme-toggler";
+import { CoolMode } from "@/registry/magicui/cool-mode";
+
 const navItems = [
   { href: "#features", label: "Features" },
   { href: "#workflow", label: "How it works" },
@@ -44,9 +47,12 @@ export function Navbar() {
                 {item.label}
               </Link>
             ))}
-            <Link href="/analyze" className="knightowl-nav-cta" data-cursor-hover>
-              Analyze Free →
-            </Link>
+            <AnimatedThemeToggler data-cursor-hover />
+            <CoolMode>
+              <Link href="/analyze" className="knightowl-nav-cta" data-cursor-hover>
+                Analyze Free →
+              </Link>
+            </CoolMode>
           </div>
 
           <button
@@ -87,15 +93,18 @@ export function Navbar() {
                   </span>
                   <span className="font-display text-xl font-bold text-[var(--text-primary)]">Knightowl</span>
                 </Link>
-                <button
-                  aria-label="Close menu"
-                  className="grid size-11 place-items-center rounded-full border border-[var(--border)] text-[var(--text-primary)]"
-                  type="button"
-                  data-cursor-hover
-                  onClick={() => setMenuOpen(false)}
-                >
-                  <X className="size-5" />
-                </button>
+                <div className="flex items-center gap-3">
+                  <AnimatedThemeToggler data-cursor-hover />
+                  <button
+                    aria-label="Close menu"
+                    className="grid size-11 place-items-center rounded-full border border-[var(--border)] text-[var(--text-primary)]"
+                    type="button"
+                    data-cursor-hover
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <X className="size-5" />
+                  </button>
+                </div>
               </div>
 
               <div className="mt-12 flex flex-col gap-4">
@@ -106,9 +115,13 @@ export function Navbar() {
                 ))}
               </div>
 
-              <Link href="/analyze" className="knightowl-mobile-cta mt-auto" data-cursor-hover onClick={() => setMenuOpen(false)}>
-                Analyze Free →
-              </Link>
+              <div className="mt-auto">
+                <CoolMode>
+                  <Link href="/analyze" className="knightowl-mobile-cta" data-cursor-hover onClick={() => setMenuOpen(false)}>
+                    Analyze Free →
+                  </Link>
+                </CoolMode>
+              </div>
             </motion.aside>
           </motion.div>
         ) : null}

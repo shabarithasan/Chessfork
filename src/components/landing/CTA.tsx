@@ -3,19 +3,27 @@
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { CoolMode } from "@/registry/magicui/cool-mode";
+import { MagicCard } from "@/registry/magicui/magic-card";
 
 const ease: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
 export function CTA() {
   return (
     <motion.section
-      className="knightowl-cta-section bg-[var(--bg-primary)] px-5 py-20 md:px-8 md:py-32 lg:px-12 lg:py-40"
+      className="knightowl-cta-section px-5 py-20 md:px-8 md:py-32 lg:px-12 lg:py-40"
       initial={{ opacity: 0, y: 40 }}
       transition={{ duration: 0.8, ease }}
       viewport={{ once: true, margin: "-80px" }}
       whileInView={{ opacity: 1, y: 0 }}
     >
-      <div className="knightowl-cta-card relative mx-auto max-w-[900px] overflow-hidden rounded-[32px] px-6 py-16 text-center sm:px-10 lg:px-[60px] lg:py-20">
+      <MagicCard
+        gradientColor="#00d4aa"
+        gradientFrom="#00d4aa40"
+        gradientTo="#6366f140"
+        gradientOpacity={1}
+        className="knightowl-cta-card relative mx-auto max-w-[900px] rounded-[32px] px-6 py-16 text-center sm:px-10 lg:px-[60px] lg:py-20"
+      >
         <svg className="knightowl-cta-knight" viewBox="0 0 320 320" aria-hidden="true">
           <text x="160" y="236" textAnchor="middle">
             ♞
@@ -52,15 +60,17 @@ export function CTA() {
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.98 }}
           >
-            <Link href="/analyze" className="knightowl-cta-button" data-cursor-hover>
-              Analyze My First Game — It&apos;s Free
-              <ArrowRight className="size-5" />
-            </Link>
+            <CoolMode>
+              <Link href="/analyze" className="knightowl-cta-button" data-cursor-hover>
+                Analyze My First Game — It&apos;s Free
+                <ArrowRight className="size-5" />
+              </Link>
+            </CoolMode>
           </motion.div>
 
           <p className="mt-5 text-[13px] font-normal text-[var(--text-muted)]">♟ No credit card · No account required · Start in 10 seconds</p>
         </div>
-      </div>
+      </MagicCard>
 
       <style>{`
         .knightowl-cta-card {

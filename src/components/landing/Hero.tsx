@@ -3,6 +3,8 @@
 import { motion, useScroll, useTransform, type Variants } from "framer-motion";
 import Link from "next/link";
 import { Fragment, useRef } from "react";
+import { CoolMode } from "@/registry/magicui/cool-mode";
+import { MagicCard } from "@/registry/magicui/magic-card";
 
 const headlineLines = [
   [
@@ -49,12 +51,8 @@ export function Hero() {
   return (
     <section
       ref={sectionRef}
-      className="knightowl-hero relative flex min-h-[100svh] w-full items-center justify-center overflow-hidden bg-[var(--bg-primary)] px-5 py-20 text-center md:px-8 md:py-32 lg:px-12 lg:py-40"
+      className="knightowl-hero relative flex min-h-[100svh] w-full items-center justify-center overflow-hidden px-5 py-20 text-center md:px-8 md:py-32 lg:px-12 lg:py-40"
     >
-      <motion.div animate={{ opacity: 1 }} className="knightowl-hero-mesh" initial={{ opacity: 0 }} transition={{ duration: 0.3 }} aria-hidden="true" />
-      <motion.div animate={{ opacity: 0.3 }} className="knightowl-hero-grid" initial={{ opacity: 0 }} transition={{ duration: 0.3 }} aria-hidden="true" />
-      <motion.div animate={{ opacity: 0.12 }} className="knightowl-hero-noise" initial={{ opacity: 0 }} transition={{ duration: 0.3 }} aria-hidden="true" />
-
       <div className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-col items-center">
         <motion.div
           initial={{ y: 18, opacity: 0 }}
@@ -109,13 +107,15 @@ export function Hero() {
           className="mt-8 flex flex-col items-center justify-center gap-3 md:flex-row"
         >
           <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.98 }}>
-            <Link
-              href="/analyze"
-              data-cursor-hover
-              className="knightowl-hero-primary inline-flex min-h-14 items-center justify-center rounded-full bg-[var(--accent)] px-8 text-base font-semibold text-[var(--bg-primary)]"
-            >
-              Analyze Your Games →
-            </Link>
+            <CoolMode>
+              <Link
+                href="/analyze"
+                data-cursor-hover
+                className="knightowl-hero-primary inline-flex min-h-14 items-center justify-center rounded-full bg-[var(--accent)] px-8 text-base font-semibold text-[var(--bg-primary)]"
+              >
+                Analyze Your Games →
+              </Link>
+            </CoolMode>
           </motion.div>
           <motion.a
             href="#workflow"
@@ -135,10 +135,17 @@ export function Hero() {
           style={{ rotateX: cardRotateX, scale: cardScale, transformPerspective: 1000 }}
           className="mt-8 w-full max-w-[680px] [transform-style:preserve-3d]"
         >
-          <div className="knightowl-hero-card relative mx-auto overflow-hidden rounded-[20px] border border-[var(--border)] bg-[var(--bg-card)] p-4 text-left sm:p-5">
-            <div className="absolute right-4 top-4 z-10 rounded-full border border-[#00d4aa30] bg-[#050508d9] px-3 py-1.5 font-mono text-xs text-[var(--accent)] shadow-[0_12px_30px_rgba(0,0,0,0.35)]">
-              88% Accuracy · Stockfish 18
-            </div>
+          <MagicCard
+            gradientColor="#00d4aa"
+            gradientFrom="#00d4aa40"
+            gradientTo="#6366f140"
+            gradientOpacity={1}
+            className="knightowl-hero-card relative mx-auto rounded-[20px] border border-[var(--border)] bg-[var(--bg-card)] text-left"
+          >
+            <div className="relative h-full p-4 sm:p-5">
+              <div className="absolute right-4 top-4 z-10 rounded-full border border-[#00d4aa30] bg-[#050508d9] px-3 py-1.5 font-mono text-xs text-[var(--accent)] shadow-[0_12px_30px_rgba(0,0,0,0.35)]">
+                88% Accuracy · Stockfish 18
+              </div>
 
             <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_210px]">
               <div className="rounded-2xl border border-white/[0.06] bg-[#050508] p-3">
@@ -179,7 +186,7 @@ export function Hero() {
                 </svg>
               </div>
 
-              <div className="hidden min-h-full flex-col justify-between rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4 md:flex">
+              <div className="hidden min-h-full flex-col justify-between rounded-2xl border border-[var(--border)] bg-[var(--bg-secondary)] p-4 md:flex">
                 <div>
                   <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--text-muted)]">Best continuation</p>
                   <p className="mt-3 font-display text-4xl font-extrabold leading-none text-[var(--text-primary)]">Qe2+</p>
@@ -187,7 +194,7 @@ export function Hero() {
                 </div>
                 <div className="space-y-2">
                   {["Critical swing", "Coach note", "Daily drill"].map((item) => (
-                    <div key={item} className="flex items-center justify-between rounded-xl border border-white/[0.06] px-3 py-2 text-sm">
+                    <div key={item} className="flex items-center justify-between rounded-xl border border-[var(--border)] px-3 py-2 text-sm">
                       <span className="text-[var(--text-secondary)]">{item}</span>
                       <span className="size-2 rounded-full bg-[var(--accent)]" />
                     </div>
@@ -196,6 +203,7 @@ export function Hero() {
               </div>
             </div>
           </div>
+        </MagicCard>
         </motion.div>
       </div>
 
@@ -210,35 +218,6 @@ export function Hero() {
       </motion.div>
 
       <style>{`
-        .knightowl-hero-mesh {
-          position: absolute;
-          inset: -18%;
-          background:
-            radial-gradient(ellipse at 20% 50%, #00d4aa08 0%, transparent 60%),
-            radial-gradient(ellipse at 80% 20%, #00c2ff06 0%, transparent 60%),
-            radial-gradient(ellipse at 50% 80%, #6366f108 0%, transparent 60%);
-          animation: knightowl-mesh-drift 14s ease-in-out infinite alternate;
-          pointer-events: none;
-        }
-
-        .knightowl-hero-grid {
-          position: absolute;
-          inset: 0;
-          background: repeating-conic-gradient(#ffffff04 0% 25%, transparent 0% 50%) 0 0 / 40px 40px;
-          opacity: 0.3;
-          pointer-events: none;
-        }
-
-        .knightowl-hero-noise {
-          position: absolute;
-          inset: 0;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.24'/%3E%3C/svg%3E");
-          mix-blend-mode: screen;
-          opacity: 0.12;
-          pointer-events: none;
-          animation: knightowl-noise-shift 1.4s steps(2) infinite;
-        }
-
         .knightowl-hero-dominate {
           animation: knightowl-text-shimmer 3s linear infinite;
           background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent));
@@ -312,26 +291,6 @@ export function Hero() {
           }
         }
 
-        @keyframes knightowl-mesh-drift {
-          from {
-            transform: scale(1) translate3d(0, 0, 0);
-          }
-
-          to {
-            transform: scale(1.08) translate3d(2%, -2%, 0);
-          }
-        }
-
-        @keyframes knightowl-noise-shift {
-          0% {
-            transform: translate3d(0, 0, 0);
-          }
-
-          100% {
-            transform: translate3d(-1%, 1%, 0);
-          }
-        }
-
         @keyframes knightowl-text-shimmer {
           0% {
             background-position: 0% 50%;
@@ -350,9 +309,7 @@ export function Hero() {
 
         @media (prefers-reduced-motion: reduce) {
           .knightowl-hero-card,
-          .knightowl-scroll-chevron,
-          .knightowl-hero-mesh,
-          .knightowl-hero-noise {
+          .knightowl-scroll-chevron {
             animation: none;
           }
         }

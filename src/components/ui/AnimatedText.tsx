@@ -3,20 +3,20 @@
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { type ElementType, useMemo, useRef } from "react";
+import { useMemo, useRef } from "react";
 
 import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(ScrollTrigger);
 
 type AnimatedTextProps = {
-  as?: ElementType;
+  as?: "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
   className?: string;
   text: string;
 };
 
 export function AnimatedText({ as: Tag = "h2", className, text }: AnimatedTextProps) {
-  const ref = useRef<HTMLElement | null>(null);
+  const ref = useRef<HTMLHeadingElement | HTMLParagraphElement | HTMLSpanElement | null>(null);
   const words = useMemo(() => text.split(" "), [text]);
 
   useGSAP(
@@ -47,7 +47,7 @@ export function AnimatedText({ as: Tag = "h2", className, text }: AnimatedTextPr
   );
 
   return (
-    <Tag ref={ref} className={cn("landing-animated-text", className)}>
+    <Tag ref={ref as any} className={cn("landing-animated-text", className)}>
       {words.map((word, index) => (
         <span key={`${word}-${index}`} className="inline-block overflow-hidden align-bottom">
           <span data-word className="inline-block pr-[0.26em]">
