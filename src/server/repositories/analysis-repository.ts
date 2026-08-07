@@ -7,6 +7,8 @@ import { hashString } from "@/lib/utils";
 import { getAllAnalysisRuns } from "@/data/sample-data";
 import { getDb } from "@/server/db/client";
 import { analysisRuns, importedPgns, moveEvaluations } from "@/server/db/schema";
+import { databaseEnabled, mongoDatabaseEnabled } from "@/server/env";
+import { getMongoAnalysisRunsCollection } from "@/server/mongodb/client";
 import { withDatabaseFallback } from "@/server/repositories/runtime";
 import type { AnalysisRun, SourceType } from "@/types/platform";
 
@@ -62,6 +64,27 @@ export async function persistAnalysisRun(run: AnalysisRun, source: SourceType = 
   const storedRun = saveFallbackAnalysisRun(run);
   if (userId) {
     getFallbackAnalysisOwnerStore().set(storedRun.id, userId);
+  }
+
+  if (mongoDatabaseEnabled()) {
+    try {
+      const collection = getMongoAnalysisRunsCollection();
+      const now = new Date();
+      await collection.updateOne(
+        { _id: storedRun.id },
+        {
+          $set: {
+            createdAt: now,
+            ownerId: userId,
+            source,
+            run: sanitizeAnalysisRun(storedRun),
+          },
+        },
+        { upsert: true },
+      );
+    } catch (error) {
+      console.warn("MongoDB analysis store unavailable, falling back to memory:", error);
+    }
   }
 
   return withDatabaseFallback(
@@ -151,6 +174,19 @@ export async function persistAnalysisRun(run: AnalysisRun, source: SourceType = 
 }
 
 export async function findAnalysisRunById(id: string) {
+  if (mongoDatabaseEnabled()) {
+    try {
+      const doc = await getMongoAnalysisRunsCollection().findOne({ _id: id });
+      if (doc) {
+        return sanitizeAnalysisRun(doc.run);
+      }
+      return getFallbackAnalysisRun(id) ?? null;
+    } catch (error) {
+      console.warn("MongoDB analysis store unavailable, falling back to memory:", error);
+      return getFallbackAnalysisRun(id) ?? null;
+    }
+  }
+
   return withDatabaseFallback(
     async () => {
       const db = getDb();
@@ -174,6 +210,19 @@ export async function claimAnalysisRunsForUser(userId: string, runIds: string[])
 
   if (uniqueRunIds.length === 0) {
     return 0;
+  }
+
+  if (mongoDatabaseEnabled()) {
+    try {
+      const collection = getMongoAnalysisRunsCollection();
+      const result = await collection.updateMany(
+        { _id: { $in: uniqueRunIds }, ownerId: { $exists: false } },
+        { $set: { ownerId: userId } },
+      );
+      return result.modifiedCount;
+    } catch (error) {
+      console.warn("MongoDB analysis store unavailable, falling back to memory:", error);
+    }
   }
 
   const fallbackClaimCount = () => {
@@ -208,6 +257,20 @@ export async function claimAnalysisRunsForUser(userId: string, runIds: string[])
 }
 
 export async function listAnalysisRuns(userId?: string) {
+  if (mongoDatabaseEnabled()) {
+    try {
+      const docs = await getMongoAnalysisRunsCollection()
+        .find(userId ? { ownerId: userId } : {})
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .toArray();
+      return docs.map((doc) => sanitizeAnalysisRun(doc.run));
+    } catch (error) {
+      console.warn("MongoDB analysis store unavailable, falling back to memory:", error);
+      return listFallbackAnalysisRuns(userId);
+    }
+  }
+
   return withDatabaseFallback(
     async () => {
       const db = getDb();

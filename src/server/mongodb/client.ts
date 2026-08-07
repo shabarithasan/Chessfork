@@ -1,7 +1,7 @@
 import { MongoClient, ServerApiVersion, type Collection } from "mongodb";
 
 import { env, mongoDatabaseEnabled } from "@/server/env";
-import type { Locale, SubscriptionTier } from "@/types/platform";
+import type { AnalysisRun, Locale, SourceType, SubscriptionTier } from "@/types/platform";
 
 export type MongoChessAccount = {
   id: string;
@@ -30,6 +30,14 @@ export type MongoUser = {
   updatedAt: Date;
 };
 
+export type MongoAnalysisRun = {
+  _id: string;
+  createdAt: Date;
+  ownerId?: string;
+  source?: SourceType;
+  run: AnalysisRun;
+};
+
 const globalForMongo = globalThis as typeof globalThis & {
   __chessforkMongoClient?: MongoClient;
   __chessforkMongoIndexes?: Promise<void>;
@@ -56,6 +64,10 @@ export function getMongoClient() {
 
 export function getMongoUsersCollection(): Collection<MongoUser> {
   return getMongoClient().db(env.MONGODB_DB).collection<MongoUser>("users");
+}
+
+export function getMongoAnalysisRunsCollection(): Collection<MongoAnalysisRun> {
+  return getMongoClient().db(env.MONGODB_DB).collection<MongoAnalysisRun>("analysisRuns");
 }
 
 export async function ensureMongoUserIndexes() {
