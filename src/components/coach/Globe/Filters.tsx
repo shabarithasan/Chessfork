@@ -12,11 +12,12 @@ export interface FilterState {
 interface FiltersProps {
   values: FilterState;
   onChange: (next: FilterState) => void;
+  timeControls?: readonly string[];
 }
 
-const TIME_OPTIONS = ["All", "Bullet", "Blitz", "Rapid", "Classical"] as const;
+const DEFAULT_TIME_OPTIONS = ["All", "Bullet", "Blitz", "Rapid", "Classical"] as const;
 
-export function Filters({ values, onChange }: FiltersProps) {
+export function Filters({ values, onChange, timeControls = DEFAULT_TIME_OPTIONS }: FiltersProps) {
   return (
     <div className="flex flex-wrap items-center gap-3">
       <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
@@ -24,7 +25,7 @@ export function Filters({ values, onChange }: FiltersProps) {
       </span>
 
       <div className="flex flex-wrap gap-1.5">
-        {TIME_OPTIONS.map((label) => {
+        {timeControls.map((label) => {
           const active = values.timeControl === label;
           return (
             <button
