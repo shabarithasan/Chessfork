@@ -1,6 +1,6 @@
 "use client";
 
-import { Line, OrbitControls } from "@react-three/drei";
+import { Line, OrbitControls, useTexture } from "@react-three/drei";
 import { Canvas, useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -73,17 +73,21 @@ function Atmosphere() {
   return (
     <mesh>
       <sphereGeometry args={[GLOBE_RADIUS * 1.08, 64, 64]} />
-      <meshBasicMaterial color="#f3c53d" transparent opacity={0.06} side={THREE.BackSide} />
+      <meshBasicMaterial color="#f3c53d" transparent opacity={0.03} side={THREE.BackSide} />
     </mesh>
   );
 }
 
 function GlobeSurface() {
+  const mapTexture = useTexture("/images/globe/world-map.jpg");
+  mapTexture.colorSpace = THREE.SRGBColorSpace;
+  mapTexture.anisotropy = 4;
+
   return (
     <mesh>
       <sphereGeometry args={[GLOBE_RADIUS, 72, 72]} />
       <meshStandardMaterial
-        color="#0a0e1a"
+        map={mapTexture}
         roughness={0.85}
         metalness={0.12}
       />
@@ -131,10 +135,10 @@ export function GlobeCanvas({ highlights, selected, onDotClick, arcs }: GlobeSce
       style={{ background: "transparent" }}
       gl={{ antialias: true, alpha: true }}
     >
-      <ambientLight intensity={0.22} />
-      <directionalLight position={[5, 3, 5]} intensity={0.6} color="#ffffff" />
-      <pointLight position={[-3, 1, 2]} intensity={0.4} color="#f3c53d" />
-      <pointLight position={[2, -2, -3]} intensity={0.3} color="#00d4aa" />
+      <ambientLight intensity={0.4} />
+      <directionalLight position={[5, 3, 5]} intensity={0.8} color="#ffffff" />
+      <pointLight position={[-3, 1, 2]} intensity={0.3} color="#f3c53d" />
+      <pointLight position={[2, -2, -3]} intensity={0.2} color="#00d4aa" />
 
       <group>
         <GlobeSurface />
