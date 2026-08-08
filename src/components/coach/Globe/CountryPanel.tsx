@@ -4,11 +4,10 @@ import { Calendar, Loader2, Sparkles, TrendingUp, Users, Zap } from "lucide-reac
 import { useState } from "react";
 
 import { cn } from "@/lib/utils";
-
-import type { CountryStats } from "./country-data";
+import { CountryGameData } from "@/lib/globe-types";
 
 interface CountryPanelProps {
-  selected: CountryStats | null;
+  selected: CountryGameData | null;
   className?: string;
 }
 
@@ -25,12 +24,12 @@ export function CountryPanel({ selected, className }: CountryPanelProps) {
           Click any country on the globe to explore its chess activity, openings, and AI-powered insights.
         </p>
         <div className="mt-6 grid grid-cols-2 gap-3">
-          <MiniStat icon={Users} label="Countries" value="178 active" />
-          <MiniStat icon={TrendingUp} label="Win rate" value="avg 49%" />
-          <MiniStat icon={Zap} label="Openings" value="18 popular" />
-          <MiniStat icon={Calendar} label="Games today" value="Thousands live" />
+          <MiniStat icon={Users} label="Countries" value="—" />
+          <MiniStat icon={TrendingUp} label="Win rate" value="—" />
+          <MiniStat icon={Zap} label="Openings" value="—" />
+          <MiniStat icon={Calendar} label="Games today" value="—" />
         </div>
-        <p className="mt-5 text-xs text-slate-600">Powered by Chessfork AI · Mock data from live game population</p>
+        <p className="mt-5 text-xs text-slate-600">Powered by Chessfork AI · Live data from Lichess & Chess.com</p>
       </div>
     );
   }
@@ -45,7 +44,12 @@ export function CountryPanel({ selected, className }: CountryPanelProps) {
             setGenerating(true);
             setInsights(null);
             setTimeout(() => {
-              setInsights([...selected.aiInsights]);
+              setInsights([
+                `Active games: ${selected.activeGames}`,
+                `Unique players: ${selected.uniquePlayers}`,
+                `Average rating: ${selected.averageRating}`,
+                `Top opening: ${selected.openings[0]?.name || "N/A"}`,
+              ]);
               setGenerating(false);
             }, 800);
           }}
@@ -58,59 +62,60 @@ export function CountryPanel({ selected, className }: CountryPanelProps) {
       </div>
 
       <div className="mt-4 flex items-center gap-3">
-        <span className="text-2xl">{selected.flag} {selected.name ? ` ${selected.name}` : ""}</span>
+        <span className="text-2xl">{selected.flag} {selected.countryName}</span>
       </div>
 
       <div className="mt-5 grid grid-cols-2 gap-3">
         <StatCard icon={<Users className="size-4 text-[#00d4aa]" />} label="Active Games" value={selected.activeGames} />
-        <StatCard icon={<Users className="size-4 text-[#00d4aa]" />} label="Players Online" value={selected.playersOnline} />
-        <StatCard icon={<Sparkles className="size-4 text-[#f3c53d]" />} label="Avg Rating" value={selected.avgRating} />
-        <StatCard icon={<TrendingUp className="size-4 text-[#00d4aa]" />} label="Win Rate Today" value={`${selected.winRateToday}%`} />
-        <StatCard icon={<Zap className="size-4 text-[#f3c53d]" />} label="Top Opening" value={selected.mostPlayedOpening} />
-        <StatCard icon={<TrendingUp className="size-4 text-[#f3c53d]" />} label="Time Control" value={selected.popularTimeControl} />
+        <StatCard icon={<Users className="size-4 text-[#00d4aa]" />} label="Unique Players" value={selected.uniquePlayers} />
+        <StatCard icon={<Sparkles className="size-4 text-[#f3c53d]" />} label="Avg Rating" value={selected.averageRating} />
+        <StatCard icon={<TrendingUp className="size-4 text-[#00d4aa]" />} label="Game Count" value={selected.gameCount} />
+        <StatCard icon={<Zap className="size-4 text-[#f3c53d]" />} label="Top Opening" value={selected.openings[0]?.name || "—"} />
+        <StatCard icon={<TrendingUp className="size-4 text-[#f3c53d]" />} label="Top Time Control" value={selected.timeControlDistribution[0]?.category || "—"} />
       </div>
 
       <div className="mt-5 space-y-2">
         <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Top Openings</p>
         <div className="flex flex-wrap gap-2">
-          {selected.openings.map((o: string) => (
-            <span key={o} className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] font-semibold text-slate-300">
-              {o}
+          {selected.openings.slice(0, 6).map((o: { name: string; count: number }) => (
+            <span key={o.name} className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] font-semibold text-slate-300">
+              {o.name} ({o.count})
             </span>
           ))}
         </div>
       </div>
 
       <div className="mt-5 space-y-2">
-        <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Game split</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Time Controls</p>
         <div className="flex gap-4 text-xs text-slate-400">
-          <span className="font-mono">Blitz: {selected.blitzGames}</span>
-          <span className="font-mono">Rapid: {selected.rapidGames}</span>
-          <span className="font-mono">Classical: {selected.classicalGames}</span>
+          {selected.timeControlDistribution.map((tc) => (
+            <span key={tc.category} className="font-mono">{tc.category}: {tc.count}</span>
+          ))}
         </div>
       </div>
 
-      {insights ?? selected.aiInsights ? (
+      {insights ?? selected.openings.length > 0 ? (
         <div className="mt-6 rounded-xl border border-[#f3c53d]/20 bg-[#f3c53d]/5 p-4">
           <span className="flex items-center gap-2 text-xs font-bold text-[#ffd966]">
-            <Sparkles className="size-4" /> AI Insights
+            <Sparkles className="size-4" /> Live Data Insights
           </span>
           <ul className="mt-2 space-y-1.5 text-xs leading-6 text-slate-300">
-            {(insights ?? selected.aiInsights).map((insight: string, i: number) => (
+            {(insights ?? [
+              `${selected.activeGames} active games from ${selected.uniquePlayers} unique players`,
+              `Average rating: ${selected.averageRating}`,
+              `Most popular: ${selected.openings[0]?.name || "N/A"} (${selected.openings[0]?.count || 0} games)`,
+              `Time control split: ${selected.timeControlDistribution.map(tc => `${tc.category}: ${tc.count}`).join(", ")}`,
+            ]).map((insight: string, i: number) => (
               <li key={i} className="text-xs leading-6 text-slate-300">{insight}</li>
             ))}
           </ul>
-          <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.04] p-3">
-            <p className="text-[11px] font-semibold text-[#ffd966]">AI Recommendation</p>
-            <p className="mt-1 text-xs leading-6 text-slate-400">{selected.aiRecommendation || "Study tactics to improve your position in this region."}</p>
-          </div>
         </div>
       ) : null}
 
       {generating ? (
         <div className="mt-6 flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-xs text-slate-400">
           <Loader2 className="size-4 animate-spin text-[#ffd966]" />
-          ChessFork AI is analyzing recent games in {selected.name}...
+          ChessFork AI is analyzing recent games in {selected.countryName}...
         </div>
       ) : null}
     </div>

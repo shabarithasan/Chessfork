@@ -1,11 +1,11 @@
 "use client";
 
-import { LiveGame } from "../chess-globe";
+import { LiveChessGame } from "@/lib/globe-types";
 
 interface LiveFeedProps {
-  games: LiveGame[];
-  selectedGame: LiveGame | null;
-  onGameSelect: (game: LiveGame) => void;
+  games: LiveChessGame[];
+  selectedGame: LiveChessGame | null;
+  onGameSelect: (game: LiveChessGame) => void;
   onClose: () => void;
 }
 
@@ -24,6 +24,16 @@ function getTimeControlColor(tc: string): string {
   if (base < 10) return "text-yellow-400 bg-yellow-400/10 border-yellow-400/20";
   if (base < 30) return "text-blue-400 bg-blue-400/10 border-blue-400/20";
   return "text-purple-400 bg-purple-400/10 border-purple-400/20";
+}
+
+function getCategoryColor(category: string): string {
+  switch (category) {
+    case "Bullet": return "text-red-400 bg-red-400/10 border-red-400/20";
+    case "Blitz": return "text-yellow-400 bg-yellow-400/10 border-yellow-400/20";
+    case "Rapid": return "text-blue-400 bg-blue-400/10 border-blue-400/20";
+    case "Classical": return "text-purple-400 bg-purple-400/10 border-purple-400/20";
+    default: return "text-white/50 bg-white/5 border-white/10";
+  }
 }
 
 export function LiveFeed({ games, selectedGame, onGameSelect, onClose }: LiveFeedProps) {
@@ -66,7 +76,7 @@ export function LiveFeed({ games, selectedGame, onGameSelect, onClose }: LiveFee
   );
 }
 
-function LiveGameCard({ game, isSelected, onClick }: { game: LiveGame; isSelected: boolean; onClick: () => void }) {
+function LiveGameCard({ game, isSelected, onClick }: { game: LiveChessGame; isSelected: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
@@ -77,8 +87,8 @@ function LiveGameCard({ game, isSelected, onClick }: { game: LiveGame; isSelecte
       }`}
     >
       <div className="flex items-center justify-between gap-2 mb-2">
-        <span className={`text-xs font-medium px-2 py-0.5 rounded ${getTimeControlColor(game.timeControl)}`}>
-          {formatTimeControl(game.timeControl)}
+        <span className={`text-xs font-medium px-2 py-0.5 rounded ${getCategoryColor(game.timeControlCategory)}`}>
+          {game.timeControlCategory}
         </span>
         <span className="text-xs text-white/50">{game.opening}</span>
       </div>
@@ -86,9 +96,10 @@ function LiveGameCard({ game, isSelected, onClick }: { game: LiveGame; isSelecte
       <div className="flex items-center justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-white truncate">{game.player1.name}</span>
-            <span className="text-white/50 text-sm">({game.player1.rating})</span>
-            <span className="text-white/30">{game.player1.country}</span>
+            <span className="font-medium text-white truncate">{game.white.name}</span>
+            <span className="text-white/50 text-sm">({game.white.rating})</span>
+            {game.white.flag && <span className="text-white/30">{game.white.flag}</span>}
+            <span className="text-white/30">{game.white.country}</span>
           </div>
         </div>
 
@@ -98,9 +109,10 @@ function LiveGameCard({ game, isSelected, onClick }: { game: LiveGame; isSelecte
 
         <div className="flex-1 min-w-0 text-right">
           <div className="flex items-center justify-end gap-2">
-            <span className="text-white/30">{game.player2.country}</span>
-            <span className="text-white/50 text-sm">({game.player2.rating})</span>
-            <span className="font-medium text-white truncate">{game.player2.name}</span>
+            {game.black.flag && <span className="text-white/30">{game.black.flag}</span>}
+            <span className="text-white/30">{game.black.country}</span>
+            <span className="text-white/50 text-sm">({game.black.rating})</span>
+            <span className="font-medium text-white truncate">{game.black.name}</span>
           </div>
         </div>
       </div>

@@ -1,9 +1,9 @@
 "use client";
 
-import { LiveGame } from "../chess-globe";
+import { LiveChessGame } from "@/lib/globe-types";
 
 interface GamePopupProps {
-  game: LiveGame;
+  game: LiveChessGame;
   onClose: () => void;
 }
 
@@ -22,6 +22,16 @@ function getTimeControlColor(tc: string): string {
   if (base < 10) return "text-yellow-400 bg-yellow-400/10 border-yellow-400/20";
   if (base < 30) return "text-blue-400 bg-blue-400/10 border-blue-400/20";
   return "text-purple-400 bg-purple-400/10 border-purple-400/20";
+}
+
+function getCategoryColor(category: string): string {
+  switch (category) {
+    case "Bullet": return "text-red-400 bg-red-400/10 border-red-400/20";
+    case "Blitz": return "text-yellow-400 bg-yellow-400/10 border-yellow-400/20";
+    case "Rapid": return "text-blue-400 bg-blue-400/10 border-blue-400/20";
+    case "Classical": return "text-purple-400 bg-purple-400/10 border-purple-400/20";
+    default: return "text-white/50 bg-white/5 border-white/10";
+  }
 }
 
 export function GamePopup({ game, onClose }: GamePopupProps) {
@@ -49,8 +59,8 @@ export function GamePopup({ game, onClose }: GamePopupProps) {
 
         <div className="p-4 space-y-4">
           <div className="flex items-center gap-3">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getTimeControlColor(game.timeControl)}`}>
-              {formatTimeControl(game.timeControl)}
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getCategoryColor(game.timeControlCategory)}`}>
+              {game.timeControlCategory}
             </span>
             <span className="px-3 py-1 rounded-full text-sm font-medium bg-white/5 text-white/70 border border-white/10">
               {game.opening}
@@ -59,13 +69,13 @@ export function GamePopup({ game, onClose }: GamePopupProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <PlayerCard
-              player={game.player1}
+              player={game.white}
               isWhite
               status={game.status}
               winner={game.winner}
             />
             <PlayerCard
-              player={game.player2}
+              player={game.black}
               isWhite={false}
               status={game.status}
               winner={game.winner}
@@ -115,9 +125,9 @@ function PlayerCard({
   status,
   winner,
 }: {
-  player: LiveGame["player1"];
+  player: LiveChessGame["white"];
   isWhite: boolean;
-  status: LiveGame["status"];
+  status: LiveChessGame["status"];
   winner?: string;
 }) {
   const isWinner = winner === player.name;
@@ -150,7 +160,7 @@ function PlayerCard({
       </div>
 
       <div className="font-semibold text-white truncate">{player.name}</div>
-      <div className="text-sm text-white/50">{player.rating} · {player.country}</div>
+      <div className="text-sm text-white/50">{player.rating} · {player.country} {player.flag || ""}</div>
 
       {status === "playing" && (
         <div className="mt-2 text-xs text-white/40">

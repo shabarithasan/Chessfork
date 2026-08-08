@@ -57,7 +57,7 @@ export function parseChessComTimeControl(tc: string): { base: number; increment:
   };
 }
 
-export function getTimeControlCategory(timeClass: string, timeControl: string): string {
+export function getTimeControlCategory(timeClass: string, timeControl: string): "Bullet" | "Blitz" | "Rapid" | "Classical" {
   if (timeClass === "bullet") return "Bullet";
   if (timeClass === "blitz") return "Blitz";
   if (timeClass === "rapid") return "Rapid";

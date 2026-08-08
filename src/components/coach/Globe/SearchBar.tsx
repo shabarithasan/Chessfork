@@ -3,13 +3,14 @@
 import { Search, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 
-import { getCountryStats, type CountryStats } from "./country-data";
+import { CountryGameData } from "@/lib/globe-types";
 
 interface SearchBarProps {
   onSelect: (code: string) => void;
+  countries: CountryGameData[];
 }
 
-export function SearchBar({ onSelect }: SearchBarProps) {
+export function SearchBar({ onSelect, countries }: SearchBarProps) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -17,18 +18,13 @@ export function SearchBar({ onSelect }: SearchBarProps) {
   const results = useMemo(() => {
     if (query.trim().length < 2) return [];
     const q = query.toLowerCase();
-    const codes = ["IN", "US", "DE", "RU", "FR", "BR", "CN", "GB", "JP", "ES", "IT", "CA", "AU", "SE", "NO", "NL", "PL", "UA", "TR", "AR", "MX", "ZA", "EG", "NG", "KE"];
-    return codes
-      .map((code) => getCountryStats(code))
-      .filter((s): s is CountryStats => s !== null)
-      .filter((s) =>
-        s.name.toLowerCase().includes(q) ||
-        s.code.toLowerCase() === q ||
-        s.mostPlayedOpening?.toLowerCase().includes(q) ||
-        s.openings.some((o) => o.toLowerCase().includes(q)),
+    return countries
+      .filter((c) =>
+        c.countryName.toLowerCase().includes(q) ||
+        c.countryCode.toLowerCase() === q
       )
       .slice(0, 6);
-  }, [query]);
+  }, [query, countries]);
 
   return (
     <div className="relative w-full max-w-sm">
@@ -40,10 +36,10 @@ export function SearchBar({ onSelect }: SearchBarProps) {
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.trim().length >= 2 && results.length > 0 && setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 200)}
-          placeholder="Search countries, openings..."
+          placeholder="Search countries..."
           className="w-full rounded-xl border border-white/10 bg-white/[0.06] py-2.5 pl-10 pr-9 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-[#f3c53d]/60 focus:bg-white/[0.10]"
         />
-        {query ? (
+        {query && (
           <button
             type="button"
             aria-label="Clear"
@@ -55,17 +51,17 @@ export function SearchBar({ onSelect }: SearchBarProps) {
           >
             <X className="size-4" />
           </button>
-        ) : null}
+        )}
       </div>
 
       {open && results.length > 0 ? (
         <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-white/10 bg-[#0d101c]/95 shadow-[0_20px_60px_rgba(0,0,0,0.5)] backdrop-blur">
           {results.map((r) => (
             <button
-              key={r.code}
+              key={r.countryCode}
               type="button"
               onMouseDown={() => {
-                onSelect(r.code);
+                onSelect(r.countryCode);
                 setQuery("");
                 setOpen(false);
               }}
@@ -73,10 +69,10 @@ export function SearchBar({ onSelect }: SearchBarProps) {
             >
               <span className="text-lg">{r.flag}</span>
               <div className="min-w-0 flex-1">
-                <span className="text-sm font-semibold text-white">{r.name}</span>
-                <span className="ml-2 text-xs text-slate-500">{r.activeGames} games</span>
+                <span className="text-sm font-semibold text-white">{r.countryName}</span>
+                <span className="ml-2 text-xs text-slate-500">{r.gameCount} games</span>
               </div>
-              <span className="text-xs font-mono text-amber-300">{r.mostPlayedOpening}</span>
+              <span className="text-xs font-mono text-amber-300">{r.openings[0]?.name || "—"}</span>
             </button>
           ))}
         </div>
