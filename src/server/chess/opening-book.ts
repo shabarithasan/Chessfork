@@ -1,5 +1,8 @@
-import { open, stat } from "node:fs/promises";
+import { mkdir, open, stat } from "node:fs/promises";
+import { createWriteStream } from "node:fs";
 import path from "node:path";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 
 import { Chess } from "chess.js";
 
@@ -235,8 +238,57 @@ async function recordCountForBook(bookPath: string) {
   return info.size / POLYGLOT_RECORD_BYTES;
 }
 
+const RUNTIME_BOOK_PATH = "/tmp/knightowl-sf18/Perfect2023.bin";
+
+async function exists(targetPath: string) {
+  const info = await stat(targetPath).catch(() => null);
+  return info?.isFile() ?? false;
+}
+
+let runtimeBookProvision: Promise<string | null> | null = null;
+
+async function provisionOpeningBook() {
+  if (process.platform !== "linux") {
+    return null;
+  }
+
+  if (await exists(RUNTIME_BOOK_PATH)) {
+    return RUNTIME_BOOK_PATH;
+  }
+
+  const assetUrl = `${env.NEXT_PUBLIC_APP_URL || "https://chessfork.vercel.app"}/engine/Perfect2023.bin`;
+
+  try {
+    const response = await fetch(assetUrl, {
+      headers: { "Accept-Encoding": "identity" },
+    });
+    if (!response.ok || !response.body) {
+      console.warn(`[opening-book] Runtime book asset not available (${response.status}): ${assetUrl}`);
+      return null;
+    }
+
+    await mkdir(path.dirname(RUNTIME_BOOK_PATH), { recursive: true });
+    await pipeline(Readable.fromWeb(response.body as never), createWriteStream(RUNTIME_BOOK_PATH));
+    console.info("[opening-book] Provisioned opening book into /tmp");
+    return RUNTIME_BOOK_PATH;
+  } catch (error) {
+    console.warn("[opening-book] Runtime book provisioning failed:", error);
+    return null;
+  }
+}
+
+async function resolveOpeningBookRuntimePath(configuredPath = env.OPENING_BOOK_PATH) {
+  const resolved = resolveOpeningBookPath(configuredPath);
+  if (resolved && (await exists(resolved))) {
+    return resolved;
+  }
+
+  runtimeBookProvision ??= provisionOpeningBook();
+  return runtimeBookProvision;
+}
+
 export async function findOpeningBookMoves(fen: string, bookPath = env.OPENING_BOOK_PATH) {
-  const resolvedBookPath = resolveOpeningBookPath(bookPath);
+  const resolvedBookPath = await resolveOpeningBookRuntimePath(bookPath);
   if (!resolvedBookPath) {
     return [];
   }
@@ -296,7 +348,7 @@ export async function findOpeningBookMoves(fen: string, bookPath = env.OPENING_B
 }
 
 export async function lookupOpeningBookMove(params: { fen: string; playedUci: string; ply: number }) {
-  const bookPath = resolveOpeningBookPath();
+  const bookPath = await resolveOpeningBookRuntimePath();
   const maxBookPlies = env.STOCKFISH_OPENING_BOOK_MAX_PLIES;
 
   if (!bookPath) {
@@ -344,7 +396,7 @@ export function openingBookCacheSignature() {
 }
 
 export async function getOpeningBookStatus() {
-  const bookPath = resolveOpeningBookPath();
+  const bookPath = await resolveOpeningBookRuntimePath();
   const info = bookPath ? await stat(/*turbopackIgnore: true*/ bookPath).catch(() => null) : null;
 
   return {
