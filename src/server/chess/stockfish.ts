@@ -187,16 +187,16 @@ export function getStockfishSearchSettings(
         searchLimit: "depth",
         threads: env.STOCKFISH_THREADS,
       }
-    : {
-        depth: env.QUICK_DEPTH,
-        actualMoveDepth: env.QUICK_DEPTH,
-        principalVariationCount: 3,
-        principalVariationLength: 4,
-        hashMb: env.STOCKFISH_HASH_MB,
-        moveTimeMs: env.QUICK_MOVETIME,
-        searchLimit: "movetime",
-        threads: env.STOCKFISH_THREADS,
-      };
+: {
+          depth: env.QUICK_DEPTH,
+          actualMoveDepth: env.QUICK_DEPTH,
+          principalVariationCount: 3,
+          principalVariationLength: 4,
+          hashMb: env.STOCKFISH_HASH_MB,
+          moveTimeMs: env.QUICK_MOVETIME,
+          searchLimit: "depth",
+          threads: env.STOCKFISH_THREADS,
+        };
 }
 
 function parseUciMove(uciMove: string) {
@@ -480,7 +480,7 @@ class StockfishSession {
       moveTimeMs: settings.moveTimeMs,
       searchLimit: settings.searchLimit,
     });
-    await runSearch(goCommand, settings.searchLimit === "depth" ? settings.moveTimeMs : null);
+    await runSearch(goCommand, settings.searchLimit === "depth" ? null : settings.moveTimeMs);
     await this.ready();
 
     const finalInfo = resultState.parsedInfoByRank.get(1) ?? null;
