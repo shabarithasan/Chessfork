@@ -9,6 +9,7 @@ import type { AnalysisRun, MoveGrade } from "@/types/platform";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const streamRequestSchema = z.object({
   mode: z.enum(["quick", "deep"]).default("quick"),

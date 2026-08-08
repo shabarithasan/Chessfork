@@ -46,7 +46,7 @@ const envSchema = z.object({
   AUTH_SESSION_SECRET: z.string(),
   STOCKFISH_PATH: z.string().optional().default(""),
   STOCKFISH_THREADS: z.coerce.number().int().min(1).max(32).optional().default(defaultStockfishThreads),
-  STOCKFISH_HASH_MB: z.coerce.number().int().min(1).max(16_384).optional().default(1024),
+  STOCKFISH_HASH_MB: z.coerce.number().int().min(1).max(16_384).optional().default(64),
   QUICK_DEPTH: z.coerce.number().int().min(1).max(60).optional().default(12),
   QUICK_MOVETIME: z.coerce.number().int().min(1).max(60_000).optional().default(2000),
   DEEP_DEPTH: z.coerce.number().int().min(1).max(60).optional().default(24),

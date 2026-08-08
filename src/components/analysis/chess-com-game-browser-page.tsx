@@ -363,6 +363,15 @@ export function ChessComGameBrowserPage({
   }, [initialUsername, linkedUsername]);
 
   useEffect(() => {
+    if (liveSession.error && showAnalysisOverlay) {
+      setMessage(liveSession.error);
+      setShowAnalysisOverlay(false);
+      setAnalyzingGameId(null);
+      setIsPending(false);
+    }
+  }, [liveSession.error, showAnalysisOverlay]);
+
+  useEffect(() => {
     if (liveSession.isFinished && liveSession.analysisId) {
       const reportLink = `/analysis/${liveSession.analysisId}`;
       navigatingToReportRef.current = true;
