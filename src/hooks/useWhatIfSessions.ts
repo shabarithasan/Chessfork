@@ -14,13 +14,30 @@ const PIECE_VALUE: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0
 function detectSacrifice(fenBefore: string, from: string, to: string): boolean {
   try {
     const c = new Chess(fenBefore);
+    const ourColor = c.turn();
+    const opponent = ourColor === "w" ? "b" : "w";
+    
     const move = c.move({ from, to, promotion: "q" });
-    if (!move.captured) return false;
+    if (!move) return false;
+    
     const movingValue = PIECE_VALUE[move.piece] ?? 0;
-    const capturedValue = PIECE_VALUE[move.captured] ?? 0;
+    const capturedValue = move.captured ? (PIECE_VALUE[move.captured] ?? 0) : 0;
+    
     if (movingValue <= capturedValue) return false;
-    const opponent = c.turn();
-    return c.isAttacked(move.to as Square, opponent);
+    if (!c.isAttacked(move.to as Square, opponent)) return false;
+    
+    const opponentMoves = c.moves({ verbose: true }) as { to: string; piece: string }[];
+    const attackers = opponentMoves.filter(m => m.to === to);
+    if (attackers.length === 0) return false;
+    
+    const minAttackerValue = Math.min(...attackers.map(m => PIECE_VALUE[m.piece] ?? 0));
+    const isDefended = c.isAttacked(move.to as Square, ourColor);
+    
+    if (isDefended) {
+      return (capturedValue - movingValue + minAttackerValue) < 0;
+    } else {
+      return (capturedValue - movingValue) < 0;
+    }
   } catch {
     return false;
   }
