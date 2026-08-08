@@ -5,6 +5,8 @@ import { runAnalysisFromPgn } from "@/lib/platform-service";
 import { getCurrentUser } from "@/server/auth/session";
 import { checkRateLimit } from "@/server/rate-limiter";
 
+export const maxDuration = 60;
+
 const analysisRunSchema = z.object({
   pgn: z.string().min(10),
   requestedDepth: z.enum(["quick", "deep"]).default("quick"),
