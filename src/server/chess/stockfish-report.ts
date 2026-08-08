@@ -487,7 +487,10 @@ export async function analyzePgnWithBestEngine(
           : best;
       const classification = classifyMove({
         ...classificationInput,
-        alternativeLines: alternativeLines.engineLines,
+        alternativeLines: alternativeLines.engineLines.map(line => ({
+          ...line,
+          score: turn === "w" ? line.score : -line.score,
+        })),
       });
       const grade = classification.label;
       const tablebaseHits =

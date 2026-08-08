@@ -38,7 +38,7 @@ function sameSan(left?: string, right?: string) {
 
 function getClassificationFacts(input: MoveClassificationInput) {
   const bestScoreForPlayer = input.bestScore;
-  const moveScoreForPlayer = -input.moveScore;
+  const moveScoreForPlayer = input.moveScore;
   const winProbabilityBefore = winProbabilityFromCentipawns(bestScoreForPlayer);
   const winProbabilityAfter = winProbabilityFromCentipawns(moveScoreForPlayer);
   const deltaPercent = (winProbabilityAfter - winProbabilityBefore) * 100;
