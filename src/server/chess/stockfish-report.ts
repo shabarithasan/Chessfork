@@ -467,7 +467,6 @@ export async function analyzePgnWithBestEngine(
         bestScore: best.score,
         moveScore: actual.score,
         playedMoveSan: move.san,
-        player: turn,
       };
       const needsOnlyMoveProbe = shouldProbeOnlyMove(classificationInput);
       const needsRefutationLines = cpLoss >= 90;

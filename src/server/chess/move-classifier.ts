@@ -8,8 +8,6 @@ const BRILLIANT_ALTERNATIVE_LOSS_PERCENT = -10;
 const GREAT_GAIN_PERCENT = 10;
 const GREAT_ALTERNATIVE_LOSS_PERCENT = -5;
 
-type PlayerColor = "b" | "w";
-
 export type MoveClassificationInput = {
   alternativeLines?: EngineLine[];
   bestMoveSan?: string;
@@ -17,7 +15,6 @@ export type MoveClassificationInput = {
   isBookMove?: boolean;
   moveScore: number;
   playedMoveSan: string;
-  player: PlayerColor;
 };
 
 export type MoveClassification = {
@@ -31,10 +28,6 @@ export type MoveClassification = {
   winProbabilityBefore: number;
 };
 
-function scoreForPlayer(score: number, player: PlayerColor) {
-  return player === "w" ? score : -score;
-}
-
 function normalizeSan(san: string) {
   return san.replaceAll("0", "O").replace(/[!?]+/g, "");
 }
@@ -44,8 +37,8 @@ function sameSan(left?: string, right?: string) {
 }
 
 function getClassificationFacts(input: MoveClassificationInput) {
-  const bestScoreForPlayer = scoreForPlayer(input.bestScore, input.player);
-  const moveScoreForPlayer = scoreForPlayer(input.moveScore, input.player);
+  const bestScoreForPlayer = input.bestScore;
+  const moveScoreForPlayer = -input.moveScore;
   const winProbabilityBefore = winProbabilityFromCentipawns(bestScoreForPlayer);
   const winProbabilityAfter = winProbabilityFromCentipawns(moveScoreForPlayer);
   const deltaPercent = (winProbabilityAfter - winProbabilityBefore) * 100;
@@ -54,7 +47,7 @@ function getClassificationFacts(input: MoveClassificationInput) {
   const alternativeLossesPercent = (input.alternativeLines ?? [])
     .filter((line) => !sameSan(line.san, input.playedMoveSan))
     .map((line) => {
-      const alternativeScoreForPlayer = scoreForPlayer(line.score, input.player);
+      const alternativeScoreForPlayer = line.score;
       return (winProbabilityFromCentipawns(alternativeScoreForPlayer) - winProbabilityBefore) * 100;
     });
 
