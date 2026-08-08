@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import type { AnalysisRun, EngineLine, MoveEvaluation, MoveGrade } from "@/types/platform";
 import ChessEvaluationGraph from "@/components/chess/ChessEvaluationGraph";
 import { AlternativeLines } from "@/components/chess/AlternativeLines";
+import { MoveDistributionBar } from "@/components/chess/MoveDistributionBar";
 import { PandaMascot } from "@/components/mascot/PandaMascot";
 import { useEngine } from "@/hooks/useEngine";
 import { useWhatIfSessions } from "@/hooks/useWhatIfSessions";
@@ -736,7 +737,15 @@ function RightPanel({
               <SettingsTab />
             </div>
           ) : (
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-3">
+            {/* ── 0. Move Summary Bar ── */}
+            <div className="shrink-0 px-1 pt-1">
+              <MoveDistributionBar
+                stats={reportStats}
+                side={analysis.subjectColor === "white" ? "left" : "right"}
+              />
+            </div>
+
             {/* ── 1. Move Detail Card ── */}
             <div className="min-h-[100px] shrink-0">
               <div className="relative min-h-[118px]">
@@ -1490,7 +1499,15 @@ function BoardWorkspace({
               style={{ transform: `scaleY(${evalScale})`, transformOrigin: "center bottom", opacity: 1 }}
             />
             <div className="absolute inset-x-0 top-1/2 h-px bg-[rgba(115,115,115,.7)]" />
-            <span className="absolute inset-x-0 bottom-1 text-center font-mono text-[9px] font-semibold tabular-nums tracking-[-0.5px] text-[#171717]">
+            
+            <span 
+              className={cn(
+                "absolute inset-x-0 text-center font-mono text-[9px] font-semibold tabular-nums tracking-[-0.5px]",
+                displayScore !== null && displayScore < 0 
+                  ? "top-1 text-white/90" 
+                  : "bottom-1 text-[#171717]"
+              )}
+            >
               {isAwaitingLiveEvaluation ? "…" : formatScore(displayScore)}
             </span>
           </div>

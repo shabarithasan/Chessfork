@@ -198,7 +198,7 @@ export async function analyzePgnClientSide(
       }
 
       // Analyze fenBefore and fenAfter
-      const best = await session.analyzeFen(fenBefore, { depth: searchDepth, multiPV: 1 });
+      const best = await session.analyzeFen(fenBefore, { depth: searchDepth, multiPV: 3 });
       const actual = await session.analyzeFen(fenAfter, { depth: Math.max(10, searchDepth - 2), multiPV: 1 });
 
       const bestMoverScore = turn === "w" ? best.score : -best.score;
@@ -216,13 +216,13 @@ export async function analyzePgnClientSide(
       };
 
       const needsOnlyMoveProbe = shouldProbeOnlyMove(classificationInput);
-      const needsDeepAlternativeLines = options.depth === "deep" && cpLoss >= 90;
       
       let alternativeLines = best;
-      if (needsOnlyMoveProbe || needsDeepAlternativeLines) {
+      if (needsOnlyMoveProbe && best.lines.length < 4) {
+        // If we specifically need to know if there's only one good move among many, probe slightly wider
         alternativeLines = await session.analyzeFen(fenBefore, {
           depth: searchDepth,
-          multiPV: needsOnlyMoveProbe ? 4 : 3,
+          multiPV: 4,
         });
       }
 
