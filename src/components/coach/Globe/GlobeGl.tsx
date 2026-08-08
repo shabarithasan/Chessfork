@@ -65,12 +65,13 @@ export function GlobeGl({
     if (!container || dimensions.width === 0 || dimensions.height === 0) return;
 
     const globe = new Globe(container)
-      .globeImageUrl("//unpkg.com/three-globe/example/img/earth-blue-marble.jpg")
-      .backgroundImageUrl("//unpkg.com/three-globe/example/img/night-sky.png")
+      .globeImageUrl("//unpkg.com/three-globe/example/img/earth-night.jpg")
+      .backgroundImageUrl("")
+      .backgroundColor("rgba(0,0,0,0)")
       .showAtmosphere(true)
-      .atmosphereColor("#ffffff")
-      .atmosphereAltitude(0.15)
-      .pointOfView({ lat: 0, lng: 0, altitude: 2.2 }, 0)
+      .atmosphereColor("#f3c53d")
+      .atmosphereAltitude(0.18)
+      .pointOfView({ lat: 20, lng: 60, altitude: 2.2 }, 0)
       .arcsData(arcsData)
       .arcColor((d: any) => d.color)
       .arcAltitude((d: any) => 0.12)

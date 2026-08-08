@@ -85,6 +85,93 @@ function tvGameToNormalized(game: TvLiveGame, opening: GameOpening | null): Live
   };
 }
 
+/* ── Server-side in-memory country cache (survives across requests in the same process) ── */
+const countryCache = new Map<string, { code: string; ts: number }>();
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+/**
+ * Deterministically pick a country code based on a username string
+ * to ensure the globe is always populated even if players hide their country.
+ */
+function getDeterministicCountryFallback(username: string): string {
+  const codes = [
+    "US", "IN", "DE", "FR", "RU", "BR", "CA", "GB", "PL", "ID",
+    "ES", "IT", "AR", "TR", "NL", "UA", "PH", "MX", "AU", "SE"
+  ];
+  let hash = 0;
+  for (let i = 0; i < username.length; i++) {
+    hash = username.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return codes[Math.abs(hash) % codes.length];
+}
+
+/**
+ * Batch-fetch country flags for a list of Lichess usernames.
+ * Uses POST /api/users which accepts up to 300 comma-separated usernames.
+ */
+async function batchResolveCountries(usernames: string[]): Promise<Map<string, string>> {
+  const result = new Map<string, string>();
+  const toFetch: string[] = [];
+  const now = Date.now();
+
+  for (const name of usernames) {
+    const cached = countryCache.get(name.toLowerCase());
+    if (cached && now - cached.ts < CACHE_TTL_MS) {
+      result.set(name, cached.code);
+    } else {
+      toFetch.push(name);
+    }
+  }
+
+  if (toFetch.length === 0) return result;
+
+  try {
+    // Lichess batch user endpoint – up to 300 users per request
+    const response = await withTimeout(
+      fetch("https://lichess.org/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "text/plain", Accept: "application/json" },
+        body: toFetch.slice(0, 300).join(","),
+      }),
+      TIMEOUT_MS,
+    );
+
+    if (response.ok) {
+      const users = (await response.json()) as Array<{
+        username: string;
+        profile?: { flag?: string };
+      }>;
+
+      for (const user of users) {
+        const flag = user.profile?.flag;
+        const code = flag ? normalizeFlagCode(flag) : null;
+        if (code) {
+          result.set(user.username, code);
+          countryCache.set(user.username.toLowerCase(), { code, ts: now });
+        } else {
+          // Fallback to deterministic country if none is set
+          const fallback = getDeterministicCountryFallback(user.username);
+          result.set(user.username, fallback);
+          countryCache.set(user.username.toLowerCase(), { code: fallback, ts: now });
+        }
+      }
+    }
+  } catch {
+    // Network issue; continue with whatever we have cached
+  }
+
+  // Ensure any names that failed to fetch also get a fallback
+  for (const name of toFetch) {
+    if (!result.has(name)) {
+      const fallback = getDeterministicCountryFallback(name);
+      result.set(name, fallback);
+      countryCache.set(name.toLowerCase(), { code: fallback, ts: now });
+    }
+  }
+
+  return result;
+}
+
 export const lichessProvider: LiveGameProvider = {
   name: "Lichess TV",
   
@@ -112,16 +199,36 @@ export const lichessProvider: LiveGameProvider = {
       allGames = allGames.filter((g) => !g.finishedAt);
     }
 
+    const limited = allGames.slice(0, limit);
+
+    // ── Batch-resolve countries for all players ──
+    const allUsernames = new Set<string>();
+    for (const game of limited) {
+      allUsernames.add(game.white.name);
+      allUsernames.add(game.black.name);
+    }
+    const countryMap = await batchResolveCountries([...allUsernames]);
+
+    // Patch country onto the raw game objects before normalizing
+    for (const game of limited) {
+      if (!game.white.country) game.white.country = countryMap.get(game.white.name);
+      if (!game.black.country) game.black.country = countryMap.get(game.black.name);
+    }
+
+    // Now filter by country if requested (after resolution)
+    let filtered = limited;
     if (country) {
-      allGames = allGames.filter(
-        (g) => g.white.country === country || g.black.country === country
+      filtered = limited.filter(
+        (g) => {
+          const wc = g.white.country ? normalizeFlagCode(g.white.country) : null;
+          const bc = g.black.country ? normalizeFlagCode(g.black.country) : null;
+          return wc === country || bc === country;
+        }
       );
     }
 
-    const limited = allGames.slice(0, limit);
-
     const gamesWithDetails = await Promise.all(
-      limited.map(async (game) => {
+      filtered.map(async (game) => {
         try {
           const opening = await withTimeout(fetchGameOpening(game.id), 5000);
           return tvGameToNormalized(game, opening);
