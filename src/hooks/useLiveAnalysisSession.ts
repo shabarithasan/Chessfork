@@ -115,9 +115,7 @@ export function useLiveAnalysisSession() {
     let whiteMoves = 0;
     let blackMoves = 0;
 
-import { analyzePgnClientSide, buildClientReport } from "@/lib/chess/client-analyzer";
-
-// ... skipping to startAnalysis ...
+    try {
       setState((prev) => ({ ...prev, engineStatus: "Connecting to Stockfish 18 WASM..." }));
 
       const evaluations = await analyzePgnClientSide(pgn, {

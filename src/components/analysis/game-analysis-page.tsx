@@ -34,6 +34,7 @@ import type { AnalysisRun, EngineLine, MoveEvaluation, MoveGrade } from "@/types
 import ChessEvaluationGraph from "@/components/chess/ChessEvaluationGraph";
 import { AlternativeLines } from "@/components/chess/AlternativeLines";
 import { MoveDistributionBar } from "@/components/chess/MoveDistributionBar";
+import { TrainerPanel } from "@/components/chess/TrainerPanel";
 import { PandaMascot } from "@/components/mascot/PandaMascot";
 import { useEngine } from "@/hooks/useEngine";
 import { useWhatIfSessions } from "@/hooks/useWhatIfSessions";
@@ -381,6 +382,16 @@ function RightPanel({
   llmLoading = false,
   currentSession,
   onPlayBestMove,
+  isTrainerMode,
+  trainerMistakes,
+  trainerIndex,
+  trainerStatus,
+  trainerAttempt,
+  onTrainerAttempt,
+  onTrainerNext,
+  onTrainerRetry,
+  onTrainerExit,
+  onStartTrainer,
 }: {
   moves: MoveEvaluation[];
   selectedMove: MoveEvaluation;
@@ -408,6 +419,18 @@ function RightPanel({
   llmLoading?: boolean;
   currentSession?: WhatIfSnapshot | null;
   onPlayBestMove?: (san: string) => void;
+
+  // Trainer Props
+  isTrainerMode?: boolean;
+  trainerMistakes?: MoveEvaluation[];
+  trainerIndex?: number;
+  trainerStatus?: "playing" | "success" | "failed" | "finished";
+  trainerAttempt?: string | null;
+  onTrainerAttempt?: (userSan: string, bestSan: string) => void;
+  onTrainerNext?: () => void;
+  onTrainerRetry?: () => void;
+  onTrainerExit?: () => void;
+  onStartTrainer?: () => void;
 }) {
   const [explainSections, setExplainSections] = useState<ExplainSection[] | null>(null);
   const [explainLoading, setExplainLoading] = useState(false);
@@ -670,24 +693,38 @@ function RightPanel({
 
   return (
     <aside className="h-screen flex flex-col bg-[#2c2b29] p-3 lg:w-[420px] overflow-hidden">
-      <div className="flex flex-col min-h-0 rounded-xl bg-[#242321] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-        <div className="grid grid-cols-4 gap-1 text-sm font-semibold text-stone-400">
-          {[
-            { icon: FileText, label: "Report" },
-            { icon: Search, label: "Analysis" },
-            { icon: BarChart3, label: "Insights" },
-            { icon: Settings, label: "" },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.label || (!tab.label && activeTab === "Settings");
-            return (
-              <button key={tab.label || "settings"} type="button" onClick={() => onTabChange(tab.label || "Settings")} className={cn("flex h-11 items-center justify-center gap-2 rounded-lg", isActive ? "bg-[#48433b] text-[#ffc12c]" : "hover:bg-white/[0.04]")}>
-                <Icon className="size-4" />
-                {tab.label ? <span>{tab.label}</span> : null}
-              </button>
-            );
-          })}
-        </div>
+        <div className="flex flex-col min-h-0 rounded-xl bg-[#242321] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] h-full">
+          {isTrainerMode && trainerMistakes && trainerIndex !== undefined ? (
+            <TrainerPanel
+              totalMistakes={trainerMistakes.length}
+              currentIndex={trainerIndex}
+              mistakeSan={trainerMistakes[trainerIndex]?.san ?? ""}
+              targetBestMove={trainerMistakes[trainerIndex]?.bestMove ?? ""}
+              status={trainerStatus ?? "playing"}
+              userAttemptSan={trainerAttempt ?? null}
+              onNext={onTrainerNext!}
+              onRetry={onTrainerRetry!}
+              onExit={onTrainerExit!}
+            />
+          ) : (
+            <>
+              <div className="grid grid-cols-4 gap-1 text-sm font-semibold text-stone-400">
+                {[
+                  { icon: FileText, label: "Report" },
+                  { icon: Search, label: "Analysis" },
+                  { icon: BarChart3, label: "Insights" },
+                  { icon: Settings, label: "" },
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.label || (!tab.label && activeTab === "Settings");
+                  return (
+                    <button key={tab.label || "settings"} type="button" onClick={() => onTabChange(tab.label || "Settings")} className={cn("flex h-11 items-center justify-center gap-2 rounded-lg", isActive ? "bg-[#48433b] text-[#ffc12c]" : "hover:bg-white/[0.04]")}>
+                      <Icon className="size-4" />
+                      {tab.label ? <span>{tab.label}</span> : null}
+                    </button>
+                  );
+                })}
+              </div>
 
         <div className="mt-3 flex-1 overflow-y-auto min-h-0 overflow-x-hidden">
           {activeTab === "Report" ? (
@@ -714,8 +751,7 @@ function RightPanel({
               }}
               onStartReview={() => onTabChange("Analysis")}
               onLearnFromMistakes={() => {
-                const target = moves.find((m) => m.grade === "Blunder" || m.grade === "Mistake");
-                if (target && setSelectedPly) setSelectedPly(target.ply);
+                if (onStartTrainer) onStartTrainer();
               }}
             />
           </div>
@@ -1117,6 +1153,8 @@ function RightPanel({
           </div>
         )}
         </div>
+        </>
+        )}
       </div>
     </aside>
   );
@@ -1142,6 +1180,10 @@ function BoardWorkspace({
   clearAltLine,
   onSelectWhatIfMove,
   showBestMoveArrow,
+  isTrainerMode,
+  trainerMistakes,
+  trainerIndex,
+  onTrainerAttempt,
 }: {
   analysis: AnalysisRun;
   moves: MoveEvaluation[];
@@ -1162,6 +1204,12 @@ function BoardWorkspace({
   showBestMoveArrow?: boolean;
   clearAltLine?: () => void;
   onSelectWhatIfMove?: (idx: number) => void;
+
+  // Trainer Props
+  isTrainerMode?: boolean;
+  trainerMistakes?: MoveEvaluation[];
+  trainerIndex?: number;
+  onTrainerAttempt?: (userSan: string, bestSan: string) => void;
 }) {
   const { boardColors, pieceThemeId } = useSettings();
   const isLiveActive = !!altFen || (whatIfMoves !== undefined && whatIfMoves.length > 0);
@@ -1427,13 +1475,23 @@ function BoardWorkspace({
       },
       onPieceDrop: ({ sourceSquare, targetSquare }: { sourceSquare: string; targetSquare: string | null }) => {
         clearSelection();
-        if (!targetSquare || !onWhatIfDrop) return false;
+        if (!targetSquare) return false;
+
         try {
           const chess = new Chess(boardFen);
           const move = chess.move({ from: sourceSquare, to: targetSquare, promotion: "q" });
           if (!move) return false;
-          onWhatIfDrop(chess.fen(), move.san);
-          return true;
+
+          if (isTrainerMode && trainerMistakes && trainerIndex !== undefined && onTrainerAttempt) {
+            onTrainerAttempt(move.san, trainerMistakes[trainerIndex]?.bestMove ?? "");
+            return false; // Snap back piece for trainer mode
+          }
+
+          if (onWhatIfDrop) {
+            onWhatIfDrop(chess.fen(), move.san);
+            return true;
+          }
+          return false;
         } catch {
           return false;
         }
@@ -1759,6 +1817,61 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
   const [selectedPly, setSelectedPly] = useState(0);
   const [startEngineLines, setStartEngineLines] = useState<EngineLine[]>([]);
   const [avatarUrls, setAvatarUrls] = useState<{ white?: string; black?: string }>({});
+
+  // ── Trainer State ──
+  const [isTrainerMode, setIsTrainerMode] = useState(false);
+  const [trainerMistakes, setTrainerMistakes] = useState<MoveEvaluation[]>([]);
+  const [trainerIndex, setTrainerIndex] = useState(0);
+  const [trainerStatus, setTrainerStatus] = useState<"playing" | "success" | "failed" | "finished">("playing");
+  const [trainerAttempt, setTrainerAttempt] = useState<string | null>(null);
+
+  const startTrainer = useCallback(() => {
+    const mistakes = moves.filter(
+      (m) => m.side === analysis.subjectColor && (m.grade === "Blunder" || m.grade === "Mistake")
+    );
+    if (mistakes.length === 0) return;
+    setTrainerMistakes(mistakes);
+    setTrainerIndex(0);
+    setTrainerStatus("playing");
+    setTrainerAttempt(null);
+    setIsTrainerMode(true);
+    // Jump to the position BEFORE the mistake
+    setSelectedPly(mistakes[0].ply - 1);
+  }, [moves, analysis.subjectColor, setSelectedPly]);
+
+  const handleTrainerNext = useCallback(() => {
+    const nextIdx = trainerIndex + 1;
+    if (nextIdx >= trainerMistakes.length) {
+      setTrainerStatus("finished");
+    } else {
+      setTrainerIndex(nextIdx);
+      setTrainerStatus("playing");
+      setTrainerAttempt(null);
+      setSelectedPly(trainerMistakes[nextIdx].ply - 1);
+    }
+  }, [trainerIndex, trainerMistakes, setSelectedPly]);
+
+  const handleTrainerRetry = useCallback(() => {
+    setTrainerStatus("playing");
+    setTrainerAttempt(null);
+    setSelectedPly(trainerMistakes[trainerIndex].ply - 1);
+  }, [trainerIndex, trainerMistakes, setSelectedPly]);
+
+  const handleTrainerAttempt = useCallback((userSan: string, bestSan: string) => {
+    setTrainerAttempt(userSan);
+    if (userSan === bestSan) {
+      setTrainerStatus("success");
+      // Actually play the correct move on the board by advancing the ply
+      setSelectedPly(trainerMistakes[trainerIndex].ply);
+    } else {
+      setTrainerStatus("failed");
+    }
+  }, [trainerIndex, trainerMistakes, setSelectedPly]);
+
+  const handleTrainerExit = useCallback(() => {
+    setIsTrainerMode(false);
+    setSelectedPly(0);
+  }, [setSelectedPly]);
 
   const { analysis: engineAnalysis, startAnalysis, stopAnalysis } = useEngine();
   const { showBestMoves, engineDepth } = useSettings();
@@ -2160,6 +2273,10 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
            onSelectWhatIfMove={onSelectWhatIfMove}
            clearAltLine={exitWhatIfMode}
            showBestMoveArrow={showBestMoveArrow}
+           isTrainerMode={isTrainerMode}
+           trainerMistakes={trainerMistakes}
+           trainerIndex={trainerIndex}
+           onTrainerAttempt={handleTrainerAttempt}
         />
         <RightPanel
           moves={moves}
@@ -2219,6 +2336,16 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
           llmAnalysis={llmAnalysis}
           llmLoading={llmLoading}
           currentSession={whatIf.currentSession}
+          isTrainerMode={isTrainerMode}
+          trainerMistakes={trainerMistakes}
+          trainerIndex={trainerIndex}
+          trainerStatus={trainerStatus}
+          trainerAttempt={trainerAttempt}
+          onTrainerAttempt={handleTrainerAttempt}
+          onTrainerNext={handleTrainerNext}
+          onTrainerRetry={handleTrainerRetry}
+          onTrainerExit={handleTrainerExit}
+          onStartTrainer={startTrainer}
         />
       </div>
       <div className="fixed left-4 top-4 z-20 flex items-center gap-2 rounded-lg border border-white/10 bg-[#242321]/95 px-3 py-2 lg:hidden">

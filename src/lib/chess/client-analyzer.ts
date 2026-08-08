@@ -242,7 +242,7 @@ export async function analyzePgnClientSide(
       });
 
       const refutationLine =
-        needsDeepAlternativeLines || cpLoss >= 90
+        needsOnlyMoveProbe || cpLoss >= 90
           ? {
               depth: actual.depth,
               line: [move.san], // Ideally we'd map actual.lines PV to SAN, but simplification for now
@@ -340,7 +340,7 @@ export function buildClientReport(
     accuracyBlack: clamp(accuracyBlack, 0, 100),
     moveCount: evaluations.length,
     pgn,
-    mode: depth === "deep" ? "deep" : "quick",
+    mode: "browser",
     depth,
     status: "complete",
     subject,
