@@ -16,7 +16,7 @@ const STOCKFISH_MATE_SCORE = 190_000;
 const STOCKFISH_LINE_TIMEOUT_MS = 180_000;
 
 export const STOCKFISH_RELEASE_TAG = "sf_18";
-export const STOCKFISH_ENGINE_VERSION = "stockfish-18-depth-movetime-book-syzygy-1";
+export const STOCKFISH_ENGINE_VERSION = "stockfish-18-depth-movetime-book-syzygy-2";
 
 export interface StockfishSearchSettings {
   actualMoveDepth: number;
@@ -155,8 +155,8 @@ export function getStockfishSearchSettings(
   if (surface === "position") {
     return requestedDepth === "deep"
       ? {
-          depth: env.DEEP_DEPTH,
-          actualMoveDepth: env.DEEP_DEPTH,
+          depth: env.STOCKFISH_DEPTH,
+          actualMoveDepth: env.STOCKFISH_ACTUAL_MOVE_DEPTH,
           principalVariationCount: 3,
           principalVariationLength: 6,
           hashMb: env.STOCKFISH_HASH_MB,
@@ -165,12 +165,12 @@ export function getStockfishSearchSettings(
           threads: env.STOCKFISH_THREADS,
         }
       : {
-          depth: env.QUICK_DEPTH,
-          actualMoveDepth: env.QUICK_DEPTH,
+          depth: env.STOCKFISH_QUICK_POSITION_DEPTH,
+          actualMoveDepth: env.STOCKFISH_QUICK_ACTUAL_MOVE_DEPTH,
           principalVariationCount: 3,
           principalVariationLength: 5,
           hashMb: env.STOCKFISH_HASH_MB,
-          moveTimeMs: env.QUICK_MOVETIME,
+          moveTimeMs: env.STOCKFISH_QUICK_MIN_MOVE_TIME_MS,
           searchLimit: "movetime",
           threads: env.STOCKFISH_THREADS,
         };
@@ -178,8 +178,8 @@ export function getStockfishSearchSettings(
 
   return requestedDepth === "deep"
     ? {
-        depth: env.DEEP_DEPTH,
-        actualMoveDepth: env.DEEP_DEPTH,
+        depth: env.STOCKFISH_DEPTH,
+        actualMoveDepth: env.STOCKFISH_ACTUAL_MOVE_DEPTH,
         principalVariationCount: 3,
         principalVariationLength: 5,
         hashMb: env.STOCKFISH_HASH_MB,
@@ -187,16 +187,16 @@ export function getStockfishSearchSettings(
         searchLimit: "depth",
         threads: env.STOCKFISH_THREADS,
       }
-: {
-          depth: env.QUICK_DEPTH,
-          actualMoveDepth: env.QUICK_DEPTH,
-          principalVariationCount: 3,
-          principalVariationLength: 4,
-          hashMb: env.STOCKFISH_HASH_MB,
-          moveTimeMs: env.QUICK_MOVETIME,
-          searchLimit: "depth",
-          threads: env.STOCKFISH_THREADS,
-        };
+    : {
+        depth: env.STOCKFISH_QUICK_REPORT_DEPTH,
+        actualMoveDepth: env.STOCKFISH_QUICK_ACTUAL_MOVE_DEPTH,
+        principalVariationCount: 3,
+        principalVariationLength: 4,
+        hashMb: env.STOCKFISH_HASH_MB,
+        moveTimeMs: env.STOCKFISH_QUICK_MIN_MOVE_TIME_MS,
+        searchLimit: "depth",
+        threads: env.STOCKFISH_THREADS,
+      };
 }
 
 function parseUciMove(uciMove: string) {
