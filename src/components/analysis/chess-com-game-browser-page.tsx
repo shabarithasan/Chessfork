@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Loader2, RefreshCw, Search } from "lucide-react";
-import { AnalysisLoadingOverlay } from "@/components/analysis/analysis-loading-overlay";
 import { LiveAnalysisScreen } from "@/components/analysis/live-analysis-screen";
 import { useLiveAnalysisSession } from "@/hooks/useLiveAnalysisSession";
 import { mergeGamePages } from "@/lib/chess/game-utils";
@@ -770,23 +769,11 @@ export function ChessComGameBrowserPage({
         </div>
       </section>
 
-      {showAnalysisOverlay && liveSession.isAnalyzing ? (
+      {showAnalysisOverlay ? (
         <LiveAnalysisScreen
           session={liveSession}
           whitePlayer={selectedPreview.white}
           blackPlayer={selectedPreview.black}
-        />
-      ) : showAnalysisOverlay ? (
-        <AnalysisLoadingOverlay
-          black={selectedPreview.black}
-          depth={analysisDepth}
-          openingLabel={selectedPreview.openingLabel}
-          previewFen={selectedPreview.previewFen}
-          previewMove={selectedPreview.previewMove}
-          previewMoveCount={selectedPreview.previewMoveCount}
-          source="chesscom"
-          timeControl={selectedPreview.timeControl}
-          white={selectedPreview.white}
         />
       ) : null}
     </>
