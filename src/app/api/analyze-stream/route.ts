@@ -18,19 +18,7 @@ const streamRequestSchema = z.object({
   subject: z.string().optional(),
 });
 
-const sessions = new Map<string, z.infer<typeof streamRequestSchema> & { createdAt: number }>();
-const sessionTtlMs = 5 * 60 * 1000;
 const moveGrades: MoveGrade[] = ["Brilliant", "Great", "Best", "Excellent", "Good", "Book", "Inaccuracy", "Mistake", "Blunder"];
-
-function cleanupSessions() {
-  const now = Date.now();
-
-  for (const [sessionId, session] of sessions.entries()) {
-    if (now - session.createdAt > sessionTtlMs) {
-      sessions.delete(sessionId);
-    }
-  }
-}
 
 function buildChartData(report: AnalysisRun) {
   return report.moveEvaluations.map((move) => ({
@@ -66,42 +54,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Invalid stream analysis payload." }, { status: 400 });
   }
 
-  cleanupSessions();
-
-  try {
-    const opening = detectOpeningFromPgn(parsed.data.pgn);
-    const moveCount = countPgnPlies(parsed.data.pgn);
-    const sessionId = crypto.randomUUID();
-    sessions.set(sessionId, {
-      ...parsed.data,
-      createdAt: Date.now(),
-    });
-
-    return NextResponse.json({
-      sessionId,
-      moveCount,
-      opening,
-    });
-  } catch (error) {
-    return NextResponse.json(
-      { message: error instanceof Error ? error.message : "Could not parse PGN." },
-      { status: 400 },
-    );
-  }
-}
-
-export async function GET(request: NextRequest) {
-  cleanupSessions();
-
-  const sessionId = request.nextUrl.searchParams.get("sessionId");
-  const session = sessionId ? sessions.get(sessionId) : null;
-
-  if (!session) {
-    return NextResponse.json({ message: "Analysis stream session expired." }, { status: 404 });
-  }
-
-  sessions.delete(sessionId!);
-
   const encoder = new TextEncoder();
   const startedAt = Date.now();
 
@@ -112,8 +64,8 @@ export async function GET(request: NextRequest) {
       };
 
       try {
-        const opening = detectOpeningFromPgn(session.pgn);
-        const totalMoves = countPgnPlies(session.pgn);
+        const opening = detectOpeningFromPgn(parsed.data.pgn);
+        const totalMoves = countPgnPlies(parsed.data.pgn);
 
         send("opening", {
           moveCount: totalMoves,
@@ -123,10 +75,10 @@ export async function GET(request: NextRequest) {
 
         const data = await runAnalysisFromPgn(
           {
-            pgn: session.pgn,
-            requestedDepth: session.mode,
-            source: session.source,
-            subject: session.subject,
+            pgn: parsed.data.pgn,
+            requestedDepth: parsed.data.mode,
+            source: parsed.data.source,
+            subject: parsed.data.subject,
           },
           await getCurrentUser(),
           {
