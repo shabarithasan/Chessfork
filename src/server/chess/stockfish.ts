@@ -1,6 +1,10 @@
 import { spawn } from "node:child_process";
-import { readdir, stat } from "node:fs/promises";
+import { chmod, mkdir, readdir, stat } from "node:fs/promises";
+import { createWriteStream } from "node:fs";
 import path from "node:path";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
+import { createGunzip } from "node:zlib";
 
 import { Chess } from "chess.js";
 
@@ -87,12 +91,57 @@ async function findBundledStockfishBinary() {
   return null;
 }
 
+const RUNTIME_ENGINE_PATH = "/tmp/knightowl-sf18/stockfish-ubuntu-x86-64";
+
+let runtimeEngineProvision: Promise<string | null> | null = null;
+
+async function provisionLinuxEngine() {
+  if (process.platform !== "linux") {
+    return null;
+  }
+
+  if (await exists(RUNTIME_ENGINE_PATH)) {
+    return RUNTIME_ENGINE_PATH;
+  }
+
+  const assetUrl = `${env.NEXT_PUBLIC_APP_URL || "https://chessfork.vercel.app"}/engine/stockfish-ubuntu-x86-64.gz`;
+
+  try {
+    const response = await fetch(assetUrl, {
+      headers: { "Accept-Encoding": "identity" },
+    });
+    if (!response.ok || !response.body) {
+      console.warn(`[stockfish] Runtime engine asset not available (${response.status}): ${assetUrl}`);
+      return null;
+    }
+
+    await mkdir(path.dirname(RUNTIME_ENGINE_PATH), { recursive: true });
+    await pipeline(
+      Readable.fromWeb(response.body as never),
+      createGunzip(),
+      createWriteStream(RUNTIME_ENGINE_PATH),
+    );
+    await chmod(RUNTIME_ENGINE_PATH, 0o755);
+    console.info("[stockfish] Provisioned linux engine into /tmp");
+    return RUNTIME_ENGINE_PATH;
+  } catch (error) {
+    console.warn("[stockfish] Runtime engine provisioning failed:", error);
+    return null;
+  }
+}
+
 export async function resolveStockfishBinaryPath() {
   if (env.STOCKFISH_PATH && (await exists(env.STOCKFISH_PATH))) {
     return env.STOCKFISH_PATH;
   }
 
-  return findBundledStockfishBinary();
+  const bundled = await findBundledStockfishBinary();
+  if (bundled) {
+    return bundled;
+  }
+
+  runtimeEngineProvision ??= provisionLinuxEngine();
+  return runtimeEngineProvision;
 }
 
 export async function stockfishAvailable() {
@@ -265,6 +314,10 @@ class StockfishSession {
     const binaryPath = await resolveStockfishBinaryPath();
     if (!binaryPath) {
       throw new Error("Stockfish binary not found. Run `npm run stockfish:install` or set STOCKFISH_PATH.");
+    }
+
+    if (process.platform !== "win32") {
+      await chmod(/* turbopackIgnore: true */ binaryPath, 0o755).catch(() => {});
     }
 
     const processHandle = spawn(binaryPath, [], {

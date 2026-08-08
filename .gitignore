@@ -34,6 +34,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# engine artifact (shipped via `vercel deploy` from local disk, must not enter git)
+public/engine/
+
 # vercel
 .vercel
 
