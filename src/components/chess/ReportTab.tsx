@@ -71,10 +71,10 @@ const STAT_ROWS: {
   countColor: string;
 }[] = [
   { key: "Brilliant", label: "Sigma",    badge: "sigma",     zeroColor: "#525252", countColor: "#525252" },
-  { key: "Excellent", label: "Awesome",  badge: "very_good", zeroColor: "#525252", countColor: "#658ba7" },
-  { key: "Great",     label: "Great",    badge: "good",      zeroColor: "#525252", countColor: "#6b8841" },
+  { key: "Great",     label: "Awesome",  badge: "very_good", zeroColor: "#525252", countColor: "#658ba7" },
   { key: "Best",      label: "Best",     badge: "best",      zeroColor: "#525252", countColor: "#6b8841" },
-  { key: "Good",      label: "Good",     badge: "good",      zeroColor: "#525252", countColor: "#6b8841" },
+  { key: "Excellent", label: "Nice",     badge: "good",      zeroColor: "#525252", countColor: "#6b8841" },
+  { key: "Good",      label: "Ok",       badge: "good",      zeroColor: "#525252", countColor: "#6b8841" },
   { key: "Inaccuracy",label: "Strange",  badge: "inaccuracy",zeroColor: "#525252", countColor: "#eac069" },
   { key: "Mistake",   label: "Bad",      badge: "mistake",   zeroColor: "#525252", countColor: "#d88c39" },
   { key: "Blunder",   label: "Clown",    badge: "blunder",   zeroColor: "#525252", countColor: "#a2251c" },

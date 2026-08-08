@@ -60,11 +60,11 @@ export function pieceThumbnailUrl(pieceTheme: string) {
 
 const DEFAULT_QUALITY_LABELS: Record<string, string> = {
   Brilliant: "Sigma",
-  "Very Good": "Awesome",
+  Great: "Awesome",
   Best: "Best",
   Excellent: "Nice",
   Good: "Ok",
-  Theoretical: "Theoretical",
+  Book: "Theoretical",
   Inaccuracy: "Strange",
   Mistake: "Bad",
   Blunder: "Clown",
