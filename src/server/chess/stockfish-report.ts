@@ -452,20 +452,14 @@ export async function analyzePgnWithBestEngine(
       });
       let cpLoss = normalizeCpLoss(bestMoverScore - actualMoverScore);
 
-      if (phase === "opening" && cpLoss < 180 && isPrincipledOpeningMove(move)) {
-        actualScore = Math.round(actualScore * 0.35);
-        caps = Math.max(caps, 94);
-        cpLoss = Math.min(cpLoss, 18);
-      }
-
       if (index < 3) {
         bestMoveChain.push(best.bestMove);
       }
 
       const classificationInput = {
         bestMoveSan: best.bestMove,
-        bestScore: best.score,
-        moveScore: actual.score,
+        bestScore: bestMoverScore,
+        moveScore: actualMoverScore,
         playedMoveSan: move.san,
       };
       const needsOnlyMoveProbe = shouldProbeOnlyMove(classificationInput);

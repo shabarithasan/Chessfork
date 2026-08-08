@@ -24,14 +24,14 @@ function getAnalysisCache() {
 }
 
 function gradeMove(cpLoss: number, moveNumber: number): MoveGrade {
-  if (moveNumber <= 8 && cpLoss < 30) return "Book";
-  if (moveNumber > 12 && cpLoss <= 4) return "Brilliant";
-  if (cpLoss <= 8) return "Best";
-  if (cpLoss <= 25) return "Excellent";
-  if (cpLoss <= 50) return "Great";
-  if (cpLoss <= 100) return "Good";
-  if (cpLoss <= 300) return "Inaccuracy";
-  if (cpLoss <= 500) return "Mistake";
+  if (moveNumber <= 8 && cpLoss < 20) return "Book";
+  if (moveNumber > 12 && cpLoss <= 2) return "Brilliant";
+  if (cpLoss <= 5) return "Best";
+  if (cpLoss <= 15) return "Excellent";
+  if (cpLoss <= 30) return "Great";
+  if (cpLoss <= 60) return "Good";
+  if (cpLoss <= 120) return "Inaccuracy";
+  if (cpLoss <= 250) return "Mistake";
   return "Blunder";
 }
 
@@ -256,11 +256,6 @@ export function analyzePgn(
     let caps = outcome.caps;
     let cpLoss = outcome.cpLoss;
     const phase = determinePhase(index + 1, moves.length);
-    if (phase === "opening" && cpLoss < 180 && isPrincipledOpeningMove(move)) {
-      actualScore = Math.round(actualScore * 0.35);
-      caps = Math.max(caps, 94);
-      cpLoss = Math.min(cpLoss, 18);
-    }
     const grade = gradeMove(cpLoss, Math.floor(index / 2) + 1);
 
     if (turn === "w") {

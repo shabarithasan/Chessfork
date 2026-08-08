@@ -15,11 +15,11 @@ export interface ClassifyResult {
 
 const GRADE_META: Record<MoveGrade, { symbol: string; label: string; maxCpLoss: number }> = {
   Brilliant: { symbol: "★", label: "Brilliant", maxCpLoss: 0 },
-  Best: { symbol: "●", label: "Best", maxCpLoss: 8 },
-  Excellent: { symbol: "○", label: "Excellent", maxCpLoss: 25 },
+  Best: { symbol: "●", label: "Best", maxCpLoss: 5 },
+  Excellent: { symbol: "○", label: "Excellent", maxCpLoss: 15 },
   Good: { symbol: "△", label: "Good", maxCpLoss: 50 },
-  Inaccuracy: { symbol: "⚠", label: "Inaccuracy", maxCpLoss: 100 },
-  Mistake: { symbol: "?", label: "Mistake", maxCpLoss: 200 },
+  Inaccuracy: { symbol: "⚠", label: "Inaccuracy", maxCpLoss: 120 },
+  Mistake: { symbol: "?", label: "Mistake", maxCpLoss: 250 },
   Blunder: { symbol: "??", label: "Blunder", maxCpLoss: Infinity },
 };
 
