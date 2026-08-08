@@ -9,7 +9,7 @@ import { buildAnalysisStory, normalizeCpLoss } from "@/lib/chess/report-helpers"
 import { accuracyFromCaps, capsFromEvaluations } from "@/lib/chess/rating";
 import { chooseAnalysisMode } from "@/lib/chess/router";
 import { clamp, hashString, slugify } from "@/lib/utils";
-import { classifyMove, shouldProbeOnlyMove } from "@/server/chess/move-classifier";
+import { classifyMove, shouldProbeOnlyMove } from "@/lib/chess/advanced-classifier";
 import { lookupOpeningBookMove, openingBookCacheSignature } from "@/server/chess/opening-book";
 import { withStockfishSession, getStockfishSearchSettings, stockfishAvailable, STOCKFISH_ENGINE_VERSION } from "@/server/chess/stockfish";
 import type { AnalysisDepth, AnalysisRun, MoveEvaluation, MoveGrade } from "@/types/platform";

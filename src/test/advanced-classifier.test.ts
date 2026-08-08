@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { classifyMove, shouldProbeOnlyMove } from "@/server/chess/move-classifier";
+import { classifyMove, shouldProbeOnlyMove } from "@/lib/chess/advanced-classifier";
 import type { EngineLine } from "@/types/platform";
 
 function line(san: string, score: number, rank: number): EngineLine {
