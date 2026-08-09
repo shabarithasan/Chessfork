@@ -110,8 +110,8 @@ export function useLiveAnalysisSession() {
     }
     abortControllerRef.current = new AbortController();
 
-    let whiteLossSum = 0;
-    let blackLossSum = 0;
+    let whiteCapsSum = 0;
+    let blackCapsSum = 0;
     let whiteMoves = 0;
     let blackMoves = 0;
 
@@ -125,17 +125,15 @@ export function useLiveAnalysisSession() {
           const progress = Math.round(((moveIndex + 1) / totalMoves) * 100);
 
           if (move.side === "white") {
-            whiteLossSum += move.cpLoss || 0;
+            whiteCapsSum += move.caps || 0;
             whiteMoves += 1;
           } else {
-            blackLossSum += move.cpLoss || 0;
+            blackCapsSum += move.caps || 0;
             blackMoves += 1;
           }
 
-          const avgWhiteLoss = whiteMoves > 0 ? whiteLossSum / whiteMoves : 0;
-          const avgBlackLoss = blackMoves > 0 ? blackLossSum / blackMoves : 0;
-          const whiteAcc = Math.max(0, Math.min(100, 100 - avgWhiteLoss * 0.15));
-          const blackAcc = Math.max(0, Math.min(100, 100 - avgBlackLoss * 0.15));
+          const whiteAcc = whiteMoves > 0 ? whiteCapsSum / whiteMoves : 100;
+          const blackAcc = blackMoves > 0 ? blackCapsSum / blackMoves : 100;
           const estWhite = Math.round(900 + whiteAcc * 12);
           const estBlack = Math.round(900 + blackAcc * 12);
 
