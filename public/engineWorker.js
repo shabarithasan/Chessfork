@@ -15,6 +15,7 @@ var _origPostMessage = self.postMessage.bind(self);
 // Intercept postMessage to capture Stockfish output
 if (!_isPthread) {
   self.postMessage = function(msg) {
+    console.log('[STOCKFISH->UI]', msg);
     try {
       if (typeof msg === 'string') {
         if (msg.startsWith('info') || msg === 'uciok' || msg.startsWith('bestmove') || msg === 'readyok') {
@@ -110,8 +111,11 @@ function beginSearch(data) {
   _currentFen = data.fen;
   _expectingBestmove = false;
   _isSearching = true;
+  console.log('[UI->STOCKFISH] setoption MultiPV ' + (data.multiPV || 3));
   _engineHandler({ data: 'setoption name MultiPV value ' + (data.multiPV || 3) });
+  console.log('[UI->STOCKFISH] position fen ' + data.fen);
   _engineHandler({ data: 'position fen ' + data.fen });
+  console.log('[UI->STOCKFISH] go depth ' + (data.depth || 14));
   _engineHandler({ data: 'go depth ' + (data.depth || 14) });
 }
 
@@ -141,6 +145,7 @@ if (!_isPthread) {
   _engineHandler = self.onmessage;
 
   // Initialize: send 'uci'
+  console.log('[UI->STOCKFISH] uci');
   _engineHandler({ data: 'uci' });
 
   // Wrap onmessage to handle command objects
@@ -162,6 +167,7 @@ if (!_isPthread) {
           if (_isSearching) {
             _pendingStart = data;
             _expectingBestmove = true;
+            console.log('[UI->STOCKFISH] stop');
             _engineHandler({ data: 'stop' });
           } else {
             beginSearch(data);
@@ -174,6 +180,7 @@ if (!_isPthread) {
           // wait for one when an actual search is active.
           if (_isSearching) {
             _expectingBestmove = true;
+            console.log('[UI->STOCKFISH] stop');
             _engineHandler({ data: 'stop' });
           }
         }

@@ -30,6 +30,7 @@ class StockfishClientSession {
 
       const timeout = setTimeout(() => {
         this.worker.removeEventListener("message", listener);
+        console.error("[UI] Stockfish timeout hit after 60s for FEN:", fen);
         reject(new Error("Stockfish timeout"));
       }, 60000); // 60s timeout just in case
 
