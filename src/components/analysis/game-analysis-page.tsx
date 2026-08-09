@@ -170,6 +170,22 @@ function BestMoveButton({ san, onClick }: { san: string; onClick?: () => void })
   );
 }
 
+function SpoilerBestMoveButton({ san, onClick, isRevealed, onReveal }: { san: string; onClick?: () => void; isRevealed: boolean; onReveal: () => void }) {
+  if (!isRevealed) {
+    return (
+      <button
+        type="button"
+        onClick={onReveal}
+        className="inline-flex cursor-pointer items-center gap-1.5 rounded-[4px] border border-neutral-600 bg-neutral-800 hover:bg-neutral-700 px-1.5 font-semibold text-neutral-300 transition-colors duration-150 text-[12px] leading-[1.4]"
+      >
+        <Search className="size-3 text-neutral-400" />
+        See best move
+      </button>
+    );
+  }
+  return <BestMoveButton san={san} onClick={onClick} />;
+}
+
 function formatScore(score: number | null) {
   if (score === null) return "";
   if (Math.abs(score) >= 100_000) return score > 0 ? "+M" : "-M";
@@ -437,6 +453,11 @@ function RightPanel({
   const explainCacheRef = useRef<Map<string, ExplainSection[]>>(new Map());
   const explainMoveRef = useRef<string>("");
   const { liveEngine } = useSettings();
+  const [revealedBestMove, setRevealedBestMove] = useState(false);
+
+  useEffect(() => {
+    setRevealedBestMove(false);
+  }, [selectedMove?.ply, altFen, whatIfSelectedIdx]);
 
   const isLiveActive = !!altFen;
 
@@ -814,27 +835,22 @@ function RightPanel({
                       )}
                     </div>
                     <p className="mt-1 min-h-[40px] text-[13px] leading-[1.45] text-neutral-700">
-                          {isLiveActive && currentWhatIfMove
-                            ? (() => {
-                                const wiGrade = currentWhatIfMove.grade ?? currentWhatIfEval?.grade;
-                                if (!wiGrade) return <span>Analyzing...</span>;
-                                if (wiGrade === "Brilliant") return <span>A brilliant find — the only way to keep the advantage. Continue with <BestMoveButton san={bestSan} onClick={() => onPlayBestMove?.(bestSan)} />.</span>;
-                                if (wiGrade === "Blunder") return <span>A critical error. <BestMoveButton san={bestSan} onClick={() => onPlayBestMove?.(bestSan)} /> would have kept the game alive.</span>;
-                                if (wiGrade === "Mistake") return <span>Better was <BestMoveButton san={bestSan} onClick={() => onPlayBestMove?.(bestSan)} />.</span>;
-                                if (wiGrade === "Inaccuracy") return <span><BestMoveButton san={bestSan} onClick={() => onPlayBestMove?.(bestSan)} /> was more accurate.</span>;
-                                if (wiGrade === "Best") return <span>The engine's top choice. Continue with <BestMoveButton san={bestSan} onClick={() => onPlayBestMove?.(bestSan)} />.</span>;
-                                if (wiGrade === "Excellent") return <span>A strong move — nearly as good as the best. Continue with <BestMoveButton san={bestSan} onClick={() => onPlayBestMove?.(bestSan)} />.</span>;
-                                if (wiGrade === "Great") return <span>A very good move. Continue with <BestMoveButton san={bestSan} onClick={() => onPlayBestMove?.(bestSan)} />.</span>;
-                                return <span>A safe, steady move. <BestMoveButton san={bestSan} onClick={() => onPlayBestMove?.(bestSan)} /> was more accurate.</span>;
-                              })()
-                            : (selectedMove.grade === "Brilliant" ? <span>A brilliant find — the only way to keep the advantage. Continue with <BestMoveButton san={bestSan} onClick={() => onPlayBestMove?.(bestSan)} />.</span> :
-                               selectedMove.grade === "Blunder" ? <span>A critical error. <BestMoveButton san={bestSan} onClick={() => onPlayBestMove?.(bestSan)} /> would have kept the game alive.</span> :
-                               selectedMove.grade === "Mistake" ? <span>Better was <BestMoveButton san={bestSan} onClick={() => onPlayBestMove?.(bestSan)} />.</span> :
-                               selectedMove.grade === "Inaccuracy" ? <span><BestMoveButton san={bestSan} onClick={() => onPlayBestMove?.(bestSan)} /> was more accurate.</span> :
-                               selectedMove.grade === "Best" ? <span>{selectedMove.cpLoss === 0 ? "The only move that keeps things balanced." : "The engine's top choice."} Continue with <BestMoveButton san={bestSan} onClick={() => onPlayBestMove?.(bestSan)} />.</span> :
-                               selectedMove.grade === "Excellent" ? <span>A strong move — nearly as good as the best. Continue with <BestMoveButton san={bestSan} onClick={() => onPlayBestMove?.(bestSan)} />.</span> :
-                               selectedMove.grade === "Great" ? <span>A very good move. Continue with <BestMoveButton san={bestSan} onClick={() => onPlayBestMove?.(bestSan)} />.</span> :
-                               <span>A safe, steady move. <BestMoveButton san={bestSan} onClick={() => onPlayBestMove?.(bestSan)} /> was more accurate.</span>)}
+                          {(() => {
+                            const grade = isLiveActive && currentWhatIfMove ? (currentWhatIfMove.grade ?? currentWhatIfEval?.grade) : selectedMove.grade;
+                            if (isLiveActive && currentWhatIfMove && !grade) return <span>Analyzing...</span>;
+                            
+                            const isMistake = grade === "Blunder" || grade === "Mistake" || grade === "Inaccuracy";
+                            const btn = <SpoilerBestMoveButton san={bestSan} onClick={() => onPlayBestMove?.(bestSan)} isRevealed={!isMistake || revealedBestMove} onReveal={() => setRevealedBestMove(true)} />;
+                            
+                            if (grade === "Brilliant") return <span>A brilliant find — the only way to keep the advantage. Continue with {btn}.</span>;
+                            if (grade === "Blunder") return <span>A critical error. {btn}{(!isMistake || revealedBestMove) && " would have kept the game alive."}</span>;
+                            if (grade === "Mistake") return <span>Better was {btn}{(!isMistake || revealedBestMove) && "."}</span>;
+                            if (grade === "Inaccuracy") return <span>{btn}{(!isMistake || revealedBestMove) && " was more accurate."}</span>;
+                            if (grade === "Best") return <span>{(!isLiveActive && selectedMove.cpLoss === 0) ? "The only move that keeps things balanced." : "The engine's top choice."} Continue with {btn}.</span>;
+                            if (grade === "Excellent") return <span>A strong move — nearly as good as the best. Continue with {btn}.</span>;
+                            if (grade === "Great") return <span>A very good move. Continue with {btn}.</span>;
+                            return <span>A safe, steady move. {btn}{(!isMistake || revealedBestMove) && " was more accurate."}</span>;
+                          })()}
                     </p>
                     {!isWhatIfSearching && isLiveActive && llmLoading && (
                       <p className="mt-1 text-[11px] leading-[1.4] text-neutral-500">
@@ -1028,6 +1044,10 @@ function RightPanel({
 
             {/* ── 2. Engine Lines ── */}
             {!isWhatIfSearching && (() => {
+              const currentGrade = isLiveActive && currentWhatIfMove ? (currentWhatIfMove.grade ?? currentWhatIfEval?.grade) : selectedMove.grade;
+              const isMistake = currentGrade === "Blunder" || currentGrade === "Mistake" || currentGrade === "Inaccuracy";
+              if (isMistake && !revealedBestMove) return null;
+
               let lines: EngineLine[] | undefined;
               let fenBefore = "";
               let moveNumber: number | undefined;
@@ -1084,14 +1104,20 @@ function RightPanel({
             )}
 
             {/* ── 4. Best move arrow toggle ── */}
-            {!isWhatIfSearching && (
-            <div className="mt-3 flex items-center gap-2 shrink-0">
-              <button type="button" onClick={onToggleBestMoveArrow} disabled={!selectedMove.engineLines?.[0]?.line?.length} className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 font-semibold transition-[background-color,transform] duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 h-9 text-[13.5px] ${showBestMoveArrow ? 'border-[#f3c53d]/30 bg-[#f3c53d]/10 text-[#f3c53d]' : 'bg-amber-400 text-[#171717] hover:bg-amber-500'}`}>
-                <BadgeIcon badge="best" size={showBestMoveArrow ? 16 : 18} />
-                {showBestMoveArrow ? 'Hide best move' : 'Show best move'}
-              </button>
-            </div>
-            )}
+            {!isWhatIfSearching && (() => {
+              const currentGrade = isLiveActive && currentWhatIfMove ? (currentWhatIfMove.grade ?? currentWhatIfEval?.grade) : selectedMove.grade;
+              const isMistake = currentGrade === "Blunder" || currentGrade === "Mistake" || currentGrade === "Inaccuracy";
+              if (isMistake && !revealedBestMove) return null;
+
+              return (
+                <div className="mt-3 flex items-center gap-2 shrink-0">
+                  <button type="button" onClick={onToggleBestMoveArrow} disabled={!selectedMove.engineLines?.[0]?.line?.length} className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 font-semibold transition-[background-color,transform] duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 h-9 text-[13.5px] ${showBestMoveArrow ? 'border-[#f3c53d]/30 bg-[#f3c53d]/10 text-[#f3c53d]' : 'bg-amber-400 text-[#171717] hover:bg-amber-500'}`}>
+                    <BadgeIcon badge="best" size={showBestMoveArrow ? 16 : 18} />
+                    {showBestMoveArrow ? 'Hide best move' : 'Show best move'}
+                  </button>
+                </div>
+              );
+            })()}
 
             {/* ── 5. Evaluation Graph ── */}
             {!isWhatIfSearching && (
