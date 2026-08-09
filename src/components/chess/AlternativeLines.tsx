@@ -48,7 +48,7 @@ function AlternativeLines({ lines, fenBefore, moveNumber, onSelectLine }: Altern
         {lines.map((line) => {
           const allMoves = [line.san, ...line.line.slice(1)];
           return (
-            <div key={`${line.rank}-${line.san}`} className="flex items-center gap-2 overflow-hidden h-[27px]">
+            <div key={line.rank} className="flex items-center gap-2 overflow-hidden h-[27px]">
               <span className="rounded border px-1.5 py-0.5 text-center font-mono font-semibold border-neutral-300 bg-neutral-100 text-neutral-900 min-w-[42px] text-[11px]">
                 {formatScore(line.score)}
               </span>

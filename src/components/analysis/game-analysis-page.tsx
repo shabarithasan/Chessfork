@@ -1077,16 +1077,32 @@ function RightPanel({
             })()}
 
             {/* ── 3. Engine Depth Indicator ── */}
+            {/* ── 3. Engine Depth Indicator ── */}
             {!isWhatIfSearching && liveEngine && (
             <div className="flex items-center gap-3 mt-[18px]">
               <div className="relative flex flex-1 items-center h-5">
-                <div className="relative h-[2px] w-full overflow-hidden rounded-full bg-neutral-700/70">
-                  <span className="absolute top-0 h-full w-[1.5%] rounded-full animate-scan-horizontal bg-amber-400" style={{ animationDelay: "0s", boxShadow: "rgba(251, 191, 36, 0.8) 0px 0px 4px" }} />
-                  <span className="absolute top-0 h-full w-[1.5%] rounded-full animate-scan-horizontal bg-amber-400/80" style={{ animationDelay: "0.2s", boxShadow: "rgba(251, 191, 36, 0.6) 0px 0px 4px" }} />
-                  <span className="absolute top-0 h-full w-[1.5%] rounded-full animate-scan-horizontal bg-amber-400/60" style={{ animationDelay: "0.4s", boxShadow: "rgba(251, 191, 36, 0.4) 0px 0px 4px" }} />
-                  <span className="absolute top-0 h-full w-[1.5%] rounded-full animate-scan-horizontal bg-amber-400/40" style={{ animationDelay: "0.65s", boxShadow: "rgba(251, 191, 36, 0.2) 0px 0px 4px" }} />
-                </div>
-                <div className="absolute left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-md border border-neutral-700 bg-neutral-800 px-1.5 py-0.5">
+                {engineAnalysis?.status === "analyzing" ? (
+                  <div className="relative h-[2px] w-full overflow-hidden rounded-full bg-neutral-700/70">
+                    <span className="absolute top-0 h-full w-[1.5%] rounded-full animate-scan-horizontal bg-amber-400" style={{ animationDelay: "0s", boxShadow: "rgba(251, 191, 36, 0.8) 0px 0px 4px" }} />
+                    <span className="absolute top-0 h-full w-[1.5%] rounded-full animate-scan-horizontal bg-amber-400/80" style={{ animationDelay: "0.2s", boxShadow: "rgba(251, 191, 36, 0.6) 0px 0px 4px" }} />
+                    <span className="absolute top-0 h-full w-[1.5%] rounded-full animate-scan-horizontal bg-amber-400/60" style={{ animationDelay: "0.4s", boxShadow: "rgba(251, 191, 36, 0.4) 0px 0px 4px" }} />
+                    <span className="absolute top-0 h-full w-[1.5%] rounded-full animate-scan-horizontal bg-amber-400/40" style={{ animationDelay: "0.65s", boxShadow: "rgba(251, 191, 36, 0.2) 0px 0px 4px" }} />
+                  </div>
+                ) : (
+                  <div className="flex w-full items-center justify-start ml-2">
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        const fen = isStartPosition ? "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" : selectedMove.fenAfter;
+                        startAnalysis(fen, { depth: 99 });
+                      }}
+                      className="rounded-md border border-[#f3c53d]/30 bg-[#f3c53d]/10 px-2.5 py-[3px] text-[10px] font-semibold text-[#f3c53d] hover:bg-[#f3c53d]/20 transition-colors uppercase tracking-wider"
+                    >
+                      Go deeper
+                    </button>
+                  </div>
+                )}
+                <div className="absolute left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-md border border-neutral-700 bg-neutral-800 px-1.5 py-0.5 pointer-events-none">
                   <span className="font-mono font-semibold leading-none tabular-nums text-[11px] text-amber-400">{pillarDepth ?? "—"}</span>
                 </div>
               </div>
@@ -1313,7 +1329,7 @@ function BoardWorkspace({
       return;
     }
     const fen = isStartPosition ? STARTING_FEN : selectedMove.fenAfter;
-    startAnalysis(fen, "deep");
+    startAnalysis(fen, { depth: 22 });
   }, [liveEngine, isLiveActive, selectedMove.fenAfter, isStartPosition, startAnalysis, stopAnalysis]);
 
   useEffect(() => {
