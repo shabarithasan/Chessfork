@@ -21,22 +21,29 @@ export function accuracyFromAverageCpLoss(cpLoss: number) {
   return clamp(100 - cpLoss / 2.4, 26, 99.4);
 }
 
-export function winProbabilityFromCentipawns(evalCentipawns: number) {
-  return 1 / (1 + 10 ** (-evalCentipawns / 400));
+export function winProbabilityFromCentipawns(evalCentipawns: number, materialCount = 32) {
+  // Scale centipawns based on material. A +2.00 advantage in an endgame (few pieces)
+  // is mathematically much stronger than +2.00 in the opening.
+  // This prevents the engine from calling a move a "Blunder" in a completely won endgame
+  // just because the score dropped from +8.00 to +5.00.
+  const multiplier = 32 / Math.max(materialCount, 4);
+  return 1 / (1 + 10 ** (-(evalCentipawns * multiplier) / 400));
 }
 
 export function capsFromEvaluations({
   bestScore,
   moveScore,
   worstScore = DEFAULT_WORST_MOVE_CP,
+  materialCount = 32,
 }: {
   bestScore: number;
   moveScore: number;
   worstScore?: number;
+  materialCount?: number;
 }) {
-  const winProbBest = winProbabilityFromCentipawns(bestScore);
-  const winProbMove = winProbabilityFromCentipawns(moveScore);
-  const winProbWorst = winProbabilityFromCentipawns(worstScore);
+  const winProbBest = winProbabilityFromCentipawns(bestScore, materialCount);
+  const winProbMove = winProbabilityFromCentipawns(moveScore, materialCount);
+  const winProbWorst = winProbabilityFromCentipawns(worstScore, materialCount);
   const denominator = winProbBest - winProbWorst;
 
   if (Math.abs(denominator) <= Number.EPSILON) {

@@ -197,15 +197,36 @@ export async function analyzePgnClientSide(
         }
       }
 
-      // Analyze fenBefore and fenAfter
       const best = await session.analyzeFen(fenBefore, { depth: searchDepth, multiPV: 3 });
-      const actual = await session.analyzeFen(fenAfter, { depth: Math.max(10, searchDepth - 2), multiPV: 1 });
 
-      const bestMoverScore = turn === "w" ? best.score : -best.score;
-      const actualMoverScore = turn === "w" ? actual.score : -actual.score;
-      const caps = capsFromEvaluations({ bestScore: bestMoverScore, moveScore: actualMoverScore });
+      const playedUci = moveToUci(move);
+      const playedLine = best.lines.find((l) => l.san === playedUci);
+
+      let actualMoverScore: number;
+      let actualDepth: number;
+      let actualScoreForWhite: number;
+
+      if (playedLine) {
+        // We found the move in the top 3! No need to search fenAfter.
+        actualMoverScore = playedLine.score;
+        actualDepth = playedLine.depth;
+        actualScoreForWhite = turn === "w" ? playedLine.score : -playedLine.score;
+      } else {
+        // Move was not in top 3. We must search fenAfter.
+        const actual = await session.analyzeFen(fenAfter, { depth: Math.max(10, searchDepth - 2), multiPV: 1 });
+        // actual.score is from the opponent's perspective (since fenAfter is opponent's turn).
+        // So the mover's score is -actual.score.
+        actualMoverScore = -actual.score;
+        actualDepth = actual.depth;
+        actualScoreForWhite = turn === "w" ? actualMoverScore : -actualMoverScore;
+      }
+
+      const bestMoverScore = best.score; // best.score is from mover's perspective.
+      const materialCount = fenBefore.split(" ")[0].replace(/[^a-zA-Z]/g, "").length;
+
+      const caps = capsFromEvaluations({ bestScore: bestMoverScore, moveScore: actualMoverScore, materialCount });
       const cpLoss = normalizeCpLoss(bestMoverScore - actualMoverScore);
-      const actualScore = actual.score; // Keep in White's perspective for UI
+      const actualScore = actualScoreForWhite; // Keep in White's perspective for UI
 
       const bestMoveSan = uciToSan(fenBefore, best.bestMove);
       const classificationInput = {
@@ -213,20 +234,19 @@ export async function analyzePgnClientSide(
         bestScore: bestMoverScore,
         moveScore: actualMoverScore,
         playedMoveSan: move.san,
+        materialCount,
       };
 
       const needsOnlyMoveProbe = shouldProbeOnlyMove(classificationInput);
       
       let alternativeLines = best;
       if (needsOnlyMoveProbe && best.lines.length < 4) {
-        // If we specifically need to know if there's only one good move among many, probe slightly wider
         alternativeLines = await session.analyzeFen(fenBefore, {
           depth: searchDepth,
           multiPV: 4,
         });
       }
 
-      // Map engine lines UCI to SAN
       const engineLines = alternativeLines.lines.map((l) => ({
         ...l,
         san: uciToSan(fenBefore, l.san),
@@ -237,19 +257,19 @@ export async function analyzePgnClientSide(
         ...classificationInput,
         alternativeLines: engineLines.map(line => ({
           ...line,
-          score: turn === "w" ? line.score : -line.score,
+          score: line.score, // already mover's perspective
         })),
       });
 
       const refutationLine =
         needsOnlyMoveProbe || cpLoss >= 90
           ? {
-              depth: actual.depth,
-              line: [move.san], // Ideally we'd map actual.lines PV to SAN, but simplification for now
+              depth: actualDepth,
+              line: [move.san], 
               nodes: 0,
               rank: 1,
               san: move.san,
-              score: actual.score,
+              score: actualScoreForWhite,
               tablebaseHits: 0,
             }
           : undefined;

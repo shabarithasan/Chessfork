@@ -15,6 +15,7 @@ export type MoveClassificationInput = {
   isBookMove?: boolean;
   moveScore: number;
   playedMoveSan: string;
+  materialCount?: number;
 };
 
 export type MoveClassification = {
@@ -39,8 +40,9 @@ function sameSan(left?: string, right?: string) {
 function getClassificationFacts(input: MoveClassificationInput) {
   const bestScoreForPlayer = input.bestScore;
   const moveScoreForPlayer = input.moveScore;
-  const winProbabilityBefore = winProbabilityFromCentipawns(bestScoreForPlayer);
-  const winProbabilityAfter = winProbabilityFromCentipawns(moveScoreForPlayer);
+  const materialCount = input.materialCount ?? 32;
+  const winProbabilityBefore = winProbabilityFromCentipawns(bestScoreForPlayer, materialCount);
+  const winProbabilityAfter = winProbabilityFromCentipawns(moveScoreForPlayer, materialCount);
   const deltaPercent = (winProbabilityAfter - winProbabilityBefore) * 100;
   const cpLoss = Math.max(0, bestScoreForPlayer - moveScoreForPlayer);
   const isTopEngineChoice = sameSan(input.playedMoveSan, input.bestMoveSan) || cpLoss <= BEST_MOVE_MARGIN_CP;
@@ -48,7 +50,7 @@ function getClassificationFacts(input: MoveClassificationInput) {
     .filter((line) => !sameSan(line.san, input.playedMoveSan))
     .map((line) => {
       const alternativeScoreForPlayer = line.score;
-      return (winProbabilityFromCentipawns(alternativeScoreForPlayer) - winProbabilityBefore) * 100;
+      return (winProbabilityFromCentipawns(alternativeScoreForPlayer, materialCount) - winProbabilityBefore) * 100;
     });
 
   return {
