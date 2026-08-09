@@ -17,7 +17,7 @@ class StockfishClientSession {
   private currentSearchId = 0;
 
   constructor() {
-    this.worker = new Worker("/stockfishWorker.js#/stockfish/stockfish.wasm");
+    this.worker = new Worker(`/stockfishWorker.js?v=${Date.now()}#/stockfish/stockfish.wasm`);
   }
 
   analyzeFen(
@@ -261,19 +261,6 @@ export async function analyzePgnClientSide(
         })),
       });
 
-      const refutationLine =
-        needsOnlyMoveProbe || cpLoss >= 90
-          ? {
-              depth: actualDepth,
-              line: [move.san], 
-              nodes: 0,
-              rank: 1,
-              san: move.san,
-              score: actualScoreForWhite,
-              tablebaseHits: 0,
-            }
-          : undefined;
-
       const evaluation: MoveEvaluation = {
         ply: index + 1,
         moveNumber: Math.floor(index / 2) + 1,
@@ -291,9 +278,8 @@ export async function analyzePgnClientSide(
         comment: buildComment(classification.label, cpLoss),
         bestMove: bestMoveSan,
         engineLines,
-        principalVariation: [move.san], // Simplification: we don't have full PV from UCI mapped properly yet
-        refutationLine,
-        depth: searchDepth,
+        principalVariation: playedLine ? playedLine.line : [move.san], // Simplification: we don't have full PV from UCI mapped properly yet
+        depth: actualDepth,
         nodes: 0,
         isCapture: move.isCapture(),
         isCheck: replay.isCheck(),
@@ -303,6 +289,10 @@ export async function analyzePgnClientSide(
 
       moveEvaluations.push(evaluation);
       options.onProgress({ move: evaluation, moveIndex: index, totalMoves: moves.length });
+    }
+  } catch (error: any) {
+    if (!options.abortSignal?.aborted) {
+      throw error;
     }
   } finally {
     session.dispose();
