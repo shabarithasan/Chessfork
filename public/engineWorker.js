@@ -45,13 +45,6 @@ if (!_isPthread) {
               _pendingStart = null;
               beginSearch(queuedStart);
             }
-          } else if (msg === 'readyok') {
-            if (_pendingSearchDataForReady) {
-              var searchData = _pendingSearchDataForReady;
-              _pendingSearchDataForReady = null;
-              _engineHandler({ data: 'position fen ' + searchData.fen });
-              _engineHandler({ data: 'go depth ' + (searchData.depth || 14) });
-            }
           } else if (msg.startsWith('bestmove')) {
             if (_expectingBestmove) {
               _expectingBestmove = false;
@@ -118,8 +111,8 @@ function beginSearch(data) {
   _expectingBestmove = false;
   _isSearching = true;
   _engineHandler({ data: 'setoption name MultiPV value ' + (data.multiPV || 3) });
-  _pendingSearchDataForReady = data;
-  _engineHandler({ data: 'isready' });
+  _engineHandler({ data: 'position fen ' + data.fen });
+  _engineHandler({ data: 'go depth ' + (data.depth || 14) });
 }
 
 // Load stockfish.js — this runs the auto-init and sets up onmessage
