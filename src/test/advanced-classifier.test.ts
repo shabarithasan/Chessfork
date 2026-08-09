@@ -40,9 +40,9 @@ describe("move classifier", () => {
 
   it.each([
     [30, "Good"],
-    [50, "Inaccuracy"],
-    [100, "Mistake"],
-    [200, "Blunder"],
+    [80, "Inaccuracy"],
+    [150, "Mistake"],
+    [300, "Blunder"],
   ] as const)("maps a %p cp drop from equality into %s", (cpLoss, expected) => {
     expect(
       classifyMove({
