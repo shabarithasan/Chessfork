@@ -100,9 +100,10 @@ export function classifyMove(input: MoveClassificationInput): MoveClassification
     facts.alternativeLossesPercent.length > 0 &&
     facts.alternativeLossesPercent.every((loss) => loss <= GREAT_ALTERNATIVE_LOSS_PERCENT);
 
+  const cpLoss = Math.max(0, input.bestScore - input.moveScore);
+
   if (
     facts.isTopEngineChoice &&
-    isCriticalEqualPosition &&
     facts.deltaPercent > BRILLIANT_GAIN_PERCENT &&
     allAlternativesLoseForBrilliant
   ) {
@@ -116,7 +117,6 @@ export function classifyMove(input: MoveClassificationInput): MoveClassification
 
   if (
     facts.isTopEngineChoice &&
-    isCriticalEqualPosition &&
     facts.deltaPercent > GREAT_GAIN_PERCENT &&
     allAlternativesLoseForGreat
   ) {
@@ -131,13 +131,13 @@ export function classifyMove(input: MoveClassificationInput): MoveClassification
   let grade: MoveGrade;
   if (facts.deltaPercent >= -0.5 && facts.isTopEngineChoice) {
     grade = "Best";
-  } else if (facts.deltaPercent >= -2) {
+  } else if (facts.deltaPercent >= -2 || cpLoss <= 15) {
     grade = "Excellent";
-  } else if (facts.deltaPercent >= -5) {
+  } else if (facts.deltaPercent >= -5 || cpLoss <= 60) {
     grade = "Good";
-  } else if (facts.deltaPercent >= -10) {
+  } else if (facts.deltaPercent >= -10 || cpLoss <= 120) {
     grade = "Inaccuracy";
-  } else if (facts.deltaPercent >= -20) {
+  } else if (facts.deltaPercent >= -20 || cpLoss <= 250) {
     grade = "Mistake";
   } else {
     grade = "Blunder";
