@@ -1,6 +1,6 @@
 import { clamp } from "@/lib/utils";
 
-const DEFAULT_WORST_MOVE_CP = -400;
+const DEFAULT_WORST_MOVE_CP = -150;
 
 export function expectedScore(playerRating: number, opponentRating: number) {
   return 1 / (1 + 10 ** ((opponentRating - playerRating) / 400));

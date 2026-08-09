@@ -104,7 +104,7 @@ export function classifyMove(input: MoveClassificationInput): MoveClassification
 
   if (
     facts.isTopEngineChoice &&
-    facts.deltaPercent > BRILLIANT_GAIN_PERCENT &&
+    (facts.deltaPercent > BRILLIANT_GAIN_PERCENT || facts.winProbabilityBefore > 0.8) &&
     allAlternativesLoseForBrilliant
   ) {
     return {
