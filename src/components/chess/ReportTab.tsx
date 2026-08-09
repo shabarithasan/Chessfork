@@ -2,6 +2,7 @@
 
 import ChessEvaluationGraph from "./ChessEvaluationGraph";
 import { useState } from "react";
+import Image from "next/image";
 import { PandaMascot } from "@/components/mascot/PandaMascot";
 
 /* ── Types ── */
@@ -226,7 +227,7 @@ export function ReportTab({
           <div className="flex justify-center">
             <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-[10px] bg-neutral-700 text-[21px] font-bold text-neutral-300">
               {showP1Img ? (
-                <img src={player1.avatarUrl} alt={player1.name} className="h-full w-full object-cover" onError={() => setP1ImgError(true)} />
+                <Image src={player1.avatarUrl!} alt={player1.name} width={56} height={56} className="h-full w-full object-cover" onError={() => setP1ImgError(true)} />
               ) : (
                 player1.name[0]?.toUpperCase() ?? "?"
               )}
@@ -236,7 +237,7 @@ export function ReportTab({
           <div className="flex justify-center">
             <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-[10px] bg-neutral-700 text-[21px] font-bold text-neutral-300 border-2 border-amber-400">
               {showP2Img ? (
-                <img src={player2.avatarUrl} alt={player2.name} className="h-full w-full object-cover" onError={() => setP2ImgError(true)} />
+                <Image src={player2.avatarUrl!} alt={player2.name} width={56} height={56} className="h-full w-full object-cover" onError={() => setP2ImgError(true)} />
               ) : (
                 player2.name[0]?.toUpperCase() ?? "?"
               )}

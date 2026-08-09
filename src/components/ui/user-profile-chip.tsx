@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 import { cn } from "@/lib/utils";
 
@@ -24,7 +25,7 @@ export function UserProfileChip({ username, rating, avatarUrl, href, className }
         style={{ width: 20, height: 20 }}
       >
         {avatarUrl ? (
-          <img src={avatarUrl} alt={username} className="h-full w-full object-cover" draggable={false} />
+          <Image src={avatarUrl} alt={username} width={20} height={20} className="h-full w-full object-cover" draggable={false} />
         ) : (
           username.charAt(0).toUpperCase()
         )}
