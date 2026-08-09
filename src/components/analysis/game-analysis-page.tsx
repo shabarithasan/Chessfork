@@ -825,7 +825,11 @@ function RightPanel({
                 <div className="min-w-0">
                   <div className="relative min-w-0 rounded-xl bg-[#f5f5f4] text-neutral-800 px-3.5 py-2.5">
                     <span className="absolute -left-[5px] rotate-45 rounded-[2px] bg-[#f5f5f4] top-[19px] h-3 w-3" />
-                    <span aria-hidden="true" className="float-left h-[42px] w-[44px]" />
+                    <span aria-hidden="true" className="float-left mr-2">
+                      <div className="relative h-[42px] w-[44px]">
+                        <PandaMascot size={44} />
+                      </div>
+                    </span>
                     <div className="flex items-center gap-2">
                       <BadgeIcon badge={GRADE_TO_BADGE[isLiveActive && currentWhatIfMove ? (currentWhatIfMove.grade ?? currentWhatIfEval?.grade ?? "") : selectedMove.grade]} size={18} />
                       <span className="font-mono font-semibold text-neutral-900 text-[15px]">{currentWhatIfMove?.san ?? selectedMove.san}</span>
@@ -1134,25 +1138,6 @@ function RightPanel({
                 </div>
               );
             })()}
-
-            {/* ── 5. Evaluation Graph ── */}
-            {!isWhatIfSearching && (
-            <div>
-              <ChessEvaluationGraph
-                scores={scoreValues}
-                annotations={isLiveActive ? {} : moveAnnotations}
-                currentMoveIndex={currentMoveIndex}
-                onMoveSelect={(idx) => {
-                  if (isLiveActive && onSelectWhatIfMove) {
-                    onSelectWhatIfMove(idx);
-                    return;
-                  }
-                  const target = moves[idx];
-                  if (target && setSelectedPly) setSelectedPly(target.ply);
-                }}
-              />
-            </div>
-            )}
 
             {/* ── 6. Nav Controls ── */}
             <div className="mt-3.5 shrink-0">
@@ -1590,8 +1575,8 @@ function BoardWorkspace({
     : 0.5;
 
   return (
-    <main className="flex min-h-0 w-full flex-1 flex-col items-center bg-[#11110f] px-8 py-3">
-      <div className="flex w-full max-w-[780px] flex-1 flex-col justify-center">
+    <main className="flex min-h-0 w-full flex-1 flex-col items-center justify-center bg-[#11110f] px-8 py-3">
+      <div className="flex w-full max-w-[580px] flex-col justify-center shrink-0">
         <div className="flex w-full flex-col gap-2">
         <div className="flex h-7 items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
@@ -1640,7 +1625,7 @@ function BoardWorkspace({
               {isAwaitingLiveEvaluation ? "…" : formatScore(displayScore)}
             </span>
           </div>
-          <div ref={boardRef} className="relative overflow-hidden rounded-md shadow-[0_10px_15px_rgba(0,0,0,.4),0_4px_6px_rgba(0,0,0,.2)] flex-1 aspect-square">
+          <div ref={boardRef} className="relative overflow-hidden rounded-lg shadow-[0_20px_40px_rgba(0,0,0,.6),0_8px_16px_rgba(0,0,0,.4)] flex-1 aspect-square">
             <Chessboard options={chessboardOptions} />
             {(() => {
               // Use what-if grade ONLY in what-if mode, otherwise strictly preserve the static game grade
