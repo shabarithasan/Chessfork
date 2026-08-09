@@ -1,5 +1,8 @@
 import { useCallback, useRef, useState } from "react";
 import { analyzePgnClientSide, buildClientReport } from "@/lib/chess/client-analyzer";
+import { readHeaders } from "@/lib/chess/pgn";
+import { hashString, slugify } from "@/lib/utils";
+import { accuracyFromCaps } from "@/lib/chess/rating";
 
 import type { AnalysisRun, MoveEvaluation, MoveGrade } from "@/types/platform";
 
@@ -100,7 +103,7 @@ export function useLiveAnalysisSession() {
         black: emptyMoveCounts(),
       },
       moveList: [],
-      engineStatus: "Parsing PGN...",
+      engineStatus: "Checking database cache...",
       analysisId: null,
       error: null,
     });
@@ -109,6 +112,51 @@ export function useLiveAnalysisSession() {
       abortControllerRef.current.abort();
     }
     abortControllerRef.current = new AbortController();
+
+    // 1. Compute expected analysis ID from PGN
+    try {
+      const headers = readHeaders(pgn);
+      const title = headers.Event || `${headers.White ?? "White"} vs ${headers.Black ?? "Black"}`;
+      const expectedId = slugify(`${title}-${hashString(pgn)}`);
+      
+      const res = await fetch(`/api/analysis/${expectedId}`);
+      if (res.ok) {
+        const cachedAnalysis = (await res.json()) as AnalysisRun;
+        
+        // Reconstruct stats from cached analysis
+        const whiteCounts = emptyMoveCounts();
+        const blackCounts = emptyMoveCounts();
+        
+        for (const m of cachedAnalysis.moveEvaluations) {
+          if (m.side === "white") whiteCounts[m.grade] = (whiteCounts[m.grade] || 0) + 1;
+          else blackCounts[m.grade] = (blackCounts[m.grade] || 0) + 1;
+        }
+
+        const whiteAcc = cachedAnalysis.accuracyWhite ?? 100;
+        const blackAcc = cachedAnalysis.accuracyBlack ?? 100;
+
+        setState((prev) => ({
+          ...prev,
+          analysisProgress: 100,
+          isAnalyzing: false,
+          isFinished: true,
+          analysisId: cachedAnalysis.id,
+          engineStatus: "Analysis loaded from cache",
+          whiteAccuracy: whiteAcc,
+          blackAccuracy: blackAcc,
+          estimatedRatingWhite: Math.round(900 + whiteAcc * 12),
+          estimatedRatingBlack: Math.round(900 + blackAcc * 12),
+          moveQualityCounts: { white: whiteCounts, black: blackCounts },
+          moveList: cachedAnalysis.moveEvaluations,
+          currentAnalyzedMove: cachedAnalysis.moveEvaluations[cachedAnalysis.moveEvaluations.length - 1],
+          replayBoardFen: cachedAnalysis.moveEvaluations[cachedAnalysis.moveEvaluations.length - 1]?.fenAfter || "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        }));
+        
+        return; // Early return, skip Stockfish entirely!
+      }
+    } catch (err) {
+      console.warn("Failed to check cache:", err);
+    }
 
     let whiteCapsSum = 0;
     let blackCapsSum = 0;

@@ -11,13 +11,14 @@ export type MoveAnalysisProgress = {
   moveIndex: number;
   totalMoves: number;
 };
+import { enginePool } from "@/lib/chess/engine-pool";
 
 class StockfishClientSession {
   private worker: Worker;
   private currentSearchId = 0;
 
   constructor() {
-    this.worker = new Worker(`/stockfishWorker.js?v=${Date.now()}#/stockfish/stockfish.wasm`);
+    this.worker = enginePool.getHeavyWorker();
   }
 
   analyzeFen(

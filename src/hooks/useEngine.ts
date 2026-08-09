@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import { lookupOpeningBook } from "@/lib/opening-book";
+import { enginePool } from "@/lib/chess/engine-pool";
 
 export interface EngineLine {
   multiPv: number;
@@ -34,10 +35,11 @@ export function useEngine() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const worker = new Worker("/stockfishWorker.js#/stockfish/stockfish.wasm");
+    const worker = enginePool.getLiveWorker();
     workerRef.current = worker;
 
-    worker.addEventListener("message", (e) => {
+    // Use a named function so we can remove it later
+    const messageHandler = (e: MessageEvent) => {
       const msg = e.data;
       if (msg.searchId && msg.searchId !== searchIdRef.current) {
         return;
@@ -69,12 +71,14 @@ export function useEngine() {
           }));
           break;
       }
-    });
+    };
+
+    worker.addEventListener("message", messageHandler);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       worker.postMessage({ command: "stop" });
-      worker.terminate();
+      worker.removeEventListener("message", messageHandler);
     };
   }, []);
 
