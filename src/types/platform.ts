@@ -13,7 +13,8 @@ export type MoveGrade =
   | "Book"
   | "Inaccuracy"
   | "Mistake"
-  | "Blunder";
+  | "Blunder"
+  | "Miss";
 
 export interface EngineLine {
   depth: number;

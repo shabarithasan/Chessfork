@@ -22,18 +22,18 @@ export function accuracyFromAverageCpLoss(cpLoss: number) {
 }
 
 export function winProbabilityFromCentipawns(evalCentipawns: number, materialCount = 32) {
-  // Scale centipawns based on material. A +2.00 advantage in an endgame (few pieces)
-  // is mathematically much stronger than +2.00 in the opening.
-  // This prevents the engine from calling a move a "Blunder" in a completely won endgame
-  // just because the score dropped from +8.00 to +5.00.
+  // Scale centipawns slightly based on material to avoid calling moves blunders in trivially won endgames,
+  // but keep the base curve anchored to the standard Chess.com formula.
   const multiplier = 32 / Math.max(materialCount, 4);
-  return 1 / (1 + 10 ** (-(evalCentipawns * multiplier) / 400));
+  const scaledCp = evalCentipawns * (multiplier * 0.5 + 0.5); // blend standard with material scaling
+  
+  // Standard CAPS v2 win probability curve (scaled 0 to 1)
+  return 0.5 + 0.5 * (2 / (1 + Math.exp(-0.00368208 * scaledCp)) - 1);
 }
 
 export function capsFromEvaluations({
   bestScore,
   moveScore,
-  worstScore = DEFAULT_WORST_MOVE_CP,
   materialCount = 32,
 }: {
   bestScore: number;
@@ -41,16 +41,19 @@ export function capsFromEvaluations({
   worstScore?: number;
   materialCount?: number;
 }) {
-  const winProbBest = winProbabilityFromCentipawns(bestScore, materialCount);
-  const winProbMove = winProbabilityFromCentipawns(moveScore, materialCount);
-  const winProbWorst = winProbabilityFromCentipawns(worstScore, materialCount);
-  const denominator = winProbBest - winProbWorst;
+  const winProbBest = winProbabilityFromCentipawns(bestScore, materialCount) * 100;
+  const winProbMove = winProbabilityFromCentipawns(moveScore, materialCount) * 100;
+  
+  const winProbLoss = winProbBest - winProbMove;
 
-  if (Math.abs(denominator) <= Number.EPSILON) {
-    return moveScore >= bestScore ? 100 : 0;
+  if (winProbLoss <= 0) {
+    return 100;
   }
 
-  return clamp(((winProbMove - winProbWorst) / denominator) * 100, 0, 100);
+  // Standard CAPS v2 move accuracy formula
+  const moveAccuracy = 103.1668 * Math.exp(-0.04354 * winProbLoss) - 3.1669;
+  
+  return clamp(moveAccuracy, 0, 100);
 }
 
 export function accuracyFromCaps(capsScores: number[]) {
@@ -58,5 +61,7 @@ export function accuracyFromCaps(capsScores: number[]) {
     return 0;
   }
 
-  return clamp(capsScores.reduce((total, score) => total + score, 0) / capsScores.length, 0, 100);
+  const avg = capsScores.reduce((total, score) => total + score, 0) / capsScores.length;
+  // A slight quadratic curve to penalize multiple mistakes more heavily
+  return Math.max(0, Math.min(100, Math.pow(avg / 100, 1.0) * 100)); // We use power of 1.0 to just keep the mean since the move accuracy formula itself is already tuned.
 }

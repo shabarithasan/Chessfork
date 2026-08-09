@@ -114,34 +114,25 @@ export function classifyMove(input: MoveClassificationInput): MoveClassification
 
   const cpLoss = Math.max(0, input.bestScore - input.moveScore);
 
+  let grade: MoveGrade;
+  
   if (
     facts.isTopEngineChoice &&
+    facts.deltaPercent >= 0 &&
     (facts.deltaPercent > BRILLIANT_GAIN_PERCENT || isCriticalEqualPosition) &&
     allAlternativesLoseForBrilliant
   ) {
-    return {
-      ...facts,
-      grade: "Brilliant",
-      isOnlyMove: true,
-      label: "Brilliant",
-    };
-  }
-
-  if (
+    grade = "Brilliant";
+  } else if (
     facts.isTopEngineChoice &&
+    facts.deltaPercent >= 0 &&
     facts.deltaPercent > GREAT_GAIN_PERCENT &&
     allAlternativesLoseForGreat
   ) {
-    return {
-      ...facts,
-      grade: "Great",
-      isOnlyMove: true,
-      label: "Great",
-    };
-  }
-
-  let grade: MoveGrade;
-  if (facts.deltaPercent >= -0.5 && facts.isTopEngineChoice) {
+    grade = "Great";
+  } else if (facts.winProbabilityBefore >= 0.70 && facts.winProbabilityAfter <= 0.55 && facts.deltaPercent <= -15) {
+    grade = "Miss";
+  } else if (facts.deltaPercent >= -0.5 && facts.isTopEngineChoice) {
     grade = "Best";
   } else if (facts.deltaPercent >= -2 || cpLoss <= 15) {
     grade = "Excellent";
@@ -158,7 +149,7 @@ export function classifyMove(input: MoveClassificationInput): MoveClassification
   return {
     ...facts,
     grade,
-    isOnlyMove: false,
+    isOnlyMove: grade === "Brilliant" || grade === "Great",
     label: grade,
   };
 }

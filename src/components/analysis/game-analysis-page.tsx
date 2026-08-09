@@ -1579,6 +1579,7 @@ function BoardWorkspace({
     Inaccuracy: "inaccuracy",
     Mistake: "mistake",
     Blunder: "blunder",
+    Miss: "miss",
   };
 
   const isAwaitingLiveEvaluation = isLiveActive && displayScore === null;
