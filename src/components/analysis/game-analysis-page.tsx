@@ -455,26 +455,42 @@ function RightPanel({
     : null;
 
   // Override display values when in what-if mode
-  const liveEvalScore = snapEval?.type === "cp" ? (snapEval as { type: "cp"; value: number }).value * 100 : (snapEval?.type === "mate" ? ((snapEval as { type: "mate"; value: number }).value > 0 ? 100000 : -100000) : null);
-  const displayScore = isLiveActive && liveEvalScore !== null ? liveEvalScore : (isLiveActive ? null : selectedMove.score);
+  const liveEvalScore = isLiveActive
+    ? (snapEval?.type === "cp" ? (snapEval as { type: "cp"; value: number }).value * 100 : (snapEval?.type === "mate" ? ((snapEval as { type: "mate"; value: number }).value > 0 ? 100000 : -100000) : null))
+    : (liveEngine && engineAnalysis?.evaluation ? (engineAnalysis.evaluation.type === "cp" ? engineAnalysis.evaluation.value * 100 : (engineAnalysis.evaluation.value > 0 ? 100000 : -100000)) : null);
+
+  const displayScore = liveEvalScore !== null ? liveEvalScore : selectedMove.score;
   const isWhatIfSearching = isLiveActive && !currentSession;
-  const isLiveEngineActive = isWhatIfSearching;
-  const liveEngineDepth = isLiveActive ? (snapDepth ?? 0) : null;
+  const isLiveEngineActive = isWhatIfSearching || (liveEngine && !isLiveActive && engineAnalysis?.status === "analyzing");
+  const liveEngineDepth = isLiveActive ? (snapDepth ?? 0) : (liveEngine && !isLiveActive ? engineAnalysis?.depth ?? 0 : null);
   const whatIfLeafFenResolved = snapFen ?? "";
 
-  // Derive engine lines from snapshot topMoves
+  // Derive engine lines from snapshot topMoves or live engineAnalysis
   const liveLinesResolved = useMemo((): EngineLine[] => {
-    if (!currentSession?.topMoves) return [];
-    return currentSession.topMoves.map((m, i) => ({
-      rank: i + 1,
-      san: m.san,
-      score: m.eval,
-      depth: currentSession.depth,
-      mate: m.mate ?? undefined,
-      line: m.line,
-      nodes: 0,
-    }));
-  }, [currentSession]);
+    if (isLiveActive) {
+      if (!currentSession?.topMoves) return [];
+      return currentSession.topMoves.map((m, i) => ({
+        rank: i + 1,
+        san: m.san,
+        score: m.eval,
+        depth: currentSession.depth,
+        mate: m.mate ?? undefined,
+        line: m.line,
+        nodes: 0,
+      }));
+    } else if (liveEngine && engineAnalysis?.lines) {
+      return engineAnalysis.lines.map((l, i) => ({
+        rank: i + 1,
+        san: l.pv[0] ?? "",
+        score: l.evaluation.type === "cp" ? Math.round(l.evaluation.value * 100) : (l.evaluation.value > 0 ? 10000 : -10000),
+        depth: engineAnalysis.depth,
+        mate: l.evaluation.type === "mate" ? l.evaluation.value : undefined,
+        line: l.pv,
+        nodes: 0,
+      }));
+    }
+    return [];
+  }, [currentSession, isLiveActive, liveEngine, engineAnalysis]);
 
   const scoreValues = useMemo(() => {
     if (isLiveActive) {
@@ -868,6 +884,7 @@ function RightPanel({
                       const be = bl?.eval ?? selectedMove.score;
                       const el = Math.abs(be - pe);
                       const gr = isLiveActive ? (currentWhatIfMove?.grade ?? currentWhatIfEval?.grade ?? "") : selectedMove.grade;
+                      if (!gr) return null;
                       const themeKeys = getThemeKeys([]);
                       const difficulty = computeDifficulty(gr, el, currentSession?.depth ?? selectedMove.depth ?? 0);
                       return (
@@ -1014,9 +1031,10 @@ function RightPanel({
               let lines: EngineLine[] | undefined;
               let fenBefore = "";
               let moveNumber: number | undefined;
-              if (isLiveActive && liveLinesResolved && liveLinesResolved.length > 0) {
+              if (liveLinesResolved && liveLinesResolved.length > 0) {
                 lines = liveLinesResolved;
-                fenBefore = whatIfLeafFenResolved;
+                fenBefore = isLiveActive ? whatIfLeafFenResolved : (isStartPosition ? "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" : selectedMove.fenBefore);
+                if (!isLiveActive) moveNumber = selectedMove.moveNumber;
               } else if (!isLiveActive && isStartPosition && startEngineLines && startEngineLines.length > 0) {
                 lines = startEngineLines;
                 fenBefore = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -1261,6 +1279,16 @@ function BoardWorkspace({
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [clearSelection]);
+
+  // Auto-run engine on current game move if Live Engine is enabled and we are not in what-if mode
+  useEffect(() => {
+    if (!liveEngine || isLiveActive) {
+      if (!isLiveActive) stopAnalysis(); // only stop if we aren't in what-if mode (what-if manages its own engine state)
+      return;
+    }
+    const fen = isStartPosition ? STARTING_FEN : selectedMove.fenAfter;
+    startAnalysis(fen, "deep");
+  }, [liveEngine, isLiveActive, selectedMove.fenAfter, isStartPosition, startAnalysis, stopAnalysis]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -1572,9 +1600,9 @@ function BoardWorkspace({
           <div ref={boardRef} className="relative overflow-hidden rounded-md shadow-[0_10px_15px_rgba(0,0,0,.4),0_4px_6px_rgba(0,0,0,.2)] flex-1 aspect-square">
             <Chessboard options={chessboardOptions} />
             {(() => {
-              // Use what-if grade in what-if mode, otherwise game grade
+              // Use what-if grade ONLY in what-if mode, otherwise strictly preserve the static game grade
               const wiGrade = isLiveActive ? (snapGrade ?? null) : null;
-              const gradeForBadge = isLiveActive ? wiGrade : (wiGrade ?? (!altFen && isStartPosition ? null : selectedMove.grade));
+              const gradeForBadge = isLiveActive ? wiGrade : (!altFen && isStartPosition ? null : selectedMove.grade);
               const gradeLabel = gradeForBadge ? GRADE_TO_LABEL[gradeForBadge] : null;
               const badgeTo = isLiveActive && whatIfMoves && whatIfSelectedIdx !== undefined && whatIfSelectedIdx >= 0
                 ? whatIfMoves[whatIfSelectedIdx]?.to ?? selectedMove.to
