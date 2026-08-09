@@ -256,8 +256,11 @@ export async function analyzePgnClientSide(
         line: [uciToSan(fenBefore, l.san)],
       }));
 
+      const isBookMove = (Math.floor(index / 2) + 1) <= 8 && cpLoss < 20;
+
       const classification = classifyMove({
         ...classificationInput,
+        isBookMove,
         alternativeLines: engineLines.map(line => ({
           ...line,
           score: line.score, // already mover's perspective
