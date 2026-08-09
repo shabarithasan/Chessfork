@@ -408,6 +408,11 @@ function RightPanel({
   onTrainerRetry,
   onTrainerExit,
   onStartTrainer,
+  engineAnalysis,
+  startAnalysis,
+  stopAnalysis,
+  multiPv = 3,
+  setMultiPv,
 }: {
   moves: MoveEvaluation[];
   selectedMove: MoveEvaluation;
@@ -447,6 +452,13 @@ function RightPanel({
   onTrainerRetry?: () => void;
   onTrainerExit?: () => void;
   onStartTrainer?: () => void;
+
+  // Engine & Feature Props
+  engineAnalysis?: any;
+  startAnalysis?: (fen: string, options?: { depth?: number; multiPV?: number }) => void;
+  stopAnalysis?: () => void;
+  multiPv?: number;
+  setMultiPv?: (val: number) => void;
 }) {
   const [explainSections, setExplainSections] = useState<ExplainSection[] | null>(null);
   const [explainLoading, setExplainLoading] = useState(false);
@@ -478,12 +490,12 @@ function RightPanel({
   // Override display values when in what-if mode
   const liveEvalScore = isLiveActive
     ? (snapEval?.type === "cp" ? (snapEval as { type: "cp"; value: number }).value * 100 : (snapEval?.type === "mate" ? ((snapEval as { type: "mate"; value: number }).value > 0 ? 100000 : -100000) : null))
-    : (liveEngine && engineAnalysis?.evaluation ? (engineAnalysis.evaluation.type === "cp" ? engineAnalysis.evaluation.value * 100 : (engineAnalysis.evaluation.value > 0 ? 100000 : -100000)) : null);
+    : (liveEngine && isAnalyzingProp ? (snapEval?.type === "cp" ? (snapEval as { type: "cp"; value: number }).value * 100 : (snapEval?.type === "mate" ? ((snapEval as { type: "mate"; value: number }).value > 0 ? 100000 : -100000) : null)) : null);
 
   const displayScore = liveEvalScore !== null ? liveEvalScore : selectedMove.score;
   const isWhatIfSearching = isLiveActive && !currentSession;
-  const isLiveEngineActive = isWhatIfSearching || (liveEngine && !isLiveActive && engineAnalysis?.status === "analyzing");
-  const liveEngineDepth = isLiveActive ? (snapDepth ?? 0) : (liveEngine && !isLiveActive ? engineAnalysis?.depth ?? 0 : null);
+  const isLiveEngineActive = isWhatIfSearching || (liveEngine && !isLiveActive && isAnalyzingProp);
+  const liveEngineDepth = isLiveActive ? (snapDepth ?? 0) : (liveEngine && !isLiveActive ? depthProp ?? 0 : null);
   const whatIfLeafFenResolved = snapFen ?? "";
 
   // Derive engine lines from snapshot topMoves or live engineAnalysis
@@ -500,7 +512,7 @@ function RightPanel({
         nodes: 0,
       }));
     } else if (liveEngine && engineAnalysis?.lines) {
-      return engineAnalysis.lines.map((l, i) => ({
+      return engineAnalysis.lines.map((l: any, i: number) => ({
         rank: i + 1,
         san: l.pv[0] ?? "",
         score: l.evaluation.type === "cp" ? Math.round(l.evaluation.value * 100) : (l.evaluation.value > 0 ? 10000 : -10000),
@@ -1081,11 +1093,10 @@ function RightPanel({
             })()}
 
             {/* ── 3. Engine Depth Indicator ── */}
-            {/* ── 3. Engine Depth Indicator ── */}
             {!isWhatIfSearching && liveEngine && (
             <div className="flex items-center gap-3 mt-[18px]">
               <div className="relative flex flex-1 items-center h-5">
-                {engineAnalysis?.status === "analyzing" ? (
+                {isAnalyzingProp ? (
                   <div className="relative h-[2px] w-full overflow-hidden rounded-full bg-neutral-700/70">
                     <span className="absolute top-0 h-full w-[1.5%] rounded-full animate-scan-horizontal bg-amber-400" style={{ animationDelay: "0s", boxShadow: "rgba(251, 191, 36, 0.8) 0px 0px 4px" }} />
                     <span className="absolute top-0 h-full w-[1.5%] rounded-full animate-scan-horizontal bg-amber-400/80" style={{ animationDelay: "0.2s", boxShadow: "rgba(251, 191, 36, 0.6) 0px 0px 4px" }} />
@@ -1093,17 +1104,34 @@ function RightPanel({
                     <span className="absolute top-0 h-full w-[1.5%] rounded-full animate-scan-horizontal bg-amber-400/40" style={{ animationDelay: "0.65s", boxShadow: "rgba(251, 191, 36, 0.2) 0px 0px 4px" }} />
                   </div>
                 ) : (
-                  <div className="flex w-full items-center justify-start ml-2">
+                  <div className="flex w-full items-center justify-start ml-2 gap-2">
                     <button 
                       type="button" 
                       onClick={() => {
                         const fen = isStartPosition ? "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" : selectedMove.fenAfter;
-                        startAnalysis(fen, { depth: 99 });
+                        if (startAnalysis) startAnalysis(fen, { depth: 99, multiPV: multiPv });
                       }}
                       className="rounded-md border border-[#f3c53d]/30 bg-[#f3c53d]/10 px-2.5 py-[3px] text-[10px] font-semibold text-[#f3c53d] hover:bg-[#f3c53d]/20 transition-colors uppercase tracking-wider"
                     >
                       Go deeper
                     </button>
+                    <select
+                      value={multiPv}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        if (setMultiPv) setMultiPv(val);
+                        const fen = isStartPosition ? "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" : selectedMove.fenAfter;
+                        if (startAnalysis) startAnalysis(fen, { depth: 22, multiPV: val });
+                      }}
+                      className="rounded-md border border-neutral-700 bg-neutral-800 px-1 py-[3px] text-[10px] font-semibold text-neutral-300 hover:bg-neutral-700 transition-colors outline-none cursor-pointer"
+                      title="Number of engine lines (Multi-PV)"
+                    >
+                      <option value={1}>1 Line</option>
+                      <option value={2}>2 Lines</option>
+                      <option value={3}>3 Lines</option>
+                      <option value={4}>4 Lines</option>
+                      <option value={5}>5 Lines</option>
+                    </select>
                   </div>
                 )}
                 <div className="absolute left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-md border border-neutral-700 bg-neutral-800 px-1.5 py-0.5 pointer-events-none">
@@ -1229,6 +1257,10 @@ function BoardWorkspace({
   trainerMistakes,
   trainerIndex,
   onTrainerAttempt,
+  liveEngine,
+  startAnalysis,
+  stopAnalysis,
+  multiPv = 3,
 }: {
   analysis: AnalysisRun;
   moves: MoveEvaluation[];
@@ -1255,6 +1287,12 @@ function BoardWorkspace({
   trainerMistakes?: MoveEvaluation[];
   trainerIndex?: number;
   onTrainerAttempt?: (userSan: string, bestSan: string) => void;
+
+  // Engine Props
+  liveEngine?: boolean;
+  startAnalysis?: (fen: string, options?: { depth?: number; multiPV?: number }) => void;
+  stopAnalysis?: () => void;
+  multiPv?: number;
 }) {
   const { boardColors, pieceThemeId } = useSettings();
   const isLiveActive = !!altFen || (whatIfMoves !== undefined && whatIfMoves.length > 0);
@@ -1310,12 +1348,12 @@ function BoardWorkspace({
   // Auto-run engine on current game move if Live Engine is enabled and we are not in what-if mode
   useEffect(() => {
     if (!liveEngine || isLiveActive) {
-      if (!isLiveActive) stopAnalysis(); // only stop if we aren't in what-if mode (what-if manages its own engine state)
+      if (!isLiveActive && stopAnalysis) stopAnalysis(); // only stop if we aren't in what-if mode (what-if manages its own engine state)
       return;
     }
     const fen = isStartPosition ? STARTING_FEN : selectedMove.fenAfter;
-    startAnalysis(fen, { depth: 22 });
-  }, [liveEngine, isLiveActive, selectedMove.fenAfter, isStartPosition, startAnalysis, stopAnalysis]);
+    if (startAnalysis) startAnalysis(fen, { depth: 22, multiPV: multiPv });
+  }, [liveEngine, isLiveActive, selectedMove.fenAfter, isStartPosition, startAnalysis, stopAnalysis, multiPv]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -1870,9 +1908,11 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
   const pathname = useStablePathname();
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
+  const [activeTab, setActiveTab] = useState("Analysis");
   const [selectedPly, setSelectedPly] = useState(0);
   const [startEngineLines, setStartEngineLines] = useState<EngineLine[]>([]);
   const [avatarUrls, setAvatarUrls] = useState<{ white?: string; black?: string }>({});
+  const [multiPv, setMultiPv] = useState(3);
 
   // ── Trainer State ──
   const [isTrainerMode, setIsTrainerMode] = useState(false);
@@ -1930,7 +1970,7 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
   }, [setSelectedPly]);
 
   const { analysis: engineAnalysis, startAnalysis, stopAnalysis } = useEngine();
-  const { showBestMoves, engineDepth, setLiveEngine } = useSettings();
+  const { showBestMoves, engineDepth, setLiveEngine, liveEngine } = useSettings();
 
   useEffect(() => {
     if (activeTab === "Analysis") {
@@ -1989,9 +2029,6 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
     ? whatIfSessionOrderRef.current.indexOf(whatIf.selectedId)
     : -1;
 
-  /* ── Removed: whatIfEngineLines, whatIfDisplayEval, whatIfDisplayDepth, whatIfDisplayGrade ── */
-  /* BoardWorkspace and RightPanel now read these fields from currentSession directly. */
-
   // Graph values follow the visible what-if line only, using the snapshot eval.
   const whatIfGraphValues = useMemo(() => {
     if (whatIfSessionList.length === 0) return null;
@@ -2034,7 +2071,6 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
   const selectedIndex = moves.findIndex((move) => move.ply === selectedPly);
   const selectedMove = selectedIndex >= 0 ? moves[selectedIndex] : moves[0];
   const isStartPosition = selectedPly === 0;
-  const displayScore = selectedMove.score;
   const containerRef = useRef<HTMLDivElement>(null);
 
   /* ── Best move arrow toggle (persistent gold arrow overlay, no step-through) ── */
@@ -2147,7 +2183,6 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
 
   /* ── Auto-play ── */
   const [autoPlay, setAutoPlay] = useState(false);
-  const [activeTab, setActiveTab] = useState("Analysis");
   const selectedPlyRef = useRef(selectedPly);
   selectedPlyRef.current = selectedPly;
 
@@ -2339,6 +2374,10 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
            trainerMistakes={trainerMistakes}
            trainerIndex={trainerIndex}
            onTrainerAttempt={handleTrainerAttempt}
+           liveEngine={liveEngine}
+           startAnalysis={startAnalysis}
+           stopAnalysis={stopAnalysis}
+           multiPv={multiPv}
         />
         <RightPanel
           moves={moves}
@@ -2408,6 +2447,12 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
           onTrainerRetry={handleTrainerRetry}
           onTrainerExit={handleTrainerExit}
           onStartTrainer={startTrainer}
+          engineAnalysis={engineAnalysis}
+          startAnalysis={startAnalysis}
+          stopAnalysis={stopAnalysis}
+          liveEngine={liveEngine}
+          multiPv={multiPv}
+          setMultiPv={setMultiPv}
         />
       </div>
       <div className="fixed left-4 top-4 z-20 flex items-center gap-2 rounded-lg border border-white/10 bg-[#242321]/95 px-3 py-2 lg:hidden">
