@@ -1930,7 +1930,13 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
   }, [setSelectedPly]);
 
   const { analysis: engineAnalysis, startAnalysis, stopAnalysis } = useEngine();
-  const { showBestMoves, engineDepth } = useSettings();
+  const { showBestMoves, engineDepth, setLiveEngine } = useSettings();
+
+  useEffect(() => {
+    if (activeTab === "Analysis") {
+      setLiveEngine(true);
+    }
+  }, [activeTab, setLiveEngine]);
 
   /* ── What-If Session Manager (immutable snapshots, clean pipeline) ── */
   const whatIf = useWhatIfSessions({
