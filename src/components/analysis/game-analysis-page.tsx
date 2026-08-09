@@ -139,6 +139,19 @@ const GRADE_TO_BADGE: Record<string, string> = {
   Blunder: "blunder",
 };
 
+const GRADE_TO_LABEL: Record<string, string> = {
+  Brilliant: "brilliant",
+  Great: "great_find",
+  Best: "best",
+  Excellent: "excellent",
+  Good: "good",
+  Book: "book",
+  Inaccuracy: "inaccuracy",
+  Mistake: "mistake",
+  Blunder: "blunder",
+  Miss: "miss",
+};
+
 const GRADE_VERB: Record<string, string> = {
   Brilliant: "is brilliant",
   Excellent: "is excellent",
@@ -843,7 +856,7 @@ function RightPanel({
                       </div>
                     </span>
                     <div className="flex items-center gap-2">
-                      <BadgeIcon badge={GRADE_TO_BADGE[isLiveActive && currentWhatIfMove ? (currentWhatIfMove.grade ?? currentWhatIfEval?.grade ?? "") : selectedMove.grade]} size={18} />
+                      <BadgeIcon badge={GRADE_TO_LABEL[isLiveActive && currentWhatIfMove ? (currentWhatIfMove.grade ?? currentWhatIfEval?.grade ?? "") : selectedMove.grade]} size={18} />
                       <span className="font-mono font-semibold text-neutral-900 text-[15px]">{currentWhatIfMove?.san ?? selectedMove.san}</span>
                       <span className="truncate text-[13px]">{isLiveActive && currentWhatIfMove ? GRADE_VERB[currentWhatIfMove.grade ?? currentWhatIfEval?.grade ?? ""] : GRADE_VERB[selectedMove.grade]}</span>
                       {displayScore !== null && (
@@ -1592,18 +1605,7 @@ function BoardWorkspace({
     };
   }, [isStartPosition, selectedMove, altFen, onWhatIfDrop, isLiveActive, whatIfMoves, whatIfSelectedIdx, selectedSquare, legalMoves, clearSelection, showBestMoveArrow, boardColors, pieceThemeId]);
 
-  const GRADE_TO_LABEL: Record<string, string> = {
-    Brilliant: "brilliant",
-    Great: "great_find",
-    Best: "best",
-    Excellent: "excellent",
-    Good: "good",
-    Book: "book",
-    Inaccuracy: "inaccuracy",
-    Mistake: "mistake",
-    Blunder: "blunder",
-    Miss: "miss",
-  };
+  
 
   const isAwaitingLiveEvaluation = isLiveActive && displayScore === null;
   // A missing live score means the worker is searching, not that Black is
@@ -2374,7 +2376,7 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
            trainerMistakes={trainerMistakes}
            trainerIndex={trainerIndex}
            onTrainerAttempt={handleTrainerAttempt}
-           liveEngine={liveEngine}
+           
            startAnalysis={startAnalysis}
            stopAnalysis={stopAnalysis}
            multiPv={multiPv}
@@ -2450,7 +2452,7 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
           engineAnalysis={engineAnalysis}
           startAnalysis={startAnalysis}
           stopAnalysis={stopAnalysis}
-          liveEngine={liveEngine}
+          
           multiPv={multiPv}
           setMultiPv={setMultiPv}
         />

@@ -175,6 +175,7 @@ const gradeClasses: Record<MoveGrade, string> = {
   Great: "border-[#22c55e]/30 bg-[#22c55e]/16 text-green-50",
   Inaccuracy: "border-[#f59e0b]/45 bg-[#f59e0b]/18 text-amber-50",
   Mistake: "border-[#f97316]/45 bg-[#f97316]/24 font-bold text-orange-50",
+  Miss: "border-[#f43f5e]/45 bg-[#f43f5e]/24 font-bold text-rose-50",
 };
 
 const gradeDotClasses: Record<MoveGrade, string> = {
@@ -187,6 +188,7 @@ const gradeDotClasses: Record<MoveGrade, string> = {
   Great: "bg-[#22c55e]",
   Inaccuracy: "bg-[#f59e0b]",
   Mistake: "bg-[#f97316]",
+  Miss: "bg-[#f43f5e]",
 };
 
 function evaluationLabel(score?: number) {

@@ -45,7 +45,8 @@ function buildComment(grade: MoveGrade, cpLoss: number) {
     Book: "Book move: a typical opening move from known theory.",
     Inaccuracy: `You gave away roughly ${cpLoss} centipawns and drifted from the best plan.`,
     Mistake: `This changes the character of the game and gives your opponent real chances.`,
-    Blunder: `A decisive swing. This is the kind of moment your training queue should revisit.`,
+    Blunder: `This completely changes the evaluation and loses the position.`,
+    Miss: `A missed opportunity to find a much better line.`,
   };
 
   return messages[grade];

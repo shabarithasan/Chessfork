@@ -36,7 +36,8 @@ const emptyMoveCounts = (): Record<MoveGrade, number> => ({
   Inaccuracy: 0,
   Mistake: 0,
   Blunder: 0,
-});
+        Miss: 0,
+      });
 
 /**
  * Parse a chunk of SSE text into individual events.

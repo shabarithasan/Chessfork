@@ -107,6 +107,7 @@ function buildComment(grade: MoveGrade, cpLoss: number) {
     Inaccuracy: `You gave away roughly ${cpLoss} centipawns and drifted from the best plan.`,
     Mistake: "This changes the character of the game and gives your opponent real chances.",
     Blunder: "A decisive swing. This is the kind of moment your training queue should revisit.",
+    Miss: "A missed opportunity to find a much better line.",
   };
   return messages[grade];
 }
@@ -228,7 +229,7 @@ export async function analyzePgnClientSide(
       const bestMoverScore = best.score; // best.score is from mover's perspective.
       const materialCount = fenBefore.split(" ")[0].replace(/[^a-zA-Z]/g, "").length;
 
-      const caps = capsFromEvaluations({ bestScore: bestMoverScore, moveScore: actualMoverScore, materialCount });
+      const caps = capsFromEvaluations({ bestScore: bestMoverScore, moveScore: actualMoverScore });
       const cpLoss = normalizeCpLoss(bestMoverScore - actualMoverScore);
       const actualScore = actualScoreForWhite; // Keep in White's perspective for UI
 
