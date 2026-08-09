@@ -21,28 +21,21 @@ export function accuracyFromAverageCpLoss(cpLoss: number) {
   return clamp(100 - cpLoss / 2.4, 26, 99.4);
 }
 
-export function winProbabilityFromCentipawns(evalCentipawns: number, materialCount = 32) {
-  // Scale centipawns slightly based on material to avoid calling moves blunders in trivially won endgames,
-  // but keep the base curve anchored to the standard Chess.com formula.
-  const multiplier = 32 / Math.max(materialCount, 4);
-  const scaledCp = evalCentipawns * (multiplier * 0.5 + 0.5); // blend standard with material scaling
-  
+export function winProbabilityFromCentipawns(evalCentipawns: number) {
   // Standard CAPS v2 win probability curve (scaled 0 to 1)
-  return 0.5 + 0.5 * (2 / (1 + Math.exp(-0.00368208 * scaledCp)) - 1);
+  return 0.5 + 0.5 * (2 / (1 + Math.exp(-0.00368208 * evalCentipawns)) - 1);
 }
 
 export function capsFromEvaluations({
   bestScore,
   moveScore,
-  materialCount = 32,
 }: {
   bestScore: number;
   moveScore: number;
   worstScore?: number;
-  materialCount?: number;
 }) {
-  const winProbBest = winProbabilityFromCentipawns(bestScore, materialCount) * 100;
-  const winProbMove = winProbabilityFromCentipawns(moveScore, materialCount) * 100;
+  const winProbBest = winProbabilityFromCentipawns(bestScore) * 100;
+  const winProbMove = winProbabilityFromCentipawns(moveScore) * 100;
   
   const winProbLoss = winProbBest - winProbMove;
 

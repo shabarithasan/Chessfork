@@ -40,9 +40,8 @@ function sameSan(left?: string, right?: string) {
 function getClassificationFacts(input: MoveClassificationInput) {
   const bestScoreForPlayer = input.bestScore;
   const moveScoreForPlayer = input.moveScore;
-  const materialCount = input.materialCount ?? 32;
-  const winProbabilityBefore = winProbabilityFromCentipawns(bestScoreForPlayer, materialCount);
-  const winProbabilityAfter = winProbabilityFromCentipawns(moveScoreForPlayer, materialCount);
+  const winProbabilityBefore = winProbabilityFromCentipawns(bestScoreForPlayer);
+  const winProbabilityAfter = winProbabilityFromCentipawns(moveScoreForPlayer);
   const deltaPercent = (winProbabilityAfter - winProbabilityBefore) * 100;
   const cpLoss = Math.max(0, bestScoreForPlayer - moveScoreForPlayer);
   const isTopEngineChoice = sameSan(input.playedMoveSan, input.bestMoveSan) || cpLoss <= BEST_MOVE_MARGIN_CP;
@@ -50,7 +49,7 @@ function getClassificationFacts(input: MoveClassificationInput) {
     .filter((line) => !sameSan(line.san, input.playedMoveSan))
     .map((line) => {
       const alternativeScoreForPlayer = line.score;
-      return (winProbabilityFromCentipawns(alternativeScoreForPlayer, materialCount) - winProbabilityBefore) * 100;
+      return (winProbabilityFromCentipawns(alternativeScoreForPlayer) - winProbabilityBefore) * 100;
     });
 
   return {
@@ -132,15 +131,15 @@ export function classifyMove(input: MoveClassificationInput): MoveClassification
     grade = "Great";
   } else if (facts.winProbabilityBefore >= 0.70 && facts.winProbabilityAfter <= 0.55 && facts.deltaPercent <= -15) {
     grade = "Miss";
-  } else if (facts.deltaPercent >= -0.5 && facts.isTopEngineChoice) {
+  } else if (facts.deltaPercent >= -1 || cpLoss <= 8 || facts.isTopEngineChoice) {
     grade = "Best";
-  } else if (facts.deltaPercent >= -2 || cpLoss <= 15) {
+  } else if (facts.deltaPercent >= -3 || cpLoss <= 25) {
     grade = "Excellent";
-  } else if (facts.deltaPercent >= -5 || cpLoss <= 60) {
+  } else if (facts.deltaPercent >= -8 || cpLoss <= 60) {
     grade = "Good";
-  } else if (facts.deltaPercent >= -10 || cpLoss <= 120) {
+  } else if (facts.deltaPercent >= -15 || cpLoss <= 100) {
     grade = "Inaccuracy";
-  } else if (facts.deltaPercent >= -20 || cpLoss <= 250) {
+  } else if (facts.deltaPercent >= -25 || cpLoss <= 200) {
     grade = "Mistake";
   } else {
     grade = "Blunder";
