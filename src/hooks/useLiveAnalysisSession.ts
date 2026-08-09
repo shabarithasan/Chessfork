@@ -117,7 +117,7 @@ export function useLiveAnalysisSession() {
     try {
       const headers = readHeaders(pgn);
       const title = headers.Event || `${headers.White ?? "White"} vs ${headers.Black ?? "Black"}`;
-      const expectedId = slugify(`${title}-${hashString(pgn)}`);
+      const expectedId = slugify(`${title}-${hashString(pgn)}-v2`);
       
       const res = await fetch(`/api/analysis/${expectedId}`);
       if (res.ok) {

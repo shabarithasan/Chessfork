@@ -341,7 +341,7 @@ export function buildClientReport(
   const opening = detectOpening(sans, headers);
   const title = headers.Event || `${headers.White ?? "White"} vs ${headers.Black ?? "Black"}`;
   const subject = headers.White ?? "Anonymous player";
-  const shareSlug = slugify(`${title}-${hashString(pgn)}`);
+  const shareSlug = slugify(`${title}-${hashString(pgn)}-v2`);
 
   return {
     id: shareSlug,
