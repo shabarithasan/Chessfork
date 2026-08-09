@@ -44,7 +44,7 @@ if (!_isPthread) {
             if (_pendingStart) {
               var queuedStart = _pendingStart;
               _pendingStart = null;
-              beginSearch(queuedStart);
+              setTimeout(function() { beginSearch(queuedStart); }, 0);
             }
           } else if (msg.startsWith('bestmove')) {
             if (_expectingBestmove) {
@@ -53,7 +53,7 @@ if (!_isPthread) {
               if (_pendingStart) {
                 var nextStart = _pendingStart;
                 _pendingStart = null;
-                beginSearch(nextStart);
+                setTimeout(function() { beginSearch(nextStart); }, 0);
                 return;
               }
               _origPostMessage({
