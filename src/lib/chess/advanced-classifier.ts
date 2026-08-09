@@ -104,13 +104,9 @@ export function classifyMove(input: MoveClassificationInput): MoveClassification
 
   const isCriticalEqualPosition = Math.abs(facts.bestScoreForPlayer) <= BRILLIANT_EQUAL_POSITION_CP;
   
-  // If we are already winning heavily (win prob > 0.8), we allow alternatives to only lose 2% win probability,
-  // since the win probability curve is extremely flat at high evaluation.
-  const requiredAlternativeLoss = facts.winProbabilityBefore > 0.8 ? -2 : BRILLIANT_ALTERNATIVE_LOSS_PERCENT;
-  
   const allAlternativesLoseForBrilliant =
     facts.alternativeLossesPercent.length > 0 &&
-    facts.alternativeLossesPercent.every((loss) => loss <= requiredAlternativeLoss);
+    facts.alternativeLossesPercent.every((loss) => loss <= BRILLIANT_ALTERNATIVE_LOSS_PERCENT);
     
   const allAlternativesLoseForGreat =
     facts.alternativeLossesPercent.length > 0 &&
@@ -120,7 +116,7 @@ export function classifyMove(input: MoveClassificationInput): MoveClassification
 
   if (
     facts.isTopEngineChoice &&
-    (facts.deltaPercent > BRILLIANT_GAIN_PERCENT || facts.winProbabilityBefore > 0.8) &&
+    (facts.deltaPercent > BRILLIANT_GAIN_PERCENT || isCriticalEqualPosition) &&
     allAlternativesLoseForBrilliant
   ) {
     return {
