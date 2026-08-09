@@ -1,3 +1,5 @@
+var _isPthread = typeof self !== 'undefined' && self.location && self.location.hash.split(',')[1] === 'worker';
+
 var _currentLines = {};
 var _lastSentDepth = 0;
 var _currentFen = '';
@@ -10,76 +12,78 @@ var _engineReady = false;
 var _origPostMessage = self.postMessage.bind(self);
 
 // Intercept postMessage to capture Stockfish output
-self.postMessage = function(msg) {
-  try {
-    if (typeof msg === 'string') {
-      if (msg.startsWith('info') || msg === 'uciok' || msg.startsWith('bestmove') || msg === 'readyok') {
-        if (msg.startsWith('info')) {
-          var parsed = parseInfo(msg);
-          var depthMatch = msg.match(/ depth (\d+)/);
-          var depthNum = depthMatch ? parseInt(depthMatch[1]) : 0;
-          if (depthNum > 0 && depthNum < _lastSentDepth - 1) { _lastSentDepth = 0; }
-          if (parsed) {
-            if (!_currentLines[parsed.multiPv]) _currentLines[parsed.multiPv] = parsed;
-            else for (var k in parsed) _currentLines[parsed.multiPv][k] = parsed[k];
-            if (depthNum > _lastSentDepth && Object.keys(_currentLines).length > 0) {
-              _lastSentDepth = depthNum;
+if (!_isPthread) {
+  self.postMessage = function(msg) {
+    try {
+      if (typeof msg === 'string') {
+        if (msg.startsWith('info') || msg === 'uciok' || msg.startsWith('bestmove') || msg === 'readyok') {
+          if (msg.startsWith('info')) {
+            var parsed = parseInfo(msg);
+            var depthMatch = msg.match(/ depth (\d+)/);
+            var depthNum = depthMatch ? parseInt(depthMatch[1]) : 0;
+            if (depthNum > 0 && depthNum < _lastSentDepth - 1) { _lastSentDepth = 0; }
+            if (parsed) {
+              if (!_currentLines[parsed.multiPv]) _currentLines[parsed.multiPv] = parsed;
+              else for (var k in parsed) _currentLines[parsed.multiPv][k] = parsed[k];
+              if (depthNum > _lastSentDepth && Object.keys(_currentLines).length > 0) {
+                _lastSentDepth = depthNum;
+                _origPostMessage({
+                  type: 'analysis',
+                  lines: Object.values(_currentLines).sort(function(a, b) { return a.multiPv - b.multiPv; }),
+                  depth: depthNum,
+                  searchId: _currentSearchId,
+                  fen: _currentFen,
+                });
+              }
+            }
+          } else if (msg === 'uciok') {
+            _engineReady = true;
+            _origPostMessage({ type: 'ready' });
+            if (_pendingStart) {
+              var queuedStart = _pendingStart;
+              _pendingStart = null;
+              beginSearch(queuedStart);
+            }
+          } else if (msg.startsWith('bestmove')) {
+            if (_expectingBestmove) {
+              _expectingBestmove = false;
+              _isSearching = false;
+              if (_pendingStart) {
+                var nextStart = _pendingStart;
+                _pendingStart = null;
+                beginSearch(nextStart);
+                return;
+              }
               _origPostMessage({
-                type: 'analysis',
+                type: 'bestmove',
+                bestmove: msg.split(' ')[1],
                 lines: Object.values(_currentLines).sort(function(a, b) { return a.multiPv - b.multiPv; }),
-                depth: depthNum,
                 searchId: _currentSearchId,
                 fen: _currentFen,
               });
+              _currentLines = {};
+              _lastSentDepth = 0;
+            } else {
+              _isSearching = false;
+              _origPostMessage({
+                type: 'bestmove',
+                bestmove: msg.split(' ')[1],
+                lines: Object.values(_currentLines).sort(function(a, b) { return a.multiPv - b.multiPv; }),
+                searchId: _currentSearchId,
+                fen: _currentFen,
+              });
+              _currentLines = {};
+              _lastSentDepth = 0;
             }
           }
-        } else if (msg === 'uciok') {
-          _engineReady = true;
-          _origPostMessage({ type: 'ready' });
-          if (_pendingStart) {
-            var queuedStart = _pendingStart;
-            _pendingStart = null;
-            beginSearch(queuedStart);
-          }
-        } else if (msg.startsWith('bestmove')) {
-          if (_expectingBestmove) {
-            _expectingBestmove = false;
-            _isSearching = false;
-            if (_pendingStart) {
-              var nextStart = _pendingStart;
-              _pendingStart = null;
-              beginSearch(nextStart);
-              return;
-            }
-            _origPostMessage({
-              type: 'bestmove',
-              bestmove: msg.split(' ')[1],
-              lines: Object.values(_currentLines).sort(function(a, b) { return a.multiPv - b.multiPv; }),
-              searchId: _currentSearchId,
-              fen: _currentFen,
-            });
-            _currentLines = {};
-            _lastSentDepth = 0;
-          } else {
-            _isSearching = false;
-            _origPostMessage({
-              type: 'bestmove',
-              bestmove: msg.split(' ')[1],
-              lines: Object.values(_currentLines).sort(function(a, b) { return a.multiPv - b.multiPv; }),
-              searchId: _currentSearchId,
-              fen: _currentFen,
-            });
-            _currentLines = {};
-            _lastSentDepth = 0;
-          }
+          return;
         }
-        return;
       }
+      _origPostMessage(msg);
+    } catch(e) {
     }
-    _origPostMessage(msg);
-  } catch(e) {
-  }
-};
+  };
+}
 
 function parseInfo(line) {
   var parts = line.split(' ');
@@ -129,49 +133,53 @@ WebAssembly.instantiateStreaming = function(response, imports) {
 };
 self.importScripts('/stockfish/stockfish.js');
 
-// Stockfish's handler is now self.onmessage. Save it.
-var _engineHandler = self.onmessage;
+var _engineHandler;
 
-// Initialize: send 'uci'
-_engineHandler({ data: 'uci' });
+if (!_isPthread) {
+  // Stockfish's handler is now self.onmessage. Save it.
+  _engineHandler = self.onmessage;
 
-// Wrap onmessage to handle command objects
-self.onmessage = function(e) {
-  try {
-    var data = e.data;
-    if (typeof data === 'object' && data !== null && data.command) {
-      if (data.command === 'start') {
-        // Stockfish can receive messages before its UCI handshake completes
-        // on slower devices. Queue the latest position instead of starting a
-        // search that the WASM runtime may silently discard.
-        if (!_engineReady) {
-          _pendingStart = data;
-          return;
+  // Initialize: send 'uci'
+  _engineHandler({ data: 'uci' });
+
+  // Wrap onmessage to handle command objects
+  self.onmessage = function(e) {
+    try {
+      var data = e.data;
+      if (typeof data === 'object' && data !== null && data.command) {
+        if (data.command === 'start') {
+          // Stockfish can receive messages before its UCI handshake completes
+          // on slower devices. Queue the latest position instead of starting a
+          // search that the WASM runtime may silently discard.
+          if (!_engineReady) {
+            _pendingStart = data;
+            return;
+          }
+          // Do not label output from the just-stopped position as output for the
+          // next one. Wait for its bestmove acknowledgement before changing the
+          // FEN/search id, while retaining the useful transposition-table cache.
+          if (_isSearching) {
+            _pendingStart = data;
+            _expectingBestmove = true;
+            _engineHandler({ data: 'stop' });
+          } else {
+            beginSearch(data);
+          }
+        } else if (data.command === 'stop') {
+          _currentLines = {};
+          _lastSentDepth = 0;
+          _pendingStart = null;
+          // An idle Stockfish has no `bestmove` acknowledgement to send. Only
+          // wait for one when an actual search is active.
+          if (_isSearching) {
+            _expectingBestmove = true;
+            _engineHandler({ data: 'stop' });
+          }
         }
-        // Do not label output from the just-stopped position as output for the
-        // next one. Wait for its bestmove acknowledgement before changing the
-        // FEN/search id, while retaining the useful transposition-table cache.
-        if (_isSearching) {
-          _pendingStart = data;
-          _expectingBestmove = true;
-          _engineHandler({ data: 'stop' });
-        } else {
-          beginSearch(data);
-        }
-      } else if (data.command === 'stop') {
-        _currentLines = {};
-        _lastSentDepth = 0;
-        _pendingStart = null;
-        // An idle Stockfish has no `bestmove` acknowledgement to send. Only
-        // wait for one when an actual search is active.
-        if (_isSearching) {
-          _expectingBestmove = true;
-          _engineHandler({ data: 'stop' });
-        }
+        return;
       }
-      return;
+      if (typeof _engineHandler === 'function') _engineHandler(e);
+    } catch(e2) {
     }
-    if (typeof _engineHandler === 'function') _engineHandler(e);
-  } catch(e2) {
-  }
-};
+  };
+}
