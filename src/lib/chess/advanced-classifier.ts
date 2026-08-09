@@ -92,10 +92,26 @@ export function classifyMove(input: MoveClassificationInput): MoveClassification
   }
 
   const facts = getClassificationFacts(input);
+
+  if (input.isBookMove) {
+    return {
+      ...facts,
+      grade: "Book",
+      isOnlyMove: false,
+      label: "Book",
+    };
+  }
+
   const isCriticalEqualPosition = Math.abs(facts.bestScoreForPlayer) <= BRILLIANT_EQUAL_POSITION_CP;
+  
+  // If we are already winning heavily (win prob > 0.8), we allow alternatives to only lose 2% win probability,
+  // since the win probability curve is extremely flat at high evaluation.
+  const requiredAlternativeLoss = facts.winProbabilityBefore > 0.8 ? -2 : BRILLIANT_ALTERNATIVE_LOSS_PERCENT;
+  
   const allAlternativesLoseForBrilliant =
     facts.alternativeLossesPercent.length > 0 &&
-    facts.alternativeLossesPercent.every((loss) => loss <= BRILLIANT_ALTERNATIVE_LOSS_PERCENT);
+    facts.alternativeLossesPercent.every((loss) => loss <= requiredAlternativeLoss);
+    
   const allAlternativesLoseForGreat =
     facts.alternativeLossesPercent.length > 0 &&
     facts.alternativeLossesPercent.every((loss) => loss <= GREAT_ALTERNATIVE_LOSS_PERCENT);
