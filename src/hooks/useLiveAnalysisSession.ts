@@ -175,6 +175,20 @@ export function useLiveAnalysisSession() {
 
       if (!abortControllerRef.current.signal.aborted) {
         const completeData = buildClientReport(evaluations, pgn, mode === "deep" ? "deep" : "quick");
+        
+        try {
+          await fetch("/api/analysis/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...completeData,
+              evaluations,
+            }),
+          });
+        } catch (e) {
+          console.error("Failed to save analysis to server", e);
+        }
+
         setState((prev) => ({
           ...prev,
           analysisProgress: 100,
