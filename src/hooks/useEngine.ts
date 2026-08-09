@@ -48,14 +48,18 @@ export function useEngine() {
           setAnalysis((prev) => ({ ...prev, status: "ready" }));
           break;
         case "analysis":
-          setAnalysis({
-            evaluation: msg.lines?.[0]?.evaluation || null,
-            lines: msg.lines || [],
-            bestMove: msg.lines?.[0]?.pv?.[0] || null,
-            depth: msg.depth,
-            status: "analyzing",
-            fen: msg.fen || "",
-          });
+          const now = Date.now();
+          if (now - ((worker as any)._lastUiUpdate || 0) > 150 || msg.depth >= 14) {
+            (worker as any)._lastUiUpdate = now;
+            setAnalysis({
+              evaluation: msg.lines?.[0]?.evaluation || null,
+              lines: msg.lines || [],
+              bestMove: msg.lines?.[0]?.pv?.[0] || null,
+              depth: msg.depth,
+              status: "analyzing",
+              fen: msg.fen || "",
+            });
+          }
           break;
         case "bestmove":
           setAnalysis((prev) => ({
