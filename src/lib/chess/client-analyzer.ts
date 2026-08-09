@@ -140,7 +140,18 @@ export async function analyzePgnClientSide(
   const replay = new Chess();
   const session = new StockfishClientSession();
   const moveEvaluations: MoveEvaluation[] = [];
-  const searchDepth = options.depth === "deep" ? 18 : 14;
+
+  // Single-threaded WASM NNUE without Atomics runs at ~10k nps.
+  // Multi-threaded WASM NNUE with Atomics runs at ~2M nps.
+  // We must cap the depth significantly if we are running in single-threaded fallback mode (e.g. Vercel Preview without COEP)
+  // to avoid hitting the 60s timeout per move!
+  const isSingleThreaded = typeof SharedArrayBuffer === 'undefined';
+  
+  let baseDepth = options.depth === "deep" ? 18 : 14;
+  if (isSingleThreaded) {
+    baseDepth = options.depth === "deep" ? 10 : 8;
+  }
+  const searchDepth = baseDepth;
 
   try {
     for (let index = 0; index < moves.length; index++) {
