@@ -361,7 +361,7 @@ export function buildClientReport(
     depth,
     status: "complete",
     subject,
-    subjectColor: "white", // Simplified
+    subjectColor: (subject && headers.Black && headers.Black.toLowerCase() === subject.toLowerCase()) ? "black" : "white",
     createdAt: new Date().toISOString(),
     summary: `${opening.name} analyzed over ${evaluations.length} plies. ${criticalMoments.length} critical moments, ${Math.round(accuracyWhite)}% vs ${Math.round(accuracyBlack)}% accuracy.`,
     story: buildAnalysisStory({
