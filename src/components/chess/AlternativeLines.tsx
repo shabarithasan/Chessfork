@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { Chess } from "chess.js";
+import { motion } from "framer-motion";
 import type { EngineLine } from "@/types/platform";
 
 interface AlternativeLinesProps {
@@ -47,8 +48,15 @@ function AlternativeLines({ lines, fenBefore, moveNumber, onSelectLine }: Altern
       <div className="flex flex-col gap-1.5">
         {lines.map((line) => {
           const allMoves = [line.san, ...line.line.slice(1)];
+          const animKey = `${line.rank}-${line.san}-${line.score}-${line.depth}`;
           return (
-            <div key={line.rank} className="flex items-center gap-2 overflow-hidden h-[27px]">
+            <motion.div 
+              key={animKey}
+              initial={{ backgroundColor: "rgba(251, 191, 36, 0.25)" }}
+              animate={{ backgroundColor: "rgba(0, 0, 0, 0)" }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="flex items-center gap-2 overflow-hidden h-[27px] rounded px-1 -mx-1"
+            >
               <span className="rounded border px-1.5 py-0.5 text-center font-mono font-semibold border-neutral-300 bg-neutral-100 text-neutral-900 min-w-[42px] text-[11px]">
                 {formatScore(line.score)}
               </span>
@@ -75,7 +83,7 @@ function AlternativeLines({ lines, fenBefore, moveNumber, onSelectLine }: Altern
                   );
                 })}
               </span>
-            </div>
+            </motion.div>
           );
         })}
       </div>
