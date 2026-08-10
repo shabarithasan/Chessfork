@@ -2388,6 +2388,7 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
         <RightPanel
           moves={moves}
           selectedMove={selectedMove}
+          isAnalyzing={engineAnalysis.status === "analyzing"}
           depth={selectedMove.depth}
           activeTab={activeTab}
           onTabChange={setActiveTab}
