@@ -82,7 +82,6 @@ class StockfishClientSession {
 
   dispose() {
     this.worker.postMessage({ command: "stop" });
-    this.worker.terminate();
   }
 }
 
