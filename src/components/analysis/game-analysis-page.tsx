@@ -149,7 +149,7 @@ const GRADE_TO_LABEL: Record<string, string> = {
   Inaccuracy: "inaccuracy",
   Mistake: "mistake",
   Blunder: "blunder",
-  Miss: "miss",
+  Miss: "missed_win",
 };
 
 const GRADE_VERB: Record<string, string> = {
@@ -1099,6 +1099,7 @@ function RightPanel({
                     fenBefore={fenBefore}
                     moveNumber={moveNumber}
                     onSelectLine={onSelectAltLine}
+                    isLive={isLiveEngineActive}
                   />
                 );
               }
