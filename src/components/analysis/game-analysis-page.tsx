@@ -2071,7 +2071,29 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
       .catch(() => {});
   }, [analysis.black, analysis.source]);
   const selectedIndex = moves.findIndex((move) => move.ply === selectedPly);
-  const selectedMove = selectedIndex >= 0 ? moves[selectedIndex] : moves[0];
+  const selectedMove = (selectedIndex >= 0 ? moves[selectedIndex] : moves[0]) || {
+    ply: 0,
+    moveNumber: 0,
+    side: "white",
+    san: "",
+    from: "",
+    to: "",
+    fenBefore: STARTING_FEN,
+    fenAfter: STARTING_FEN,
+    score: 0,
+    caps: 100,
+    cpLoss: 0,
+    grade: "Book",
+    comment: "",
+    bestMove: "",
+    principalVariation: [],
+    depth: 0,
+    nodes: 0,
+    isCapture: false,
+    isCheck: false,
+    isCheckmate: false,
+    phase: "opening"
+  };
   const isStartPosition = selectedPly === 0;
   const containerRef = useRef<HTMLDivElement>(null);
 
