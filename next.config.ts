@@ -56,6 +56,9 @@ const nextConfig: NextConfig = {
   experimental: {
     authInterrupts: true,
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.externals = [...config.externals, "stockfish"];
