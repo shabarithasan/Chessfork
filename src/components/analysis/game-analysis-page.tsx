@@ -829,22 +829,23 @@ function RightPanel({
             <div className="min-h-[100px] shrink-0">
               <div className="relative min-h-[118px]">
                 <div className="min-w-0">
-                  <div className="relative min-w-0 rounded-xl bg-[#f5f5f4] text-neutral-800 px-3.5 py-2.5">
-                    <span className="absolute -left-[5px] rotate-45 rounded-[2px] bg-[#f5f5f4] top-[19px] h-3 w-3" />
-                    <span aria-hidden="true" className="float-left mr-2">
-                      <div className="relative h-[42px] w-[44px]">
-                        <PandaMascot size={44} />
-                      </div>
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <BadgeIcon badge={GRADE_TO_LABEL[isLiveActive && currentWhatIfMove ? (currentWhatIfMove.grade ?? currentWhatIfEval?.grade ?? "") : selectedMove.grade]} size={18} />
-                      <span className="font-mono font-semibold text-neutral-900 text-[15px]">{currentWhatIfMove?.san ?? selectedMove.san}</span>
-                      <span className="truncate text-[13px]">{isLiveActive && currentWhatIfMove ? GRADE_VERB[currentWhatIfMove.grade ?? currentWhatIfEval?.grade ?? ""] : GRADE_VERB[selectedMove.grade]}</span>
-                      {displayScore !== null && (
-                        <span className="ml-auto shrink-0 rounded-md font-mono font-semibold tabular-nums border border-neutral-300 bg-white text-neutral-900 px-1.5 py-0.5 text-[11px]">{formatScore(displayScore)}</span>
-                      )}
-                    </div>
-                    <p className="mt-1 min-h-[40px] text-[13px] leading-[1.45] text-neutral-700">
+                  <div className="relative min-w-0 rounded-2xl bg-white text-neutral-800 p-4 shadow-sm">
+                    <div className="flex items-start gap-3">
+                      <span aria-hidden="true" className="shrink-0 pt-0.5">
+                        <div className="relative flex h-[48px] w-[48px] items-center justify-center rounded-xl bg-[#f0f0f0] overflow-hidden border border-neutral-200">
+                          <PandaMascot size={46} />
+                        </div>
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <BadgeIcon badge={GRADE_TO_LABEL[isLiveActive && currentWhatIfMove ? (currentWhatIfMove.grade ?? currentWhatIfEval?.grade ?? "") : selectedMove.grade]} size={18} />
+                          <span className="font-mono font-bold text-neutral-900 text-[15px]">{currentWhatIfMove?.san ?? selectedMove.san}</span>
+                          <span className="truncate text-[13.5px] font-medium text-neutral-500">{isLiveActive && currentWhatIfMove ? GRADE_VERB[currentWhatIfMove.grade ?? currentWhatIfEval?.grade ?? ""] : GRADE_VERB[selectedMove.grade]}</span>
+                          {displayScore !== null && (
+                            <span className="ml-auto shrink-0 rounded-lg font-mono font-bold tabular-nums border border-neutral-900 bg-neutral-900 text-white px-2 py-0.5 text-[12px]">{formatScore(displayScore)}</span>
+                          )}
+                        </div>
+                        <p className="mt-1.5 min-h-[38px] text-[13.5px] leading-snug text-neutral-700">
                           {(() => {
                             const grade = isLiveActive && currentWhatIfMove ? (currentWhatIfMove.grade ?? currentWhatIfEval?.grade) : selectedMove.grade;
                             if (isLiveActive && currentWhatIfMove && !grade) return <span>Analyzing...</span>;
@@ -861,34 +862,36 @@ function RightPanel({
                             if (grade === "Great") return <span>A very good move. Continue with {btn}.</span>;
                             return <span>A safe, steady move. {btn}{(!isMistake || revealedBestMove) && " was more accurate."}</span>;
                           })()}
-                    </p>
-                    {!isWhatIfSearching && isLiveActive && llmLoading && (
-                      <p className="mt-1 text-[11px] leading-[1.4] text-neutral-500">
-                        Consulting DeepSeek...
-                      </p>
-                    )}
-                    {!isWhatIfSearching && isLiveActive && !llmLoading && llmAnalysis && (
-                      <div className="mt-1.5 space-y-1 rounded-lg border border-[#f3c53d]/30 bg-[#f3c53d]/5 px-2.5 py-2">
-                        <div className="flex items-center gap-1.5">
-                          <span className="rounded bg-[#f3c53d]/20 px-1.5 py-0.5 text-[10px] font-semibold text-[#f3c53d]">AI</span>
-                          <span className="text-[12px] font-semibold text-neutral-200">{llmAnalysis.verdict}</span>
-                        </div>
-                        <p className="text-[12px] leading-[1.5] text-neutral-300">{llmAnalysis.explanation}</p>
-                        {llmAnalysis.bestContinuation && (
-                          <p className="text-[11px] text-neutral-400">
-                            Suggested continuation: <span className="font-mono text-neutral-300">{llmAnalysis.bestContinuation}</span>
+                        </p>
+                        {!isWhatIfSearching && isLiveActive && llmLoading && (
+                          <p className="mt-1.5 text-[12px] leading-[1.4] text-neutral-500">
+                            Consulting DeepSeek...
                           </p>
                         )}
+                        {!isWhatIfSearching && isLiveActive && !llmLoading && llmAnalysis && (
+                          <div className="mt-2 space-y-1 rounded-xl border border-[#f3c53d]/30 bg-[#f3c53d]/5 px-3 py-2.5">
+                            <div className="flex items-center gap-1.5">
+                              <span className="rounded bg-[#f3c53d]/20 px-1.5 py-0.5 text-[10px] font-bold text-[#f3c53d]">AI</span>
+                              <span className="text-[12px] font-semibold text-neutral-800">{llmAnalysis.verdict}</span>
+                            </div>
+                            <p className="text-[12px] leading-[1.5] text-neutral-700">{llmAnalysis.explanation}</p>
+                            {llmAnalysis.bestContinuation && (
+                              <p className="text-[11px] text-neutral-500">
+                                Suggested continuation: <span className="font-mono font-medium text-neutral-700">{llmAnalysis.bestContinuation}</span>
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
                     {!isWhatIfSearching && (
-                      <div className="mt-1.5">
-                        <button type="button" onClick={handleExplain} disabled={explainLoading} className="group/explain relative w-full overflow-hidden rounded-lg bg-neutral-950 p-[1.5px] transition-transform active:scale-[0.98] disabled:active:scale-100 disabled:opacity-60">
+                      <div className="mt-3.5">
+                        <button type="button" onClick={handleExplain} disabled={explainLoading} className="group/explain relative w-full overflow-hidden rounded-xl bg-neutral-900 p-[1.5px] transition-transform active:scale-[0.98] disabled:active:scale-100 disabled:opacity-60">
                           <span aria-hidden="true" className="coach-explain-wave-rotor coach-explain-wave-rotor--dark-button" />
-                          <span className="relative z-10 flex items-center justify-center gap-1.5 rounded-[6.5px] bg-[#262626] font-medium text-white transition-colors duration-150 group-hover/explain:bg-[#171717] px-2.5 py-1.5 text-[11.5px]">
+                          <span className="relative z-10 flex items-center justify-center gap-2 rounded-[10px] bg-[#1a1a1a] font-semibold text-white transition-colors duration-150 group-hover/explain:bg-[#111111] px-3 py-2 text-[13px]">
                             {explainLoading ? (
                               <>
-                                <Loader2 className="size-3.5 animate-spin" />
+                                <Loader2 className="size-4 animate-spin" />
                                 Explaining...
                               </>
                             ) : explainSections ? (
@@ -896,161 +899,157 @@ function RightPanel({
                             ) : (
                               <>
                                 Explain
-                                <canvas width={15} height={15} className="will-change-transform" />
+                                <Sparkles className="size-3.5 text-[#f3c53d]" />
                               </>
                             )}
                           </span>
                         </button>
                       </div>
                     )}
-                    {explainSections && (() => {
-                      const seCp = currentSession?.evaluation?.type === "cp" ? (currentSession.evaluation as { type: "cp"; value: number }).value * 100 : null;
-                      const pe = seCp ?? selectedMove.score;
-                      const bl = currentSession?.topMoves?.[0] ?? (selectedMove.engineLines?.[0] ? { san: selectedMove.engineLines[0].san, eval: selectedMove.engineLines[0].score } : null);
-                      const be = bl?.eval ?? selectedMove.score;
-                      const el = Math.abs(be - pe);
-                      const gr = isLiveActive ? (currentWhatIfMove?.grade ?? currentWhatIfEval?.grade ?? "") : selectedMove.grade;
-                      if (!gr) return null;
-                      const themeKeys = getThemeKeys([]);
-                      const difficulty = computeDifficulty(gr, el, currentSession?.depth ?? selectedMove.depth ?? 0);
-                      return (
-                        <div className="mt-3 animate-fadeIn space-y-2.5">
-                          {/* ── Engine Facts ── */}
-                          <div className="rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2.5">
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Engine Facts</span>
-                              <div className="h-px flex-1 bg-neutral-800" />
-                            </div>
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[11px] text-zinc-400">Evaluation</span>
-                                <span className="font-mono text-[11px] font-semibold tabular-nums">
-                                  <span className={be >= 0 ? "text-emerald-400" : "text-red-400"}>{formatScore(be)}</span>
-                                  <span className="text-zinc-600 mx-1">→</span>
-                                  <span className={pe >= 0 ? "text-emerald-400" : "text-red-400"}>{formatScore(pe)}</span>
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-[11px] text-zinc-400">Loss</span>
-                                <span className="font-mono text-[11px] font-semibold tabular-nums text-rose-400">{el} cp</span>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-[11px] text-zinc-400">Best move</span>
-                                <span className="font-mono text-[11px] font-semibold text-[#f3c53d]">{bestSan.includes("the engine") ? "—" : bestSan}</span>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-[11px] text-zinc-400">Depth</span>
-                                <span className="font-mono text-[11px] font-semibold tabular-nums text-white">{currentSession?.depth ?? selectedMove.depth ?? "—"}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* ── Themes Chips ── */}
-                          {themeKeys.length > 0 && (
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 mr-1">Themes</span>
-                              {themeKeys.map((theme) => {
-                                const colors = MOTIF_THEME_COLORS[theme] ?? "from-stone-500/20 to-stone-500/5 text-stone-300 border-stone-500/20";
-                                return (
-                                  <span key={theme} className={`rounded-full border bg-gradient-to-r px-2 py-0.5 text-[10px] font-medium ${colors}`}>
-                                    {theme}
-                                  </span>
-                                );
-                              })}
-                            </div>
-                          )}
-
-                          {/* ── Difficulty ── */}
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Difficulty</span>
-                            <div className="flex items-center gap-1">
-                              {[1, 2, 3].map((dot) => (
-                                <span
-                                  key={dot}
-                                  className={`h-2 w-2 rounded-full ${
-                                    dot <= difficulty.level
-                                      ? difficulty.level === 1 ? "bg-emerald-400"
-                                        : difficulty.level === 2 ? "bg-amber-400"
-                                        : "bg-rose-400"
-                                      : "bg-neutral-700"
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                            <span className={`text-[11px] font-medium ${difficulty.color}`}>{difficulty.label}</span>
-                          </div>
-
-                          {/* ── Coach Sections ── */}
-                          <div className="rounded-xl border border-[#f3c53d]/30 bg-neutral-900">
-                            <div className="px-3.5 py-2.5">
-                              <div className="flex items-center gap-2 mb-3">
-                                <span className="flex items-center gap-1.5 rounded-full bg-[#f3c53d]/15 px-2.5 py-1">
-                                  <Sparkles className="size-3 text-[#f3c53d]" />
-                                  <span className="text-[10px] font-bold tracking-wider text-[#f3c53d] uppercase">Coach</span>
-                                </span>
-                                <div className="h-px flex-1 bg-neutral-800" />
-                              </div>
-                              <div className="space-y-3">
-                                {explainSections.map((sec, i) => (
-                                  <div key={i}>
-                                    <div className="flex items-start gap-2.5">
-                                      <span className="shrink-0 mt-0.5 text-base">{sec.icon}</span>
-                                      <div className="min-w-0">
-                                        <h4 className="text-[11px] font-bold uppercase tracking-wide text-[#f3c53d] mb-1">{sec.title}</h4>
-                                        <p className="text-[12.5px] leading-[1.7] text-white">{sec.content}</p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* ── Interactive Buttons ── */}
-                          <div className="flex gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const fen = isLiveActive ? (currentSession?.fen ?? "") : selectedMove.fenBefore;
-                                if (fen && bestSan && !bestSan.includes("the engine") && onShowLine) {
-                                  onShowLine(fen, bestSan);
-                                }
-                              }}
-                              disabled={!bestSan || bestSan.includes("the engine") || !onShowLine}
-                              className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-neutral-700 bg-neutral-800 px-2.5 py-2 text-[11px] font-semibold text-zinc-300 transition-colors hover:border-[#f3c53d]/40 hover:bg-[#f3c53d]/10 hover:text-[#f3c53d] disabled:opacity-40"
-                            >
-                              <span>▶</span>
-                              Show Line
-                            </button>
-                            <button
-                              type="button"
-                              disabled
-                              className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-neutral-700 bg-neutral-800 px-2.5 py-2 text-[11px] font-semibold text-zinc-500 cursor-not-allowed"
-                            >
-                              <span>?</span>
-                              Why not
-                            </button>
-                            <button
-                              type="button"
-                              disabled
-                              className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-neutral-700 bg-neutral-800 px-2.5 py-2 text-[11px] font-semibold text-zinc-500 cursor-not-allowed"
-                            >
-                              <span>♟</span>
-                              Practice
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-                <div className="absolute left-0 top-px z-10 shrink-0 drop-shadow-[0_3px_8px_rgba(0,0,0,.4)]">
-                  <div className="relative shrink-0" style={{ width: 52, height: 52 }}>
-                    <PandaMascot size={52} />
                   </div>
                 </div>
               </div>
             </div>
+
+            {explainSections && (() => {
+              const seCp = currentSession?.evaluation?.type === "cp" ? (currentSession.evaluation as { type: "cp"; value: number }).value * 100 : null;
+              const pe = seCp ?? selectedMove.score;
+              const bl = currentSession?.topMoves?.[0] ?? (selectedMove.engineLines?.[0] ? { san: selectedMove.engineLines[0].san, eval: selectedMove.engineLines[0].score } : null);
+              const be = bl?.eval ?? selectedMove.score;
+              const el = Math.abs(be - pe);
+              const gr = isLiveActive ? (currentWhatIfMove?.grade ?? currentWhatIfEval?.grade ?? "") : selectedMove.grade;
+              if (!gr) return null;
+              const themeKeys = getThemeKeys([]);
+              const difficulty = computeDifficulty(gr, el, currentSession?.depth ?? selectedMove.depth ?? 0);
+              return (
+                <div className="mt-3 animate-fadeIn space-y-2.5">
+                  {/* ── Engine Facts ── */}
+                  <div className="rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2.5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Engine Facts</span>
+                      <div className="h-px flex-1 bg-neutral-800" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-zinc-400">Evaluation</span>
+                        <span className="font-mono text-[11px] font-semibold tabular-nums">
+                          <span className={be >= 0 ? "text-emerald-400" : "text-red-400"}>{formatScore(be)}</span>
+                          <span className="text-zinc-600 mx-1">→</span>
+                          <span className={pe >= 0 ? "text-emerald-400" : "text-red-400"}>{formatScore(pe)}</span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-zinc-400">Loss</span>
+                        <span className="font-mono text-[11px] font-semibold tabular-nums text-rose-400">{el} cp</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-zinc-400">Best move</span>
+                        <span className="font-mono text-[11px] font-semibold text-[#f3c53d]">{bestSan.includes("the engine") ? "—" : bestSan}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-zinc-400">Depth</span>
+                        <span className="font-mono text-[11px] font-semibold tabular-nums text-white">{currentSession?.depth ?? selectedMove.depth ?? "—"}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── Themes Chips ── */}
+                  {themeKeys.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 mr-1">Themes</span>
+                      {themeKeys.map((theme) => {
+                        const colors = MOTIF_THEME_COLORS[theme] ?? "from-stone-500/20 to-stone-500/5 text-stone-300 border-stone-500/20";
+                        return (
+                          <span key={theme} className={`rounded-full border bg-gradient-to-r px-2 py-0.5 text-[10px] font-medium ${colors}`}>
+                            {theme}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* ── Difficulty ── */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Difficulty</span>
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3].map((dot) => (
+                        <span
+                          key={dot}
+                          className={`h-2 w-2 rounded-full ${
+                            dot <= difficulty.level
+                              ? difficulty.level === 1 ? "bg-emerald-400"
+                                : difficulty.level === 2 ? "bg-amber-400"
+                                : "bg-rose-400"
+                              : "bg-neutral-700"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className={`text-[11px] font-medium ${difficulty.color}`}>{difficulty.label}</span>
+                  </div>
+
+                  {/* ── Coach Sections ── */}
+                  <div className="rounded-xl border border-[#f3c53d]/30 bg-neutral-900">
+                    <div className="px-3.5 py-2.5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="flex items-center gap-1.5 rounded-full bg-[#f3c53d]/15 px-2.5 py-1">
+                          <Sparkles className="size-3 text-[#f3c53d]" />
+                          <span className="text-[10px] font-bold tracking-wider text-[#f3c53d] uppercase">Coach</span>
+                        </span>
+                        <div className="h-px flex-1 bg-neutral-800" />
+                      </div>
+                      <div className="space-y-3">
+                        {explainSections.map((sec, i) => (
+                          <div key={i}>
+                            <div className="flex items-start gap-2.5">
+                              <span className="shrink-0 mt-0.5 text-base">{sec.icon}</span>
+                              <div className="min-w-0">
+                                <h4 className="text-[11px] font-bold uppercase tracking-wide text-[#f3c53d] mb-1">{sec.title}</h4>
+                                <p className="text-[12.5px] leading-[1.7] text-white">{sec.content}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── Interactive Buttons ── */}
+                  <div className="flex gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const fen = isLiveActive ? (currentSession?.fen ?? "") : selectedMove.fenBefore;
+                        if (fen && bestSan && !bestSan.includes("the engine") && onShowLine) {
+                          onShowLine(fen, bestSan);
+                        }
+                      }}
+                      disabled={!bestSan || bestSan.includes("the engine") || !onShowLine}
+                      className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-neutral-700 bg-neutral-800 px-2.5 py-2 text-[11px] font-semibold text-zinc-300 transition-colors hover:border-[#f3c53d]/40 hover:bg-[#f3c53d]/10 hover:text-[#f3c53d] disabled:opacity-40"
+                    >
+                      <span>▶</span>
+                      Show Line
+                    </button>
+                    <button
+                      type="button"
+                      disabled
+                      className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-neutral-700 bg-neutral-800 px-2.5 py-2 text-[11px] font-semibold text-zinc-500 cursor-not-allowed"
+                    >
+                      <span>?</span>
+                      Why not
+                    </button>
+                    <button
+                      type="button"
+                      disabled
+                      className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-neutral-700 bg-neutral-800 px-2.5 py-2 text-[11px] font-semibold text-zinc-500 cursor-not-allowed"
+                    >
+                      <span>♟</span>
+                      Practice
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* ── 2. Engine Lines ── */}
             {!isWhatIfSearching && (() => {
@@ -1154,17 +1153,17 @@ function RightPanel({
 
               return (
                 <div className="mt-3 flex items-center gap-2 shrink-0">
-                  <button type="button" onClick={onToggleBestMoveArrow} disabled={!selectedMove.engineLines?.[0]?.line?.length} className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 font-semibold transition-[background-color,transform] duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 h-9 text-[13.5px] ${showBestMoveArrow ? 'border-[#f3c53d]/30 bg-[#f3c53d]/10 text-[#f3c53d]' : 'bg-amber-400 text-[#171717] hover:bg-amber-500'}`}>
-                    <BadgeIcon badge="best" size={showBestMoveArrow ? 16 : 18} />
-                    {showBestMoveArrow ? 'Hide best move' : 'Show best move'}
+                  <button type="button" onClick={onToggleBestMoveArrow} disabled={!selectedMove.engineLines?.[0]?.line?.length} className={`flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 font-bold transition-all duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 h-[46px] text-[14.5px] ${showBestMoveArrow ? 'border-[#f3c53d]/30 bg-[#f3c53d]/10 text-[#f3c53d]' : 'bg-[#facc15] border-transparent text-black hover:bg-[#eab308]'}`}>
+                    <BadgeIcon badge="best" size={showBestMoveArrow ? 18 : 20} />
+                    {showBestMoveArrow ? 'Hide best move' : 'See best move'}
                   </button>
                 </div>
               );
             })()}
 
             {/* ── 6. Nav Controls ── */}
-            <div className="mt-3.5 shrink-0">
-              <div className="flex items-stretch gap-1.5">
+            <div className="mt-3.5 shrink-0 rounded-2xl bg-[#111111] p-2">
+              <div className="flex items-stretch gap-2">
                 <button
                   type="button"
                   aria-label="First move"
@@ -1173,9 +1172,9 @@ function RightPanel({
                     setSelectedPly?.(moves[0]?.ply ?? 0);
                   }}
                   disabled={currentMoveIndex <= 0}
-                  className="w-11 shrink-0 flex h-[46px] items-center justify-center rounded-[10px] text-[#171717] transition-[background-color,transform] duration-150 active:scale-[0.96] disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-800 bg-amber-400 hover:bg-amber-500 active:bg-amber-500 disabled:opacity-40"
+                  className="w-12 shrink-0 flex h-[42px] items-center justify-center rounded-xl text-[#171717] transition-all duration-150 active:scale-[0.96] disabled:active:scale-100 bg-[#facc15] hover:bg-[#eab308] disabled:opacity-40 shadow-sm"
                 >
-                  <ChevronsLeft className="h-[18px] w-[18px]" strokeWidth={2.4} />
+                  <ChevronsLeft className="h-5 w-5" strokeWidth={2.6} />
                 </button>
                 <button
                   type="button"
@@ -1186,9 +1185,9 @@ function RightPanel({
                     if (idx >= 0 && moves[idx] && setSelectedPly) setSelectedPly(moves[idx].ply);
                   }}
                   disabled={currentMoveIndex <= 0}
-                  className="flex-1 flex h-[46px] items-center justify-center rounded-[10px] text-[#171717] transition-[background-color,transform] duration-150 active:scale-[0.96] disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-800 bg-amber-400 hover:bg-amber-500 active:bg-amber-500 disabled:opacity-40"
+                  className="flex-1 flex h-[42px] items-center justify-center rounded-xl text-[#171717] transition-all duration-150 active:scale-[0.96] disabled:active:scale-100 bg-[#facc15] hover:bg-[#eab308] disabled:opacity-40 shadow-sm"
                 >
-                  <ChevronLeft className="h-[18px] w-[18px]" strokeWidth={2.4} />
+                  <ChevronLeft className="h-5 w-5" strokeWidth={2.6} />
                 </button>
                 <button
                   type="button"
@@ -1199,9 +1198,9 @@ function RightPanel({
                     if (idx < moves.length && moves[idx] && setSelectedPly) setSelectedPly(moves[idx].ply);
                   }}
                   disabled={isLiveActive ? currentMoveIndex >= (whatIfMoves ? whatIfMoves.length - 1 : 0) : currentMoveIndex >= moves.length - 1}
-                  className="flex-1 flex h-[46px] items-center justify-center rounded-[10px] text-[#171717] transition-[background-color,transform] duration-150 active:scale-[0.96] disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-800 bg-amber-400 hover:bg-amber-500 active:bg-amber-500 disabled:opacity-40"
+                  className="flex-1 flex h-[42px] items-center justify-center rounded-xl text-[#171717] transition-all duration-150 active:scale-[0.96] disabled:active:scale-100 bg-[#facc15] hover:bg-[#eab308] disabled:opacity-40 shadow-sm"
                 >
-                  <ChevronRight className="h-[18px] w-[18px]" strokeWidth={2.4} />
+                  <ChevronRight className="h-5 w-5" strokeWidth={2.6} />
                 </button>
                 <button
                   type="button"
@@ -1212,9 +1211,9 @@ function RightPanel({
                     if (last && setSelectedPly) setSelectedPly(last.ply);
                   }}
                   disabled={isLiveActive ? currentMoveIndex >= (whatIfMoves ? whatIfMoves.length - 1 : 0) : currentMoveIndex >= moves.length - 1}
-                  className="w-11 shrink-0 flex h-[46px] items-center justify-center rounded-[10px] text-[#171717] transition-[background-color,transform] duration-150 active:scale-[0.96] disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-800 bg-amber-400 hover:bg-amber-500 active:bg-amber-500 disabled:opacity-40"
+                  className="w-12 shrink-0 flex h-[42px] items-center justify-center rounded-xl text-[#171717] transition-all duration-150 active:scale-[0.96] disabled:active:scale-100 bg-[#facc15] hover:bg-[#eab308] disabled:opacity-40 shadow-sm"
                 >
-                  <ChevronsRight className="h-[18px] w-[18px]" strokeWidth={2.4} />
+                  <ChevronsRight className="h-5 w-5" strokeWidth={2.6} />
                 </button>
               </div>
             </div>
