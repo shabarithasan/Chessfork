@@ -144,7 +144,7 @@ const GRADE_VERB: Record<string, string> = {
   Book: "is a book move",
 };
 
-function BadgeIcon({ badge, size = 16 }: { badge: string; size?: number }) {
+function BadgeIcon({ badge, size = 16 }: { badge?: string | null; size?: number }) {
   if (!badge) return null;
   const src = `/images/brilliance_v2/svg/${badge}.svg`;
   return <img src={src} alt="" width={size} height={size} className="shrink-0" />;
