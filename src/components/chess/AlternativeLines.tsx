@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { Chess } from "chess.js";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import type { EngineLine } from "@/types/platform";
 
 interface AlternativeLinesProps {
@@ -10,6 +10,8 @@ interface AlternativeLinesProps {
   fenBefore: string;
   moveNumber?: number;
   onSelectLine?: (fen: string, san: string) => void;
+  /** True only while Stockfish is actively refreshing these PVs. */
+  isLive?: boolean;
 }
 
 function formatScore(score: number): string {
@@ -23,7 +25,8 @@ function formatMoveNumber(moveNum: number, side: "white" | "black"): string {
   return side === "white" ? `${moveNum}.` : `${moveNum}...`;
 }
 
-function AlternativeLines({ lines, fenBefore, moveNumber, onSelectLine }: AlternativeLinesProps) {
+function AlternativeLines({ lines, fenBefore, moveNumber, onSelectLine, isLive = false }: AlternativeLinesProps) {
+  const reduceMotion = useReducedMotion();
   const handleLineClick = useCallback(
     (san: string) => {
       try {
@@ -46,15 +49,22 @@ function AlternativeLines({ lines, fenBefore, moveNumber, onSelectLine }: Altern
   return (
     <div className="mt-3.5">
       <div className="flex flex-col gap-1.5">
-        {lines.map((line) => {
+        {lines.map((line, lineIndex) => {
           const allMoves = [line.san, ...line.line.slice(1)];
           const animKey = `${line.rank}-${line.san}-${line.score}-${line.depth}`;
           return (
-            <motion.div 
+            <motion.div
               key={animKey}
               initial={{ backgroundColor: "rgba(251, 191, 36, 0.25)" }}
-              animate={{ backgroundColor: "rgba(0, 0, 0, 0)" }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
+              animate={isLive && !reduceMotion
+                ? {
+                    backgroundColor: ["rgba(251, 191, 36, 0)", "rgba(251, 191, 36, 0.12)", "rgba(251, 191, 36, 0)"],
+                    filter: ["brightness(0.82)", "brightness(1.3)", "brightness(0.82)"],
+                  }
+                : { backgroundColor: "rgba(0, 0, 0, 0)", filter: "brightness(1)" }}
+              transition={isLive && !reduceMotion
+                ? { duration: 1.65, ease: "easeInOut", repeat: Infinity, delay: lineIndex * 0.18 }
+                : { duration: 0.6, ease: "easeOut" }}
               className="flex items-center gap-2 overflow-hidden h-[27px] rounded px-1 -mx-1"
             >
               <span className="rounded border px-1.5 py-0.5 text-center font-mono font-semibold border-neutral-300 bg-neutral-100 text-neutral-900 min-w-[42px] text-[11px]">
