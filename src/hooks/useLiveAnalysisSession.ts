@@ -236,6 +236,13 @@ export function useLiveAnalysisSession() {
           console.error("Failed to save analysis to server", e);
         }
 
+        // Save fallback to localStorage for serverless environments (Vercel) without a DB
+        try {
+          window.localStorage.setItem(`chessfork_fallback_${completeData.id}`, JSON.stringify(completeData));
+        } catch (e) {
+          console.warn("Could not save fallback to localStorage");
+        }
+
         setState((prev) => ({
           ...prev,
           analysisProgress: 100,

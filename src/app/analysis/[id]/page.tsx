@@ -6,21 +6,19 @@ import { getAnalysisResponse } from "@/lib/platform-service";
 import { buildReportCardDataFromAnalysis } from "@/lib/report-card-data";
 import { createSeoMetadata, jsonLd } from "@/lib/seo/metadata";
 
+import { FallbackReportLoader } from "@/components/analysis/FallbackReportLoader";
+
 type AnalysisPageProps = {
   params: Promise<{ id: string }>;
 };
 
 export async function generateMetadata({ params }: AnalysisPageProps): Promise<Metadata> {
   const { id } = await params;
-  let analysis;
+  let analysis = null;
   try {
     analysis = await getAnalysisResponse(id);
-  } catch {
-    return createSeoMetadata({
-      title: "Chess Analysis",
-      description: "Chessfork chess analysis report",
-      path: `/analysis/${encodeURIComponent(id)}`,
-    });
+  } catch (e) {
+    // Ignore error for metadata
   }
 
   if (!analysis) {
@@ -47,15 +45,15 @@ export async function generateMetadata({ params }: AnalysisPageProps): Promise<M
 
 export default async function Page({ params }: AnalysisPageProps) {
   const { id } = await params;
-  let analysis;
+  let analysis = null;
   try {
     analysis = await getAnalysisResponse(id);
-  } catch {
-    redirect("/analysis");
+  } catch (e) {
+    // Ignore error, fallback below
   }
 
   if (!analysis) {
-    redirect("/analysis");
+    return <FallbackReportLoader analysisId={id} />;
   }
 
   const card = buildReportCardDataFromAnalysis(analysis);
