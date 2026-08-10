@@ -136,7 +136,7 @@ WebAssembly.instantiateStreaming = function(response, imports) {
     }
   });
 };
-self.importScripts('/stockfish/stockfish-17.1-lite-single.js');
+self.importScripts('/stockfish/stockfish.js');
 
 var _engineHandler;
 
