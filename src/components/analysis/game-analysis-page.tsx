@@ -119,26 +119,6 @@ function getThemeKeys(reasons: string[]): string[] {
 
 const STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-const BADGE_IMG: Record<string, string> = {
-  good: "https://cdn.chessigma.dev/moves/good.png",
-  best: "https://cdn.chessigma.dev/moves/best.png",
-  very_good: "https://cdn.chessigma.dev/moves/very_good.png",
-  inaccuracy: "https://cdn.chessigma.dev/moves/inaccuracy.png",
-  mistake: "https://cdn.chessigma.dev/moves/mistake.png",
-  blunder: "https://cdn.chessigma.dev/moves/blunder.png",
-};
-
-const GRADE_TO_BADGE: Record<string, string> = {
-  Brilliant: "very_good",
-  Excellent: "very_good",
-  Great: "good",
-  Best: "best",
-  Good: "good",
-  Inaccuracy: "inaccuracy",
-  Mistake: "mistake",
-  Blunder: "blunder",
-};
-
 const GRADE_TO_LABEL: Record<string, string> = {
   Brilliant: "brilliant",
   Great: "great_find",
@@ -161,11 +141,12 @@ const GRADE_VERB: Record<string, string> = {
   Inaccuracy: "is questionable",
   Mistake: "is a mistake",
   Blunder: "is a blunder",
+  Book: "is a book move",
 };
 
 function BadgeIcon({ badge, size = 16 }: { badge: string; size?: number }) {
-  const src = BADGE_IMG[badge];
-  if (!src) return null;
+  if (!badge) return null;
+  const src = `/images/brilliance_v2/svg/${badge}.svg`;
   return <img src={src} alt="" width={size} height={size} className="shrink-0" />;
 }
 
