@@ -72,13 +72,22 @@ function AlternativeLines({ lines, fenBefore, moveNumber, onSelectLine, isLive =
               </span>
               <span className="overflow-hidden whitespace-nowrap font-mono text-neutral-400 text-[13px]">
                 {allMoves.map((san, moveIdx) => {
-                  const moveNum = startMoveNum + moveIdx;
-                  const side = moveIdx % 2 === 0 ? "black" : "white";
+                  let initialTurn = "white";
+                  try {
+                    initialTurn = new Chess(fenBefore).turn() === "w" ? "white" : "black";
+                  } catch {}
+                  const moveSide = (initialTurn === "white")
+                    ? (moveIdx % 2 === 0 ? "white" : "black")
+                    : (moveIdx % 2 === 0 ? "black" : "white");
+                  
+                  const moveNumIncrement = initialTurn === "white" ? Math.floor(moveIdx / 2) : Math.floor((moveIdx + 1) / 2);
+                  const moveNum = startMoveNum + moveNumIncrement;
+                  
                   const isFirst = moveIdx === 0;
                   return (
                     <span key={moveIdx}>
                       <span className="mr-1 tabular-nums text-neutral-600">
-                        {formatMoveNumber(moveNum, side)}
+                        {formatMoveNumber(moveNum, moveSide as "white" | "black")}
                       </span>
                       <button
                         type="button"

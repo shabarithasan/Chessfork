@@ -2086,15 +2086,21 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   /* ── Best move arrow toggle (persistent gold arrow overlay, no step-through) ── */
-  const [showBestMoveArrow, setShowBestMoveArrow] = useState(showBestMoves);
+  const currentGrade = analysis.moveEvaluations[selectedPly]?.grade;
+  const isMistake = currentGrade === "Blunder" || currentGrade === "Mistake" || currentGrade === "Inaccuracy";
+  const defaultShowArrow = showBestMoves && !isMistake;
+  const [showBestMoveArrow, setShowBestMoveArrow] = useState(defaultShowArrow);
+  
   const toggleBestMoveArrow = useCallback(() => {
     setShowBestMoveArrow(v => !v);
   }, []);
 
-  /* ── Sync arrow visibility with the "Show best moves" review setting ── */
+  /* ── Sync arrow visibility with the "Show best moves" review setting and selected move ── */
   useEffect(() => {
-    setShowBestMoveArrow(showBestMoves);
-  }, [showBestMoves]);
+    const grade = analysis.moveEvaluations[selectedPly]?.grade;
+    const mistake = grade === "Blunder" || grade === "Mistake" || grade === "Inaccuracy";
+    setShowBestMoveArrow(showBestMoves && !mistake);
+  }, [showBestMoves, selectedPly, analysis.moveEvaluations]);
 
   /* ── Navigate within what-if moves ── */
   const onSelectWhatIfMove = useCallback((idx: number) => {
