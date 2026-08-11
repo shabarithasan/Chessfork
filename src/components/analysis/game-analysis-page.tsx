@@ -245,7 +245,11 @@ function ChipLink({
           <path d="M3 8l4.5 3L12 5l4.5 6L21 8l-1.8 10H4.8L3 8z" />
         </svg>
       )}
-      <span className="font-mono text-[11px] tabular-nums opacity-[.62]">{rating}</span>
+      {rating !== undefined && (
+        <span className="ml-auto font-mono text-[11px] font-bold tabular-nums text-emerald-400 ml-2">
+          {rating.toFixed(1)}%
+        </span>
+      )}
     </>
   );
 
@@ -853,14 +857,17 @@ function RightPanel({
                             const isMistake = grade === "Blunder" || grade === "Mistake" || grade === "Inaccuracy";
                             const btn = <SpoilerBestMoveButton san={bestSan} onClick={() => onPlayBestMove?.(bestSan)} isRevealed={!isMistake || revealedBestMove} onReveal={() => setRevealedBestMove(true)} />;
                             
-                            if (grade === "Brilliant") return <span>A brilliant find — the only way to keep the advantage. Continue with {btn}.</span>;
+                            if (grade === "Book") return <span>A safe, steady move from opening theory.</span>;
+                            if (grade === "Best") return <span>{(!isLiveActive && selectedMove.cpLoss === 0) ? "The only move that keeps things balanced." : "The engine's top choice."}</span>;
+                            if (grade === "Brilliant") return <span>An absolutely brilliant move!</span>;
+                            if (grade === "Great") return <span>A great find in a complex position.</span>;
+                            if (grade === "Excellent") return <span>An excellent move, very close to the engine's top choice.</span>;
+                            if (grade === "Good") return <span>A good, playable move.</span>;
                             if (grade === "Blunder") return <span>A critical error. {btn}{(!isMistake || revealedBestMove) && " would have kept the game alive."}</span>;
                             if (grade === "Mistake") return <span>Better was {btn}{(!isMistake || revealedBestMove) && "."}</span>;
                             if (grade === "Inaccuracy") return <span>{btn}{(!isMistake || revealedBestMove) && " was more accurate."}</span>;
-                            if (grade === "Best") return <span>{(!isLiveActive && selectedMove.cpLoss === 0) ? "The only move that keeps things balanced." : "The engine's top choice."} Continue with {btn}.</span>;
-                            if (grade === "Excellent") return <span>A strong move — nearly as good as the best. Continue with {btn}.</span>;
-                            if (grade === "Great") return <span>A very good move. Continue with {btn}.</span>;
-                            return <span>A safe, steady move. {btn}{(!isMistake || revealedBestMove) && " was more accurate."}</span>;
+                            
+                            return <span>{btn}{(!isMistake || revealedBestMove) && " was more accurate."}</span>;
                           })()}
                         </p>
                         {!isWhatIfSearching && isLiveActive && llmLoading && (
@@ -1062,7 +1069,7 @@ function RightPanel({
               let moveNumber: number | undefined;
               if (liveLinesResolved && liveLinesResolved.length > 0) {
                 lines = liveLinesResolved;
-                fenBefore = isLiveActive ? whatIfLeafFenResolved : (isStartPosition ? "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" : selectedMove.fenBefore);
+                fenBefore = isLiveActive ? whatIfLeafFenResolved : (isStartPosition ? "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" : selectedMove.fenAfter);
                 if (!isLiveActive) moveNumber = selectedMove.moveNumber;
               } else if (!isLiveActive && isStartPosition && startEngineLines && startEngineLines.length > 0) {
                 lines = startEngineLines;
@@ -1606,7 +1613,7 @@ function BoardWorkspace({
               className="bg-[#ededed] text-[#171717] hover:bg-[#e2e2e2]"
               avatarUrl={avatarUrls?.white}
               name={analysis.white}
-              rating={playerRating(analysis.accuracyWhite)}
+              rating={analysis.accuracyWhite}
               showTrophy={analysis.result === "1-0"}
             />
             <span className="flex-none font-mono tabular-nums text-[11.5px] text-neutral-400">6:46</span>
@@ -1618,7 +1625,7 @@ function BoardWorkspace({
               className="border border-[#333] bg-[#101010] text-[#f5f5f5] ring-[1.5px] ring-amber-400 hover:bg-[#1c1c1c]"
               avatarUrl={avatarUrls?.black}
               name={analysis.black}
-              rating={playerRating(analysis.accuracyBlack)}
+              rating={analysis.accuracyBlack}
               showTrophy={analysis.result === "0-1"}
             />
           </div>
