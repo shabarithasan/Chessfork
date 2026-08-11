@@ -131,15 +131,15 @@ export function classifyMove(input: MoveClassificationInput): MoveClassification
     grade = "Great";
   } else if (facts.winProbabilityBefore >= 0.70 && facts.winProbabilityAfter <= 0.55 && facts.deltaPercent <= -15) {
     grade = "Miss";
-  } else if (facts.deltaPercent >= -1 || cpLoss <= 8 || facts.isTopEngineChoice) {
+  } else if (facts.deltaPercent >= -1 || cpLoss <= 10 || facts.isTopEngineChoice) {
     grade = "Best";
-  } else if (facts.deltaPercent >= -3 || cpLoss <= 25) {
+  } else if (facts.deltaPercent >= -2 || cpLoss <= 25) {
     grade = "Excellent";
-  } else if (facts.deltaPercent >= -8 || cpLoss <= 60) {
+  } else if (facts.deltaPercent >= -5 || cpLoss <= 50) {
     grade = "Good";
-  } else if (facts.deltaPercent >= -15 || cpLoss <= 100) {
+  } else if (facts.deltaPercent >= -10 || cpLoss <= 100) {
     grade = "Inaccuracy";
-  } else if (facts.deltaPercent >= -25 || cpLoss <= 200) {
+  } else if (facts.deltaPercent >= -20 || cpLoss <= 300) {
     grade = "Mistake";
   } else {
     grade = "Blunder";

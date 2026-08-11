@@ -253,9 +253,9 @@ export function analyzePgn(
       outcome = buildMoveOutcome(best, move.san, turn, fenAfter);
     }
 
-    let actualScore = outcome.actualScore;
-    let caps = outcome.caps;
-    let cpLoss = outcome.cpLoss;
+    const actualScore = outcome.actualScore;
+    const caps = outcome.caps;
+    const cpLoss = outcome.cpLoss;
     const phase = determinePhase(index + 1, moves.length);
     const grade = gradeMove(cpLoss, Math.floor(index / 2) + 1);
 

@@ -146,8 +146,8 @@ export async function analyzeFullGame(
   signal?: AbortSignal,
 ): Promise<GameAnalysis> {
   const results: MoveAnalysis[] = [];
-  let whiteCpLosses: number[] = [];
-  let blackCpLosses: number[] = [];
+  const whiteCpLosses: number[] = [];
+  const blackCpLosses: number[] = [];
 
   for (let i = 0; i < moves.length; i++) {
     const move = moves[i];

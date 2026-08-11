@@ -51,8 +51,8 @@ export function useEngine() {
           break;
         case "analysis":
           const now = Date.now();
-          if (now - ((worker as any)._lastUiUpdate || 0) > 150 || msg.depth >= 14) {
-            (worker as any)._lastUiUpdate = now;
+          if (now - (((worker as unknown) as { _lastUiUpdate?: number })._lastUiUpdate || 0) > 150 || msg.depth >= 14) {
+            ((worker as unknown) as { _lastUiUpdate?: number })._lastUiUpdate = now;
             setAnalysis({
               evaluation: msg.lines?.[0]?.evaluation || null,
               lines: msg.lines || [],

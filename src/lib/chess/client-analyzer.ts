@@ -24,7 +24,7 @@ class StockfishClientSession {
   analyzeFen(
     fen: string,
     options: { depth: number; multiPV: number }
-  ): Promise<{ bestMove: string; score: number; lines: any[]; depth: number }> {
+  ): Promise<{ bestMove: string; score: number; lines: { pv: string[], evaluation: { type: string, value: number }, multiPv: number }[]; depth: number }> {
     return new Promise((resolve, reject) => {
       this.currentSearchId++;
       const sid = this.currentSearchId;
@@ -44,7 +44,7 @@ class StockfishClientSession {
           const topPv = msg.lines?.[0];
           
           // engineWorker divides by 100 to give pawns, so we multiply by 100 to restore centipawns.
-          const getCpScore = (evaluation: any) => {
+          const getCpScore = (evaluation: { type: string, value: number } | undefined) => {
             if (!evaluation) return 0;
             if (evaluation.type === "cp") {
               return Math.round(evaluation.value * 100);
@@ -56,7 +56,7 @@ class StockfishClientSession {
           resolve({
             bestMove: msg.bestmove,
             score: getCpScore(topPv?.evaluation),
-            lines: (msg.lines || []).map((l: any) => ({
+            lines: (msg.lines || []).map((l: { pv: string[], evaluation: { type: string, value: number }, multiPv: number }) => ({
               depth: options.depth,
               line: l.pv,
               nodes: 0,
@@ -111,7 +111,7 @@ function buildComment(grade: MoveGrade, cpLoss: number) {
   return messages[grade];
 }
 
-function moveToUci(move: any) {
+function moveToUci(move: { from: string, to: string, promotion?: string }) {
   return `${move.from}${move.to}${move.promotion ?? ""}`;
 }
 
@@ -297,7 +297,7 @@ export async function analyzePgnClientSide(
       moveEvaluations.push(evaluation);
       options.onProgress({ move: evaluation, moveIndex: index, totalMoves: moves.length });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (!options.abortSignal?.aborted) {
       throw error;
     }

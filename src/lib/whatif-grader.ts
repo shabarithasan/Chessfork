@@ -137,15 +137,19 @@ export function classifyWhatIfMove(input: ClassifyInput): ClassifyResult {
   }
 
   /* ── Step 8: Position-aware scaling ── */
-  if (absLoss <= 30) {
+  if (absLoss <= 25) {
+    reasons.push("small_loss");
+    return { grade: "Excellent", reasons };
+  }
+  if (absLoss <= 50) {
     reasons.push("small_loss");
     return { grade: "Good", reasons };
   }
-  if (absLoss <= 80) {
+  if (absLoss <= 100) {
     reasons.push("medium_loss");
     return { grade: "Inaccuracy", reasons };
   }
-  if (absLoss <= 200) {
+  if (absLoss <= 300) {
     reasons.push("large_loss");
     return { grade: "Mistake", reasons };
   }

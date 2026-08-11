@@ -446,12 +446,12 @@ export async function analyzePgnWithBestEngine(
 
       const bestMoverScore = turn === "w" ? best.score : -best.score;
       const actualMoverScore = turn === "w" ? actual.score : -actual.score;
-      let actualScore = actual.score;
-      let caps = capsFromEvaluations({
+      const actualScore = actual.score;
+      const caps = capsFromEvaluations({
         bestScore: bestMoverScore,
         moveScore: actualMoverScore,
       });
-      let cpLoss = normalizeCpLoss(bestMoverScore - actualMoverScore);
+      const cpLoss = normalizeCpLoss(bestMoverScore - actualMoverScore);
 
       if (index < 3) {
         bestMoveChain.push(best.bestMove);

@@ -17,6 +17,9 @@ import {
   Search,
   Settings,
   Sparkles,
+  Bug,
+  Check,
+  Copy,
 } from "lucide-react";
 
 import { ChessforkLogo } from "@/components/brand/chessfork-logo";
@@ -367,6 +370,70 @@ function renderExplainMarkdown(text: string): React.ReactNode[] {
   }
   flushList();
   return nodes;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function DevDiagnosticPanel({
+  selectedMove,
+  currentSession,
+  topMoves,
+  isLiveActive,
+  depth,
+}: any) {
+  const [copied, setCopied] = useState(false);
+
+  const move = isLiveActive ? currentSession : selectedMove;
+  
+  const data = {
+    fen: move?.fenAfter || move?.fen,
+    sideToMove: (move?.fenAfter || move?.fen)?.split(" ")[1] === "w" ? "White" : "Black",
+    moveNumber: Math.ceil((selectedMove?.ply || 0) / 2),
+    engineDepth: depth || 0,
+    multiPv: topMoves?.length || 0,
+    cpLoss: move?.cpLoss,
+    grade: move?.grade,
+    gradingInputs: {
+      winProbBefore: move?.winProbabilityBefore,
+      winProbAfter: move?.winProbabilityAfter,
+      deltaPercent: move?.deltaPercent,
+    },
+    pvLines: topMoves?.map((m: any, i: number) => ({
+      pv: i + 1,
+      eval: m.score,
+      firstMove: m.san,
+      line: m.line?.join(" "),
+    })),
+  };
+
+  const copyEvidence = () => {
+    navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="mb-3 rounded-xl border border-[#f3c53d]/30 bg-[#f3c53d]/5 p-3">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2 text-[#f3c53d] font-mono text-[11px] font-bold uppercase tracking-wider">
+          <Bug size={14} />
+          Dev Diagnostic Mode
+        </div>
+        <button
+          onClick={copyEvidence}
+          className="flex items-center gap-1.5 rounded-md bg-[#f3c53d]/10 px-2.5 py-1 text-[11px] font-semibold text-[#f3c53d] hover:bg-[#f3c53d]/20 transition-colors"
+        >
+          {copied ? <Check size={12} /> : <Copy size={12} />}
+          {copied ? "Copied!" : "Copy Evidence"}
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] font-mono text-neutral-400">
+        <div className="flex justify-between"><span>Depth:</span> <span className="text-white">{data.engineDepth}</span></div>
+        <div className="flex justify-between"><span>MultiPV:</span> <span className="text-white">{data.multiPv}</span></div>
+        <div className="flex justify-between"><span>CPLoss:</span> <span className="text-white">{data.cpLoss ?? "N/A"}</span></div>
+        <div className="flex justify-between"><span>Grade:</span> <span className="text-white">{data.grade ?? "N/A"}</span></div>
+      </div>
+    </div>
+  );
 }
 
 function RightPanel({
@@ -821,6 +888,17 @@ function RightPanel({
             </div>
           ) : (
           <div className="flex flex-col gap-3">
+            {/* ── DEV DIAGNOSTIC MODE ── */}
+            {process.env.NODE_ENV === "development" && (
+              <DevDiagnosticPanel 
+                selectedMove={selectedMove}
+                currentSession={currentSession}
+                topMoves={liveLinesResolved.length > 0 ? liveLinesResolved : startEngineLines}
+                isLiveActive={isLiveActive}
+                depth={liveEngineDepth}
+              />
+            )}
+
             {/* ── 0. Move Summary Bar ── */}
             <div className="shrink-0 px-1 pt-1">
               <MoveDistributionBar

@@ -31,8 +31,8 @@ export async function analyzeCompleteGame(
   signal?: AbortSignal,
 ): Promise<GameAnalysis & { analyzedMoves: AnalyzedMove[] }> {
   const results: AnalyzedMove[] = [];
-  let whiteCpLosses: number[] = [];
-  let blackCpLosses: number[] = [];
+  const whiteCpLosses: number[] = [];
+  const blackCpLosses: number[] = [];
   const total = moves.length;
 
   const { evaluateFen } = await import("./stockfish-worker");
