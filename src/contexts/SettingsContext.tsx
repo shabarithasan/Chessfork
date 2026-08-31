@@ -72,7 +72,7 @@ const DEFAULT_QUALITY_LABELS: Record<string, string> = {
 
 const STORAGE_KEY = "chessfork-settings";
 
-export const ENGINE_DEPTH_OPTIONS = [14, 20, 25, 30] as const;
+export const ENGINE_DEPTH_OPTIONS = [14, 18, 20, 25, 30] as const;
 
 interface SettingsState {
   boardThemeId: string;
@@ -103,7 +103,7 @@ const SettingsContext = createContext<SettingsContextValue | null>(null);
 
 function loadSettings(): SettingsState {
   if (typeof window === "undefined") {
-    return { boardThemeId: "neo", pieceThemeId: "Neo", liveEngine: true, showBestMoves: true, engineDepth: 14, qualityLabels: { ...DEFAULT_QUALITY_LABELS } };
+    return { boardThemeId: "neo", pieceThemeId: "Neo", liveEngine: true, showBestMoves: true, engineDepth: 18, qualityLabels: { ...DEFAULT_QUALITY_LABELS } };
   }
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -114,12 +114,12 @@ function loadSettings(): SettingsState {
         pieceThemeId: parsed.pieceThemeId ?? "Neo",
         liveEngine: parsed.liveEngine ?? true,
         showBestMoves: parsed.showBestMoves ?? true,
-        engineDepth: (ENGINE_DEPTH_OPTIONS as readonly number[]).includes(parsed.engineDepth) ? parsed.engineDepth : 14,
+        engineDepth: (ENGINE_DEPTH_OPTIONS as readonly number[]).includes(parsed.engineDepth) ? parsed.engineDepth : 18,
         qualityLabels: { ...DEFAULT_QUALITY_LABELS, ...(parsed.qualityLabels ?? {}) },
       };
     }
   } catch { /* ignore corrupt data */ }
-  return { boardThemeId: "neo", pieceThemeId: "Neo", liveEngine: true, showBestMoves: true, engineDepth: 14, qualityLabels: { ...DEFAULT_QUALITY_LABELS } };
+  return { boardThemeId: "neo", pieceThemeId: "Neo", liveEngine: true, showBestMoves: true, engineDepth: 18, qualityLabels: { ...DEFAULT_QUALITY_LABELS } };
 }
 
 export function SettingsProvider({ children }: { children: ReactNode }) {

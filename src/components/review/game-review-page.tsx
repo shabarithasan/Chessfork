@@ -167,6 +167,7 @@ type ContextMenuState = {
 
 const gradeClasses: Record<MoveGrade, string> = {
   Best: "border-[#22c55e]/30 bg-[#22c55e]/14 text-emerald-50",
+  Nice: "border-[#22c55e]/30 bg-[#22c55e]/16 text-green-50",
   Brilliant: "border-cyan-300/30 bg-cyan-400/18 text-cyan-50",
   Book: "border-white/10 bg-white/[0.035] text-slate-200",
   Blunder: "border-[#ef4444]/45 bg-[#ef4444]/22 font-bold text-red-50",
@@ -180,6 +181,7 @@ const gradeClasses: Record<MoveGrade, string> = {
 
 const gradeDotClasses: Record<MoveGrade, string> = {
   Best: "bg-[#22c55e]",
+  Nice: "bg-[#22c55e]",
   Brilliant: "bg-[#00c2ff]",
   Book: "bg-slate-500",
   Blunder: "bg-[#ef4444]",

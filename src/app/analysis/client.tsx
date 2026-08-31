@@ -16,6 +16,8 @@ import type { GameHeaders, ParsedMove } from "@/lib/pgn-parser";
 import { getFenAtMove } from "@/lib/pgn-parser";
 import { Chess } from "chess.js";
 import { analyzeFullGame, type GameAnalysis } from "@/lib/game-analyzer";
+import { useSettings } from "@/contexts/SettingsContext";
+import { useEngine } from "@/hooks/useEngine";
 
 type TabId = "report" | "analysis" | "coach" | "insights" | "openings";
 type AppStatus = "loading" | "pgn" | "analyzing" | "done";
@@ -54,6 +56,11 @@ export function AnalysisPageClient() {
   const topMovesRef = useRef<AbortController | null>(null);
   const movesRef = useRef<ParsedMove[]>(moves);
   movesRef.current = moves;
+
+  const { liveEngine } = useSettings();
+  const { analysis: liveAnalysis, startAnalysis, stopAnalysis } = useEngine();
+  const liveAnalysisRef = useRef(liveAnalysis);
+  liveAnalysisRef.current = liveAnalysis;
 
   const handleGameLoaded = useCallback((headers: GameHeaders, parsedMoves: ParsedMove[]) => {
     movesRef.current = parsedMoves;
@@ -226,58 +233,122 @@ export function AnalysisPageClient() {
 
   /* ── Fetch multi-Pv analysis for current position ── */
   useEffect(() => {
-    if (status !== "done" || currentMoveIndex < 0) {
+    if (status !== "done") {
       setTopMoves([]);
       setTopMovesFull([]);
       setSelectedLineIndex(null);
+      stopAnalysis();
       return;
     }
 
     setTopMoves([]);
     setTopMovesFull([]);
     setSelectedLineIndex(null);
-
     topMovesRef.current?.abort();
-    const controller = new AbortController();
-    topMovesRef.current = controller;
 
-    setIsAnalyzing(true);
+    // currentMoveIndex -1 = starting position
+    const fen = currentMoveIndex >= 0 ? getFenAtMove(moves, currentMoveIndex) : "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-    const fetchTopMoves = async () => {
-      const fen = getFenAtMove(moves, currentMoveIndex);
+    if (liveEngine) {
+      // Use client-side WASM engine for continuous deepening
+      setIsAnalyzing(true);
+      startAnalysis(fen, { depth: 16, multiPV: 3 });
 
-      try {
-        const res = await fetch("/api/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fen, depth: 16, maxTime: 2500, multiPv: 3 }),
-          signal: controller.signal,
-        });
-        if (!res.ok) return;
-        const data = (await res.json()) as AnalyzeResponse;
-        if (data.topMoves && data.topMoves.length > 0) {
-          setTopMoves(data.topMoves.map((m) => ({ from: m.from, to: m.to, san: m.san, eval: m.eval })));
-          setTopMovesFull(data.topMoves);
-        }
-        setDepth(data.depth);
-      } catch (err) {
-        if ((err as Error).name !== "AbortError") {
-          console.error("[analysis] Fetch failed:", err);
-        }
-      } finally {
-        if (!controller.signal.aborted) {
+      const updateFromLive = () => {
+        const la = liveAnalysisRef.current;
+        if (la.lines.length > 0) {
+          const chess = new Chess(fen);
+          setTopMoves(
+            la.lines.map((l) => {
+              const uci = l.pv[0];
+              try {
+                const move = chess.move(uci);
+                chess.undo();
+                return {
+                  from: move.from,
+                  to: move.to,
+                  san: move.san,
+                  eval: l.evaluation?.type === "cp" ? l.evaluation.value : l.evaluation?.type === "mate" ? l.evaluation.value * 10000 : 0,
+                };
+              } catch {
+                return { from: uci?.slice(0, 2) || "", to: uci?.slice(2, 4) || "", san: uci || "", eval: l.evaluation?.type === "cp" ? l.evaluation.value : 0 };
+              }
+            })
+          );
+          setTopMovesFull(
+            la.lines.map((l, i) => {
+              const uci = l.pv[0];
+              try {
+                const move = chess.move(uci);
+                chess.undo();
+                return {
+                  from: move.from,
+                  to: move.to,
+                  san: move.san,
+                  eval: l.evaluation?.type === "cp" ? l.evaluation.value : l.evaluation?.type === "mate" ? l.evaluation.value * 10000 : 0,
+                  mate: l.evaluation?.type === "mate" ? l.evaluation.value : null,
+                  line: l.pv,
+                };
+              } catch {
+                return { from: uci?.slice(0, 2) || "", to: uci?.slice(2, 4) || "", san: uci || "", eval: l.evaluation?.type === "cp" ? l.evaluation.value : 0, mate: l.evaluation?.type === "mate" ? l.evaluation.value : null, line: l.pv };
+              }
+            })
+          );
+          setDepth(la.depth);
+          setIsAnalyzing(la.status === "analyzing");
+        } else if (la.status === "idle" && la.depth > 0) {
           setIsAnalyzing(false);
         }
-      }
-    };
+      };
 
-    fetchTopMoves();
+      const interval = window.setInterval(updateFromLive, 200);
+      updateFromLive();
 
-    return () => {
-      controller.abort();
-      setIsAnalyzing(false);
-    };
-  }, [status, currentMoveIndex, moves]);
+      return () => {
+        window.clearInterval(interval);
+        stopAnalysis();
+        setIsAnalyzing(false);
+      };
+    } else {
+      // Fallback: server /api/analyze
+      const controller = new AbortController();
+      topMovesRef.current = controller;
+
+      const fetchTopMoves = async () => {
+        try {
+          const res = await fetch("/api/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fen, depth: 16, maxTime: 2500, multiPv: 3 }),
+            signal: controller.signal,
+          });
+          if (!res.ok) return;
+          const data = (await res.json()) as AnalyzeResponse;
+          if (data.topMoves && data.topMoves.length > 0) {
+            setTopMoves(data.topMoves.map((m) => ({ from: m.from, to: m.to, san: m.san, eval: m.eval })));
+            setTopMovesFull(data.topMoves);
+          }
+          setDepth(data.depth);
+        } catch (err) {
+          if ((err as Error).name !== "AbortError") {
+            console.error("[analysis] Fetch failed:", err);
+          }
+        } finally {
+          if (!controller.signal.aborted) {
+            setIsAnalyzing(false);
+          }
+        }
+      };
+
+      setIsAnalyzing(true);
+      fetchTopMoves();
+
+      return () => {
+        controller.abort();
+        setIsAnalyzing(false);
+      };
+    }
+  }, [status, currentMoveIndex, moves, liveEngine, startAnalysis, stopAnalysis]);
 
   /* ── Alternative line selection ── */
   const handleSelectLine = useCallback(

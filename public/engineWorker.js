@@ -38,7 +38,7 @@ if (!_isPthread) {
                 });
               }
             }
-          } else if (msg === 'uciok') {
+          } else if (msg === 'uciok' || msg === 'readyok') {
             _engineReady = true;
             _origPostMessage({ type: 'ready' });
             if (_pendingStart) {

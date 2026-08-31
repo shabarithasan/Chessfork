@@ -57,7 +57,7 @@ const envSchema = z.object({
   STOCKFISH_QUICK_REPORT_DEPTH: z.coerce.number().int().min(1).max(60).optional().default(12),
   STOCKFISH_QUICK_ACTUAL_MOVE_DEPTH: z.coerce.number().int().min(1).max(60).optional().default(10),
   STOCKFISH_QUICK_POSITION_DEPTH: z.coerce.number().int().min(1).max(60).optional().default(14),
-  STOCKFISH_QUICK_MIN_MOVE_TIME_MS: z.coerce.number().int().min(0).max(60_000).optional().default(0),
+  STOCKFISH_QUICK_MIN_MOVE_TIME_MS: z.coerce.number().int().min(0).max(60_000).optional().default(2000),
   STOCKFISH_SYZYGY_PATH: z.string().optional().default(""),
   STOCKFISH_SYZYGY_PROBE_DEPTH: z.coerce.number().int().min(1).max(100).optional().default(1),
   STOCKFISH_SYZYGY_PROBE_LIMIT: z.coerce.number().int().min(0).max(7).optional().default(5),

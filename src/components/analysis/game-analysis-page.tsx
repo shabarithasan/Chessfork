@@ -126,6 +126,7 @@ const GRADE_TO_LABEL: Record<string, string> = {
   Brilliant: "brilliant",
   Great: "great_find",
   Best: "best",
+  Nice: "excellent",
   Excellent: "excellent",
   Good: "good",
   Book: "book",
@@ -138,6 +139,7 @@ const GRADE_TO_LABEL: Record<string, string> = {
 const GRADE_VERB: Record<string, string> = {
   Brilliant: "is brilliant",
   Excellent: "is excellent",
+  Nice: "is nice",
   Great: "is great",
   Best: "is best",
   Good: "is ok",
@@ -379,30 +381,46 @@ function DevDiagnosticPanel({
   topMoves,
   isLiveActive,
   depth,
+  engineAnalysis,
+  liveEngine,
+  showBestMoveArrow,
+  multiPv,
 }: any) {
   const [copied, setCopied] = useState(false);
 
   const move = isLiveActive ? currentSession : selectedMove;
+  const fen = move?.fenAfter || move?.fen || engineAnalysis?.fen;
+  const sideToMove = fen?.split(" ")[1] === "w" ? "white" : "black";
   
   const data = {
-    fen: move?.fenAfter || move?.fen,
-    sideToMove: (move?.fenAfter || move?.fen)?.split(" ")[1] === "w" ? "White" : "Black",
+    fen: fen,
+    sideToMove: sideToMove,
     moveNumber: Math.ceil((selectedMove?.ply || 0) / 2),
-    engineDepth: depth || 0,
-    multiPv: topMoves?.length || 0,
-    cpLoss: move?.cpLoss,
-    grade: move?.grade,
-    gradingInputs: {
-      winProbBefore: move?.winProbabilityBefore,
-      winProbAfter: move?.winProbabilityAfter,
-      deltaPercent: move?.deltaPercent,
+    playedMove: selectedMove?.san || null,
+    evaluation: engineAnalysis?.evaluation ? (engineAnalysis.evaluation.type === "cp" ? (engineAnalysis.evaluation.value / 100).toFixed(2) : `M${engineAnalysis.evaluation.value}`) : (move?.score ? (move.score / 100).toFixed(2) : null),
+    cpl: move?.cpLoss ?? null,
+    grade: move?.grade ?? null,
+    bestMove: engineAnalysis?.bestMove || null,
+    engine: {
+      name: "Stockfish 16.1 WASM",
+      version: null,
+      network: null,
+      depth: engineAnalysis?.depth || depth || 0,
+      multiPV: multiPv || 3,
+      threads: null,
+      hash: null,
+      nodes: null,
+      time: null
     },
-    pvLines: topMoves?.map((m: any, i: number) => ({
-      pv: i + 1,
-      eval: m.score,
-      firstMove: m.san,
-      line: m.line?.join(" "),
-    })),
+    lines: {
+      pv1: topMoves?.[0]?.line?.join(" ") || topMoves?.[0]?.san || null,
+      pv2: topMoves?.[1]?.line?.join(" ") || topMoves?.[1]?.san || null,
+      pv3: topMoves?.[2]?.line?.join(" ") || topMoves?.[2]?.san || null,
+    },
+    arrows: showBestMoveArrow && liveEngine ? topMoves?.slice(0, 3).map((m: any) => m.san) : [],
+    source: isLiveActive ? "what-if" : (liveEngine ? "live-engine" : "static-analysis"),
+    cache: null,
+    whatIf: !!isLiveActive
   };
 
   const copyEvidence = () => {
@@ -412,25 +430,37 @@ function DevDiagnosticPanel({
   };
 
   return (
-    <div className="mb-3 rounded-xl border border-[#f3c53d]/30 bg-[#f3c53d]/5 p-3">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2 text-[#f3c53d] font-mono text-[11px] font-bold uppercase tracking-wider">
-          <Bug size={14} />
-          Dev Diagnostic Mode
+    <div className="mb-3 rounded-xl border border-[#f3c53d]/30 bg-[#f3c53d]/5 p-3 flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[#f3c53d] font-mono text-[11px] font-bold uppercase tracking-wider">
+            <Bug size={14} />
+            Dev Diagnostic Mode
+          </div>
+          <button
+            onClick={copyEvidence}
+            className="flex items-center gap-1.5 rounded-md bg-[#f3c53d]/10 px-2.5 py-1 text-[11px] font-semibold text-[#f3c53d] hover:bg-[#f3c53d]/20 transition-colors"
+          >
+            {copied ? <Check size={12} /> : <Copy size={12} />}
+            {copied ? "Copied!" : "Copy Evidence"}
+          </button>
         </div>
-        <button
-          onClick={copyEvidence}
-          className="flex items-center gap-1.5 rounded-md bg-[#f3c53d]/10 px-2.5 py-1 text-[11px] font-semibold text-[#f3c53d] hover:bg-[#f3c53d]/20 transition-colors"
-        >
-          {copied ? <Check size={12} /> : <Copy size={12} />}
-          {copied ? "Copied!" : "Copy Evidence"}
-        </button>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] font-mono text-neutral-400">
+          <div className="flex justify-between"><span>Depth:</span> <span className="text-white">{data.engine.depth}</span></div>
+          <div className="flex justify-between"><span>MultiPV:</span> <span className="text-white">{data.engine.multiPV}</span></div>
+          <div className="flex justify-between"><span>Eval:</span> <span className="text-white">{data.evaluation ?? "N/A"}</span></div>
+          <div className="flex justify-between"><span>Grade:</span> <span className="text-white">{data.grade ?? "N/A"}</span></div>
+        </div>
       </div>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] font-mono text-neutral-400">
-        <div className="flex justify-between"><span>Depth:</span> <span className="text-white">{data.engineDepth}</span></div>
-        <div className="flex justify-between"><span>MultiPV:</span> <span className="text-white">{data.multiPv}</span></div>
-        <div className="flex justify-between"><span>CPLoss:</span> <span className="text-white">{data.cpLoss ?? "N/A"}</span></div>
-        <div className="flex justify-between"><span>Grade:</span> <span className="text-white">{data.grade ?? "N/A"}</span></div>
+      
+      <div className="border-t border-[#f3c53d]/20 pt-2 text-[10px] text-[#f3c53d]/80 leading-relaxed font-mono">
+        <strong className="block mb-1 text-[#f3c53d]">Manual Parity Test:</strong>
+        <ol className="list-decimal pl-4 space-y-0.5">
+          <li>Copy Chessfork Evidence.</li>
+          <li>Open the exact same position in Chessigma.</li>
+          <li>Record Chessigma: Eval, PV1-3, Depth, Grade.</li>
+          <li>Compare the two datasets for mismatches.</li>
+        </ol>
       </div>
     </div>
   );
@@ -478,6 +508,8 @@ function RightPanel({
   stopAnalysis,
   multiPv = 3,
   setMultiPv,
+  engineDepth,
+  setEngineDepth,
 }: {
   moves: MoveEvaluation[];
   selectedMove: MoveEvaluation;
@@ -524,6 +556,8 @@ function RightPanel({
   stopAnalysis?: () => void;
   multiPv?: number;
   setMultiPv?: (val: number) => void;
+  engineDepth?: number;
+  setEngineDepth?: (val: number) => void;
 }) {
   const [explainSections, setExplainSections] = useState<ExplainSection[] | null>(null);
   const [explainLoading, setExplainLoading] = useState(false);
@@ -739,17 +773,27 @@ function RightPanel({
   }, [moves]);
 
   const phaseStats = useMemo(() => {
-    const count = { opening: { left: { good: 0, bad: 0 }, right: { good: 0, bad: 0 } }, middlegame: { left: { good: 0, bad: 0 }, right: { good: 0, bad: 0 } }, endgame: { left: { good: 0, bad: 0 }, right: { good: 0, bad: 0 } } };
+    const cpLossSum = { opening: { left: 0, right: 0 }, middlegame: { left: 0, right: 0 }, endgame: { left: 0, right: 0 } };
+    const count = { opening: { left: 0, right: 0 }, middlegame: { left: 0, right: 0 }, endgame: { left: 0, right: 0 } };
+    
     for (const m of moves) {
       const side = m.side === "white" ? "left" : "right" as const;
       const phase = m.phase;
-      if (m.grade === "Brilliant" || m.grade === "Great" || m.grade === "Best" || m.grade === "Excellent") count[phase][side].good++;
-      else if (m.grade === "Blunder" || m.grade === "Mistake" || m.grade === "Inaccuracy") count[phase][side].bad++;
+      cpLossSum[phase][side] += (m.cpLoss || 0);
+      count[phase][side]++;
     }
+
+    const calcRating = (sum: number, c: number) => {
+      if (c === 0) return 0;
+      const avgLoss = sum / c;
+      const acc = Math.max(0, Math.min(100, 100 * Math.exp(-0.0035 * avgLoss)));
+      return playerRating(acc);
+    };
+
     return {
-      opening: { left: count.opening.left.good >= count.opening.left.bad ? "good" as const : "bad" as const, right: count.opening.right.good >= count.opening.right.bad ? "good" as const : "bad" as const },
-      middlegame: { left: count.middlegame.left.good >= count.middlegame.left.bad ? "good" as const : "bad" as const, right: count.middlegame.right.good >= count.middlegame.right.bad ? "good" as const : "bad" as const },
-      endgame: { left: count.endgame.left.good >= count.endgame.left.bad ? "good" as const : "bad" as const, right: count.endgame.right.good >= count.endgame.right.bad ? "good" as const : "bad" as const },
+      opening: { left: calcRating(cpLossSum.opening.left, count.opening.left), right: calcRating(cpLossSum.opening.right, count.opening.right) },
+      middlegame: { left: calcRating(cpLossSum.middlegame.left, count.middlegame.left), right: calcRating(cpLossSum.middlegame.right, count.middlegame.right) },
+      endgame: { left: calcRating(cpLossSum.endgame.left, count.endgame.left), right: calcRating(cpLossSum.endgame.right, count.endgame.right) },
     };
   }, [moves]);
 
@@ -772,19 +816,23 @@ function RightPanel({
     const blunderPct = totalMoves > 0 ? Math.round((blunders.length / totalMoves) * 100) : 0;
     const phaseAcc: Record<string, { sum: number; count: number }> = { opening: { sum: 0, count: 0 }, middlegame: { sum: 0, count: 0 }, endgame: { sum: 0, count: 0 } };
     for (const m of moves) {
-      const acc = Math.max(0, 100 - (m.cpLoss || 0) * 0.15);
-      if (phaseAcc[m.phase]) { phaseAcc[m.phase].sum += acc; phaseAcc[m.phase].count++; }
+      if (phaseAcc[m.phase]) { phaseAcc[m.phase].sum += (m.cpLoss || 0); phaseAcc[m.phase].count++; }
     }
-    const avg = (p: string) => phaseAcc[p].count > 0 ? Math.round(phaseAcc[p].sum / phaseAcc[p].count) : 50;
-    const pctRank = (acc: number) => acc >= 90 ? 80 : acc >= 75 ? 50 : acc >= 60 ? 34 : 20;
-    const colorRank = (pct: number) => pct <= 20 ? "#e74c3c" : pct <= 34 ? "#fbc531" : "#b4b4b4";
+    const avgAcc = (p: string) => {
+      if (phaseAcc[p].count === 0) return 0;
+      const avgLoss = phaseAcc[p].sum / phaseAcc[p].count;
+      return Math.max(0, Math.min(100, 100 * Math.exp(-0.0035 * avgLoss)));
+    };
+    
+    const overallAvgLoss = totalMoves > 0 ? moves.reduce((s, m) => s + (m.cpLoss || 0), 0) / totalMoves : 0;
+    const overallAcc = Math.max(0, Math.min(100, 100 * Math.exp(-0.0035 * overallAvgLoss)));
 
     const sections = [
-      { label: "Accuracy", icon: "\uD83C\uDFAF", value: `bottom ${100 - pctRank(Math.round(100 - moves.reduce((s, m) => s + (m.cpLoss || 0), 0) / Math.max(1, totalMoves) * 0.15))}%`, textColor: "#e74c3c", progressFill: "#e74c3c", progressPercent: pctRank(Math.round(100 - moves.reduce((s, m) => s + (m.cpLoss || 0), 0) / Math.max(1, totalMoves) * 0.15)) },
-      { label: "Opening", icon: "\uD83D\uDCD6", value: `bottom ${100 - pctRank(avg("opening"))}%`, textColor: colorRank(pctRank(avg("opening"))), progressFill: colorRank(pctRank(avg("opening"))), progressPercent: pctRank(avg("opening")) },
-      { label: "Middlegame", icon: "\u2694\uFE0F", value: `bottom ${100 - pctRank(avg("middlegame"))}%`, textColor: colorRank(pctRank(avg("middlegame"))), progressFill: colorRank(pctRank(avg("middlegame"))), progressPercent: pctRank(avg("middlegame")) },
-      { label: "Endgame", icon: "\u265B", value: `bottom ${100 - pctRank(avg("endgame"))}%`, textColor: colorRank(pctRank(avg("endgame"))), progressFill: colorRank(pctRank(avg("endgame"))), progressPercent: pctRank(avg("endgame")) },
-      { label: "Blunders", icon: "\u26A0\uFE0F", value: `bottom ${Math.max(1, Math.min(100, blunderPct))}%`, textColor: "#e74c3c", progressFill: "#e74c3c", progressPercent: Math.max(5, 100 - blunderPct * 3) },
+      { label: "Accuracy", icon: "\uD83C\uDFAF", value: `${playerRating(overallAcc)}`, textColor: "#f5f5f5", progressFill: "#34d399", progressPercent: overallAcc },
+      { label: "Opening", icon: "\uD83D\uDCD6", value: `${playerRating(avgAcc("opening"))}`, textColor: "#f5f5f5", progressFill: "#34d399", progressPercent: avgAcc("opening") },
+      { label: "Middlegame", icon: "\u2694\uFE0F", value: `${playerRating(avgAcc("middlegame"))}`, textColor: "#f5f5f5", progressFill: "#34d399", progressPercent: avgAcc("middlegame") },
+      { label: "Endgame", icon: "\u265B", value: `${playerRating(avgAcc("endgame"))}`, textColor: "#f5f5f5", progressFill: "#34d399", progressPercent: avgAcc("endgame") },
+      { label: "Blunders", icon: "\u26A0\uFE0F", value: `${blunders.length}`, textColor: "#e74c3c", progressFill: "#e74c3c", progressPercent: Math.max(5, 100 - blunderPct * 3) },
     ];
 
     const accuracyData = moves.map((m, i) => ({
@@ -806,8 +854,8 @@ function RightPanel({
 
 
   return (
-    <aside className="h-screen flex flex-col bg-[#2c2b29] p-3 lg:w-[420px] overflow-hidden">
-        <div className="flex flex-col min-h-0 rounded-xl bg-[#242321] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] h-full">
+    <aside className="h-screen flex flex-col bg-[#0b0d14] p-3 lg:w-[420px] overflow-hidden">
+        <div className="flex flex-col min-h-0 rounded-xl bg-[#121624] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] h-full">
           {isTrainerMode && trainerMistakes && trainerIndex !== undefined ? (
             <TrainerPanel
               totalMistakes={trainerMistakes.length}
@@ -896,6 +944,10 @@ function RightPanel({
                 topMoves={liveLinesResolved.length > 0 ? liveLinesResolved : startEngineLines}
                 isLiveActive={isLiveActive}
                 depth={liveEngineDepth}
+                engineAnalysis={engineAnalysis}
+                liveEngine={liveEngine}
+                showBestMoveArrow={showBestMoveArrow}
+                multiPv={multiPv}
               />
             )}
 
@@ -1147,15 +1199,24 @@ function RightPanel({
               let moveNumber: number | undefined;
               if (liveLinesResolved && liveLinesResolved.length > 0) {
                 lines = liveLinesResolved;
-                fenBefore = isLiveActive ? whatIfLeafFenResolved : (isStartPosition ? "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" : selectedMove.fenAfter);
+                fenBefore = isLiveActive ? whatIfLeafFenResolved : (isStartPosition ? STARTING_FEN : selectedMove.fenAfter);
                 if (!isLiveActive) moveNumber = selectedMove.moveNumber;
               } else if (!isLiveActive && isStartPosition && startEngineLines && startEngineLines.length > 0) {
                 lines = startEngineLines;
-                fenBefore = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-              } else if (!isLiveActive && selectedMove && selectedMove.engineLines && selectedMove.engineLines.length > 0) {
-                lines = selectedMove.engineLines;
-                fenBefore = selectedMove.fenBefore;
-                moveNumber = selectedMove.moveNumber;
+                fenBefore = STARTING_FEN;
+              } else if (!isLiveActive && selectedMove) {
+                // Fetch the engine lines from the *next* move, which correspond to `fenAfter`.
+                const nextMove = moves[selectedMove.ply]; 
+                if (nextMove && nextMove.engineLines && nextMove.engineLines.length > 0) {
+                  lines = nextMove.engineLines;
+                  fenBefore = selectedMove.fenAfter;
+                  moveNumber = selectedMove.side === "black" ? selectedMove.moveNumber + 1 : selectedMove.moveNumber;
+                } else if (selectedMove.engineLines && selectedMove.engineLines.length > 0) {
+                  // Fallback to the played move's engineLines (fenBefore) if it's the last move
+                  lines = selectedMove.engineLines;
+                  fenBefore = selectedMove.fenBefore;
+                  moveNumber = selectedMove.moveNumber;
+                }
               }
               if (lines && lines.length > 0) {
                 return (
@@ -1195,12 +1256,29 @@ function RightPanel({
                       Go deeper
                     </button>
                     <select
+                      value={engineDepth ?? 18}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        if (setEngineDepth) setEngineDepth(val);
+                        const fen = isStartPosition ? "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" : selectedMove.fenAfter;
+                        if (startAnalysis) startAnalysis(fen, { depth: val, multiPV: multiPv });
+                      }}
+                      className="rounded-md border border-neutral-700 bg-neutral-800 px-1 py-[3px] text-[10px] font-semibold text-neutral-300 hover:bg-neutral-700 transition-colors outline-none cursor-pointer"
+                      title="Engine Depth"
+                    >
+                      <option value={14}>Depth 14</option>
+                      <option value={18}>Depth 18</option>
+                      <option value={20}>Depth 20</option>
+                      <option value={25}>Depth 25</option>
+                      <option value={30}>Depth 30</option>
+                    </select>
+                    <select
                       value={multiPv}
                       onChange={(e) => {
                         const val = parseInt(e.target.value);
                         if (setMultiPv) setMultiPv(val);
                         const fen = isStartPosition ? "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" : selectedMove.fenAfter;
-                        if (startAnalysis) startAnalysis(fen, { depth: 22, multiPV: val });
+                        if (startAnalysis) startAnalysis(fen, { depth: engineDepth ?? 18, multiPV: val });
                       }}
                       className="rounded-md border border-neutral-700 bg-neutral-800 px-1 py-[3px] text-[10px] font-semibold text-neutral-300 hover:bg-neutral-700 transition-colors outline-none cursor-pointer"
                       title="Number of engine lines (Multi-PV)"
@@ -1340,6 +1418,8 @@ function BoardWorkspace({
   startAnalysis,
   stopAnalysis,
   multiPv = 3,
+  engineAnalysis,
+  engineDepth,
 }: {
   analysis: AnalysisRun;
   moves: MoveEvaluation[];
@@ -1367,11 +1447,13 @@ function BoardWorkspace({
   trainerIndex?: number;
   onTrainerAttempt?: (userSan: string, bestSan: string) => void;
 
-  // Engine Props
+  // Engine & Feature Props
   liveEngine?: boolean;
   startAnalysis?: (fen: string, options?: { depth?: number; multiPV?: number }) => void;
   stopAnalysis?: () => void;
   multiPv?: number;
+  engineAnalysis?: any;
+  engineDepth?: number;
 }) {
   const { boardColors, pieceThemeId } = useSettings();
   const isLiveActive = !!altFen || (whatIfMoves !== undefined && whatIfMoves.length > 0);
@@ -1424,15 +1506,15 @@ function BoardWorkspace({
     return () => window.removeEventListener("keydown", handler);
   }, [clearSelection]);
 
-  // Auto-run engine on current game move if Live Engine is enabled and we are not in what-if mode
+  // Auto-run engine on current game move if Live Engine is enabled
   useEffect(() => {
     if (!liveEngine || isLiveActive) {
-      if (!isLiveActive && stopAnalysis) stopAnalysis(); // only stop if we aren't in what-if mode (what-if manages its own engine state)
+      if (!isLiveActive && stopAnalysis) stopAnalysis();
       return;
     }
     const fen = isStartPosition ? STARTING_FEN : selectedMove.fenAfter;
-    if (startAnalysis) startAnalysis(fen, { depth: 22, multiPV: multiPv });
-  }, [liveEngine, isLiveActive, selectedMove.fenAfter, isStartPosition, startAnalysis, stopAnalysis, multiPv]);
+    if (startAnalysis) startAnalysis(fen, { depth: engineDepth, multiPV: multiPv });
+  }, [liveEngine, isLiveActive, selectedMove.fenAfter, isStartPosition, startAnalysis, stopAnalysis, multiPv, engineDepth]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -1460,8 +1542,22 @@ function BoardWorkspace({
   const snapFen = currentSession?.fen;
   const snapGrade = currentSession?.grade ?? null;
 
-  const liveScoreVal = snapEval?.type === "cp" ? snapEval.value * 100 : snapEval?.type === "mate" ? (snapEval.value > 0 ? 100000 : -100000) : undefined;
-  const displayScore = liveScoreVal ?? (isLiveActive ? null : selectedMove.score);
+  const liveScoreRaw = snapEval?.type === "cp" ? snapEval.value * 100 : snapEval?.type === "mate" ? (snapEval.value > 0 ? 100000 : -100000) : undefined;
+  // Stockfish evaluation is relative to the side to move. Convert to absolute (White's perspective)
+  const isBlackToMoveLive = currentSession?.fen?.split(" ")[1] === "b";
+  const liveScoreVal = liveScoreRaw !== undefined ? (isBlackToMoveLive ? -liveScoreRaw : liveScoreRaw) : undefined;
+  
+  let staticScore = selectedMove.score;
+  const nextMoveForScore = moves[selectedMove.ply];
+  if (!isLiveActive && nextMoveForScore?.engineLines && nextMoveForScore.engineLines.length > 0) {
+    // nextMove.engineLines[0].score is relative to the next move's player (which is selectedMove's opponent).
+    // It's already converted to White's perspective in client-analyzer (`engineLines` are NOT in White's perspective? Wait)
+    // Actually, in client-analyzer, `engineLines` has `line.score` from the mover's perspective.
+    // So if fenAfter is Black to move, `engineLines[0].score` is Black's perspective.
+    // We want absolute (White's perspective), so if selectedMove was White, the next move is Black, so we negate.
+    staticScore = selectedMove.side === "white" ? -nextMoveForScore.engineLines[0].score : nextMoveForScore.engineLines[0].score;
+  }
+  const displayScore = liveScoreVal ?? (isLiveActive ? null : staticScore);
 
   const chessboardOptions = useMemo(() => {
     const arrows: Array<{ startSquare: string; endSquare: string; color: string }> = [];
@@ -1532,52 +1628,54 @@ function BoardWorkspace({
       clearSelection();
     };
 
-    // In what-if mode, use only live lines (never fall back to game analysis)
-    const engineLines = isLiveActive
-      ? (snapLines ?? [])
-      : (selectedMove.engineLines ?? []);
+    // Drive board arrows using Live Engine results exclusively when showBestMoveArrow is active.
+    let engineLinesToRender: EngineLine[] = [];
+    if (showBestMoveArrow) {
+      if (isLiveActive) {
+        engineLinesToRender = snapLines || [];
+      } else if (liveEngine && engineAnalysis?.lines && engineAnalysis.lines.length > 0) {
+        engineLinesToRender = engineAnalysis.lines.map((l: any, i: number) => ({
+          rank: i + 1,
+          san: l.pv[0] ?? "",
+          score: l.evaluation.type === "cp" ? Math.round(l.evaluation.value * 100) : (l.evaluation.value > 0 ? 10000 : -10000),
+          depth: engineAnalysis.depth,
+          mate: l.evaluation.type === "mate" ? l.evaluation.value : undefined,
+          line: l.pv,
+          nodes: 0,
+        }));
+      } else if (selectedMove.engineLines && selectedMove.engineLines.length > 0) {
+        // Fallback to pre-computed report lines
+        engineLinesToRender = selectedMove.engineLines.slice(0, 3);
+      }
+    }
 
-    // In what-if mode show top 3 arrows (matching multiPV=3), in game mode show top 2
-    const maxArrows = isLiveActive ? 3 : 2;
-    engineLines.slice(0, maxArrows).forEach((line, lineIdx) => {
+    const maxArrows = 3;
+    engineLinesToRender.slice(0, maxArrows).forEach((line, lineIdx) => {
       const firstSan = line.san;
       if (!firstSan) return;
       try {
-        const fenBefore = isLiveActive && (snapFen ?? "") ? (snapFen ?? "") : selectedMove.fenBefore;
+        const fenBefore = (isLiveActive ? (snapFen ?? "") : selectedMove.fenAfter);
+        if (!fenBefore) return;
         const chess = new Chess(fenBefore);
         const move = chess.move(firstSan);
         const sqKey = `${move.from}-${move.to}`;
         if (seenSquares.has(sqKey)) return;
         seenSquares.add(sqKey);
+        
+        let arrowColor = "rgba(92, 145, 20, 0.45)"; // secondary green
+        if (lineIdx === 0) arrowColor = "rgba(243, 197, 61, 0.85)"; // gold best move
+        else if (lineIdx === 1) arrowColor = "rgba(92, 145, 20, 0.85)"; // solid green second choice
+
         arrows.push({
           startSquare: move.from,
           endSquare: move.to,
-          color: lineIdx === 0 ? "rgba(92, 145, 20, 0.85)" : "rgba(92, 145, 20, 0.45)",
+          color: arrowColor,
         });
       } catch { /* skip invalid move */ }
     });
 
     const boardFen = altFen ?? (isStartPosition ? STARTING_FEN : selectedMove.fenAfter);
     const orientation = (analysis.subjectColor ?? "white") as "white" | "black";
-
-    // Best move arrow overlay (gold, when toggle is on)
-    if (showBestMoveArrow) {
-      const fenBefore = isLiveActive && snapFen ? snapFen : selectedMove.fenBefore;
-      if (fenBefore) {
-        const firstSan = engineLines[0]?.san;
-        if (firstSan) {
-          try {
-            const ch = new Chess(fenBefore);
-            const mv = ch.move(firstSan);
-            const sqKey = `${mv.from}-${mv.to}`;
-            if (!seenSquares.has(sqKey)) {
-              seenSquares.add(sqKey);
-              arrows.push({ startSquare: mv.from, endSquare: mv.to, color: "rgba(243, 197, 61, 0.85)" });
-            }
-          } catch { /* skip */ }
-        }
-      }
-    }
 
     return {
       position: boardFen,
@@ -1614,21 +1712,6 @@ function BoardWorkspace({
 
         styles[selectedMove.from] = { backgroundColor: "rgba(128, 167, 37, 0.45)" };
         styles[selectedMove.to] = { backgroundColor: "rgba(170, 69, 69, 0.50)" };
-
-        if (showBestMoveArrow) {
-          const bmFenBefore = isLiveActive && snapFen ? snapFen : selectedMove.fenBefore;
-          if (bmFenBefore) {
-            const bmSan = engineLines[0]?.san;
-            if (bmSan) {
-              try {
-                const bmCh = new Chess(bmFenBefore);
-                const bmMv = bmCh.move(bmSan);
-                styles[bmMv.from] = { backgroundColor: "rgba(243, 197, 61, 0.45)" };
-                styles[bmMv.to] = { backgroundColor: "rgba(243, 197, 61, 0.50)", boxShadow: "inset 0 0 12px rgba(243,197,61,0.4)" };
-              } catch { /* skip */ }
-            }
-          }
-        }
 
         return styles;
       })(),
@@ -1669,7 +1752,7 @@ function BoardWorkspace({
         }
       },
     };
-  }, [isStartPosition, selectedMove, altFen, onWhatIfDrop, isLiveActive, whatIfMoves, whatIfSelectedIdx, selectedSquare, legalMoves, clearSelection, showBestMoveArrow, boardColors, pieceThemeId]);
+  }, [isStartPosition, selectedMove, altFen, onWhatIfDrop, isLiveActive, whatIfMoves, whatIfSelectedIdx, selectedSquare, legalMoves, clearSelection, showBestMoveArrow, boardColors, pieceThemeId, snapFen, snapLines, engineAnalysis?.lines, analysis.subjectColor, moves]);
 
   
 
@@ -1681,7 +1764,7 @@ function BoardWorkspace({
     : 0.5;
 
   return (
-    <main className="flex min-h-0 w-full flex-1 flex-col items-center justify-center bg-[#11110f] px-8 py-3">
+    <main className="flex min-h-0 w-full flex-1 flex-col items-center justify-center bg-[#0b0d14] px-8 py-3">
       <div className="flex w-full max-w-[580px] flex-col justify-center shrink-0">
         <div className="flex w-full flex-col gap-2">
         <div className="flex h-7 items-center justify-between gap-3">
@@ -2038,7 +2121,7 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
   }, [setSelectedPly]);
 
   const { analysis: engineAnalysis, startAnalysis, stopAnalysis } = useEngine();
-  const { showBestMoves, engineDepth, setLiveEngine, liveEngine } = useSettings();
+  const { showBestMoves, setLiveEngine, liveEngine, engineDepth, setEngineDepth } = useSettings();
 
   useEffect(() => {
     if (activeTab === "Analysis") {
@@ -2379,8 +2462,8 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
 
   if (moves.length === 0) {
     return (
-      <section className="grid min-h-screen place-items-center bg-[#171613] px-6 text-stone-200">
-        <div className="rounded-xl bg-[#242321] p-8 text-center">
+      <section className="grid min-h-screen place-items-center bg-[#0b0d14] px-6 text-stone-200">
+        <div className="rounded-xl bg-[#121624] p-8 text-center">
           <Search className="mx-auto size-8 text-stone-500" />
           <h1 className="mt-4 text-2xl font-bold">No moves to analyze</h1>
           <Link href="/analyze" className="mt-6 inline-flex rounded-lg bg-[#ffc12c] px-4 py-2 text-sm font-bold text-[#282417]">
@@ -2392,7 +2475,7 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
   }
 
   return (
-    <div ref={containerRef} className="fixed inset-0 z-[1000] overflow-hidden bg-[#171613] text-stone-100" onKeyDown={onKeyDown} tabIndex={0}>
+    <div ref={containerRef} className="fixed inset-0 z-[1000] overflow-hidden bg-[#0b0d14] text-stone-100" onKeyDown={onKeyDown} tabIndex={0}>
       <PremiumSidebar
         pathname={pathname}
         onShowWhatsNew={() => setShowWhatsNew(true)}
@@ -2470,10 +2553,12 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
            trainerMistakes={trainerMistakes}
            trainerIndex={trainerIndex}
            onTrainerAttempt={handleTrainerAttempt}
-           
+           liveEngine={liveEngine}
            startAnalysis={startAnalysis}
            stopAnalysis={stopAnalysis}
            multiPv={multiPv}
+           engineDepth={engineDepth}
+           engineAnalysis={engineAnalysis}
         />
         <RightPanel
           moves={moves}
@@ -2550,9 +2635,11 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
           
           multiPv={multiPv}
           setMultiPv={setMultiPv}
+          engineDepth={engineDepth}
+          setEngineDepth={setEngineDepth}
         />
       </div>
-      <div className="fixed left-4 top-4 z-20 flex items-center gap-2 rounded-lg border border-white/10 bg-[#242321]/95 px-3 py-2 lg:hidden">
+      <div className="fixed left-4 top-4 z-20 flex items-center gap-2 rounded-lg border border-white/10 bg-[#121624]/95 px-3 py-2 lg:hidden">
         <ChessforkLogo className="size-7" />
         <span className="text-sm font-bold">Chessfork</span>
         <span className="ml-2 text-xs text-stone-500">{resultLabel(analysis.result)}</span>

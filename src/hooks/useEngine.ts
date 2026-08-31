@@ -19,11 +19,14 @@ export interface AnalysisState {
   fen: string;
 }
 
+const analysisCache = new Map<string, AnalysisState>();
+
 export function useEngine() {
   const workerRef = useRef<Worker | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchIdRef = useRef(0);
   const searchStartedRef = useRef(0);
+  const currentRequestRef = useRef({ fen: "", depth: 14, multiPv: 3 });
   const [analysis, setAnalysis] = useState<AnalysisState>({
     evaluation: null,
     lines: [],
@@ -38,7 +41,6 @@ export function useEngine() {
     const worker = enginePool.getLiveWorker();
     workerRef.current = worker;
 
-    // Use a named function so we can remove it later
     const messageHandler = (e: MessageEvent) => {
       const msg = e.data;
       if (msg.searchId && msg.searchId !== searchIdRef.current) {
@@ -64,16 +66,27 @@ export function useEngine() {
           }
           break;
         case "bestmove":
-          setAnalysis((prev) => ({
-            ...prev,
-            bestMove: msg.bestmove,
-            status: "idle" as const,
-          }));
+          setAnalysis((prev) => {
+            const newState = {
+              ...prev,
+              bestMove: msg.bestmove,
+              status: "idle" as const,
+            };
+            const req = currentRequestRef.current;
+            if (req.fen === prev.fen) {
+              const cacheKey = `${req.fen}_${req.depth}_${req.multiPv}`;
+              analysisCache.set(cacheKey, newState);
+            }
+            return newState;
+          });
           break;
       }
     };
 
     worker.addEventListener("message", messageHandler);
+
+    // Ping engine to receive "ready" if it was already initialized
+    worker.postMessage("isready");
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -89,29 +102,37 @@ export function useEngine() {
       searchIdRef.current += 1;
       const sid = searchIdRef.current;
       const normalizedFen = fen === "startpos" ? "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" : fen;
-      // Cancellation is immediate; scheduling the replacement search lets a
-      // rapid series of board moves collapse into one inexpensive evaluation.
+      
+      const depth = options?.depth ?? 14;
+      const multiPv = options?.multiPV || 3;
+      currentRequestRef.current = { fen: normalizedFen, depth, multiPv };
+      const cacheKey = `${normalizedFen}_${depth}_${multiPv}`;
+
       worker.postMessage({ command: "stop" });
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      setAnalysis({ evaluation: null, lines: [], bestMove: null, depth: 0, status: "analyzing", fen });
+
+      const cached = analysisCache.get(cacheKey);
+      if (cached && cached.status === "idle") {
+        setAnalysis(cached);
+        return;
+      }
+
+      setAnalysis({ evaluation: null, lines: [], bestMove: null, depth: 0, status: "analyzing", fen: "" });
       debounceRef.current = setTimeout(() => {
         searchStartedRef.current = sid;
         worker.postMessage({
           command: "start",
           fen: normalizedFen,
-          depth: options?.depth ?? 14,
-          multiPV: options?.multiPV || 3,
+          depth,
+          multiPV: multiPv,
           searchId: sid,
         });
       }, 100);
 
-      // Only a warm opening-book hit can win this 100 ms window. A cold
-      // network response never delays local Stockfish, keeping the board fast
-      // and fully functional offline.
       void lookupOpeningBook(normalizedFen).then((bookLines) => {
         if (!bookLines || searchIdRef.current !== sid || searchStartedRef.current === sid) return;
         if (debounceRef.current) clearTimeout(debounceRef.current);
-        setAnalysis({
+        const bookState: AnalysisState = {
           evaluation: { type: "cp", value: 0 },
           lines: bookLines.map((line, index) => ({
             multiPv: index + 1,
@@ -119,10 +140,12 @@ export function useEngine() {
             pv: [line.uci],
           })),
           bestMove: bookLines[0]?.uci ?? null,
-          depth: options?.depth ?? 14,
+          depth,
           status: "idle",
           fen: normalizedFen,
-        });
+        };
+        analysisCache.set(cacheKey, bookState);
+        setAnalysis(bookState);
       });
     },
     [],

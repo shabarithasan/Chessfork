@@ -25,8 +25,8 @@ export interface ReportTabStats {
 }
 
 interface ReportTabPhase {
-  left: "good" | "bad";
-  right: "good" | "bad";
+  left: number;
+  right: number;
 }
 
 interface ReportTabProps {
@@ -149,13 +149,13 @@ function BadgeIcon({ badge, label }: { badge: string; label: string }) {
   );
 }
 
-/* ── Phase icon ── */
+/* ── Phase Rating ── */
 
-function PhaseIcon({ rating }: { rating: "good" | "bad" }) {
-  const src = rating === "good" ? BADGE_IMG.good : BADGE_IMG.blunder;
+function PhaseRating({ rating }: { rating: number }) {
+  if (!rating) return <span className="font-mono text-[12px] text-neutral-500">-</span>;
   return (
-    <div title={rating === "good" ? "Good Move" : "Blunder"} className="inline-block">
-      <img alt={rating === "good" ? "Good Move" : "Blunder"} width={18} height={18} decoding="async" src={src} style={{ color: "transparent" }} />
+    <div className="font-mono text-[13px] font-semibold text-neutral-300 tabular-nums">
+      {rating}
     </div>
   );
 }
@@ -324,11 +324,11 @@ export function ReportTab({
         {(["opening", "middlegame", "endgame"] as const).map((phase) => (
           <div key={phase} className="grid grid-cols-[1fr_104px_1fr] items-center h-7">
             <div className="flex justify-center">
-              <PhaseIcon rating={phaseAnalysis[phase].left} />
+              <PhaseRating rating={phaseAnalysis[phase].left} />
             </div>
             <span className="text-center text-[12.5px] text-neutral-400 capitalize">{phase}</span>
             <div className="flex justify-center">
-              <PhaseIcon rating={phaseAnalysis[phase].right} />
+              <PhaseRating rating={phaseAnalysis[phase].right} />
             </div>
           </div>
         ))}

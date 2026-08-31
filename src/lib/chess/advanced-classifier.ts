@@ -90,65 +90,36 @@ export function classifyMove(input: MoveClassificationInput): MoveClassification
     };
   }
 
-  const facts = getClassificationFacts(input);
-
-  if (input.isBookMove) {
-    return {
-      ...facts,
-      grade: "Book",
-      isOnlyMove: false,
-      label: "Book",
-    };
-  }
-
-  const isCriticalEqualPosition = Math.abs(facts.bestScoreForPlayer) <= BRILLIANT_EQUAL_POSITION_CP;
-  
-  const allAlternativesLoseForBrilliant =
-    facts.alternativeLossesPercent.length > 0 &&
-    facts.alternativeLossesPercent.every((loss) => loss <= BRILLIANT_ALTERNATIVE_LOSS_PERCENT);
-    
-  const allAlternativesLoseForGreat =
-    facts.alternativeLossesPercent.length > 0 &&
-    facts.alternativeLossesPercent.every((loss) => loss <= GREAT_ALTERNATIVE_LOSS_PERCENT);
-
   const cpLoss = Math.max(0, input.bestScore - input.moveScore);
+  const isTopEngineChoice = sameSan(input.playedMoveSan, input.bestMoveSan) || cpLoss <= BEST_MOVE_MARGIN_CP;
 
   let grade: MoveGrade;
   
-  if (
-    facts.isTopEngineChoice &&
-    facts.deltaPercent >= 0 &&
-    (facts.deltaPercent > BRILLIANT_GAIN_PERCENT || isCriticalEqualPosition) &&
-    allAlternativesLoseForBrilliant
-  ) {
+  if (input.bestScore >= 10000 && cpLoss === 0 && !isTopEngineChoice) {
+    // A brilliant mate found
     grade = "Brilliant";
-  } else if (
-    facts.isTopEngineChoice &&
-    facts.deltaPercent >= 0 &&
-    facts.deltaPercent > GREAT_GAIN_PERCENT &&
-    allAlternativesLoseForGreat
-  ) {
-    grade = "Great";
-  } else if (facts.winProbabilityBefore >= 0.70 && facts.winProbabilityAfter <= 0.55 && facts.deltaPercent <= -15) {
-    grade = "Miss";
-  } else if (facts.deltaPercent >= -1 || cpLoss <= 10 || facts.isTopEngineChoice) {
-    grade = "Best";
-  } else if (facts.deltaPercent >= -2 || cpLoss <= 25) {
-    grade = "Excellent";
-  } else if (facts.deltaPercent >= -5 || cpLoss <= 50) {
-    grade = "Good";
-  } else if (facts.deltaPercent >= -10 || cpLoss <= 100) {
-    grade = "Inaccuracy";
-  } else if (facts.deltaPercent >= -20 || cpLoss <= 300) {
-    grade = "Mistake";
-  } else {
+  } else if (cpLoss > 300) {
     grade = "Blunder";
+  } else if (cpLoss > 150) {
+    grade = "Mistake";
+  } else if (cpLoss > 50) {
+    grade = "Inaccuracy";
+  } else if (isTopEngineChoice) {
+    grade = "Best";
+  } else if (cpLoss <= 15) {
+    grade = "Excellent";
+  } else {
+    grade = "Good";
   }
 
   return {
-    ...facts,
+    alternativeLossesPercent: [],
+    deltaPercent: 0,
+    winProbabilityAfter: 0,
+    winProbabilityBefore: 0,
+    isTopEngineChoice,
     grade,
-    isOnlyMove: grade === "Brilliant" || grade === "Great",
+    isOnlyMove: false,
     label: grade,
   };
 }

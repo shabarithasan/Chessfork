@@ -8,6 +8,7 @@ export type MoveGrade =
   | "Brilliant"
   | "Great"
   | "Best"
+  | "Nice"
   | "Excellent"
   | "Good"
   | "Book"

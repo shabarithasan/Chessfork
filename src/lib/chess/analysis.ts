@@ -38,6 +38,7 @@ function gradeMove(cpLoss: number, moveNumber: number): MoveGrade {
 function buildComment(grade: MoveGrade, cpLoss: number) {
   const messages: Record<MoveGrade, string> = {
     Best: "Best move. It lines up with the engine's preferred continuation.",
+    Nice: "A solid, sensible move that doesn't lose your advantage.",
     Brilliant: "You found the cleanest continuation and kept full pressure on the position.",
     Excellent: "Excellent move. It stays very close to the engine's preferred path.",
     Great: "Solid move. It keeps your plan coherent and preserves the evaluation.",
