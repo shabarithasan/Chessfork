@@ -611,18 +611,34 @@ function RightPanel({
         nodes: 0,
       }));
     } else if (liveEngine && engineAnalysis?.lines) {
-      return engineAnalysis.lines.map((l: any, i: number) => ({
-        rank: i + 1,
-        san: l.pv[0] ?? "",
-        score: l.evaluation.type === "cp" ? Math.round(l.evaluation.value * 100) : (l.evaluation.value > 0 ? 10000 : -10000),
-        depth: engineAnalysis.depth,
-        mate: l.evaluation.type === "mate" ? l.evaluation.value : undefined,
-        line: l.pv,
-        nodes: 0,
-      }));
+      // The live engine FEN is the position currently on the board
+      const liveFen = isStartPosition ? STARTING_FEN : selectedMove.fenAfter;
+      return engineAnalysis.lines.map((l: any, i: number) => {
+        // Convert UCI PV to SAN
+        let firstSan = l.pv[0] ?? "";
+        const lineSan: string[] = [];
+        try {
+          const c = new Chess(liveFen);
+          for (const uci of l.pv) {
+            const m = c.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci.slice(4, 5) || undefined });
+            if (!m) break;
+            lineSan.push(m.san);
+          }
+          if (lineSan.length > 0) firstSan = lineSan[0];
+        } catch {}
+        return {
+          rank: i + 1,
+          san: firstSan,
+          score: l.evaluation.type === "cp" ? Math.round(l.evaluation.value * 100) : (l.evaluation.value > 0 ? 10000 : -10000),
+          depth: engineAnalysis.depth,
+          mate: l.evaluation.type === "mate" ? l.evaluation.value : undefined,
+          line: lineSan.length > 0 ? lineSan : l.pv,
+          nodes: 0,
+        };
+      });
     }
     return [];
-  }, [currentSession, isLiveActive, liveEngine, engineAnalysis]);
+  }, [currentSession, isLiveActive, liveEngine, engineAnalysis, isStartPosition, selectedMove.fenAfter]);
 
   const scoreValues = useMemo(() => {
     if (isLiveActive) {
@@ -1634,15 +1650,24 @@ function BoardWorkspace({
       if (isLiveActive) {
         engineLinesToRender = snapLines || [];
       } else if (liveEngine && engineAnalysis?.lines && engineAnalysis.lines.length > 0) {
-        engineLinesToRender = engineAnalysis.lines.map((l: any, i: number) => ({
-          rank: i + 1,
-          san: l.pv[0] ?? "",
-          score: l.evaluation.type === "cp" ? Math.round(l.evaluation.value * 100) : (l.evaluation.value > 0 ? 10000 : -10000),
-          depth: engineAnalysis.depth,
-          mate: l.evaluation.type === "mate" ? l.evaluation.value : undefined,
-          line: l.pv,
-          nodes: 0,
-        }));
+        const arrowFen = isStartPosition ? STARTING_FEN : selectedMove.fenAfter;
+        engineLinesToRender = engineAnalysis.lines.map((l: any, i: number) => {
+          let firstSan = l.pv[0] ?? "";
+          try {
+            const c = new Chess(arrowFen);
+            const m = c.move({ from: l.pv[0].slice(0, 2), to: l.pv[0].slice(2, 4), promotion: l.pv[0].slice(4, 5) || undefined });
+            if (m) firstSan = m.san;
+          } catch {}
+          return {
+            rank: i + 1,
+            san: firstSan,
+            score: l.evaluation.type === "cp" ? Math.round(l.evaluation.value * 100) : (l.evaluation.value > 0 ? 10000 : -10000),
+            depth: engineAnalysis.depth,
+            mate: l.evaluation.type === "mate" ? l.evaluation.value : undefined,
+            line: l.pv,
+            nodes: 0,
+          };
+        });
       } else if (selectedMove.engineLines && selectedMove.engineLines.length > 0) {
         // Fallback to pre-computed report lines
         engineLinesToRender = selectedMove.engineLines.slice(0, 3);
