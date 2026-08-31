@@ -4,7 +4,7 @@ import { parsePgn } from "@/lib/chess/pgn";
 import { capsFromEvaluations } from "@/lib/chess/rating";
 import { classifyMove, shouldProbeOnlyMove } from "@/lib/chess/advanced-classifier";
 import { lookupOpeningBook } from "@/lib/opening-book";
-import type { AnalysisDepth, MoveEvaluation, MoveGrade, EngineLine } from "@/types/platform";
+import type { AnalysisDepth, MoveEvaluation, MoveGrade } from "@/types/platform";
 
 export type MoveAnalysisProgress = {
   move: MoveEvaluation;
@@ -24,7 +24,7 @@ class StockfishClientSession {
   analyzeFen(
     fen: string,
     options: { depth: number; multiPV: number }
-  ): Promise<{ bestMove: string; score: number; lines: EngineLine[]; depth: number }> {
+  ): Promise<{ bestMove: string; score: number; lines: { pv: string[], evaluation: { type: string, value: number }, multiPv: number }[]; depth: number }> {
     return new Promise((resolve, reject) => {
       this.currentSearchId++;
       const sid = this.currentSearchId;
@@ -98,7 +98,6 @@ function determinePhase(ply: number, moveCount: number): MoveEvaluation["phase"]
 function buildComment(grade: MoveGrade, cpLoss: number) {
   const messages: Record<MoveGrade, string> = {
     Best: "Best move. It lines up with the engine's preferred continuation.",
-    Nice: "A solid, sensible move that doesn't lose your advantage.",
     Brilliant: "You found the cleanest continuation and kept full pressure on the position.",
     Excellent: "Excellent move. It stays very close to the engine's preferred path.",
     Great: "Great find. You found a difficult resource when alternatives dropped winning chances.",
@@ -144,8 +143,7 @@ export async function analyzePgnClientSide(
   const moveEvaluations: MoveEvaluation[] = [];
 
   // We use the optimized single-threaded Stockfish 17.1 Lite build which easily hits 500k-1M nps.
-  const searchDepth = 18;
-  const multiPV = 5;
+  const searchDepth = options.depth === "deep" ? 18 : 14;
 
   try {
     for (let index = 0; index < moves.length; index++) {
@@ -203,7 +201,7 @@ export async function analyzePgnClientSide(
         }
       }
 
-      const best = await session.analyzeFen(fenBefore, { depth: searchDepth, multiPV });
+      const best = await session.analyzeFen(fenBefore, { depth: searchDepth, multiPV: 3 });
 
       const playedUci = moveToUci(move);
       const playedLine = best.lines.find((l) => l.san === playedUci);
@@ -219,7 +217,7 @@ export async function analyzePgnClientSide(
         actualScoreForWhite = turn === "w" ? playedLine.score : -playedLine.score;
       } else {
         // Move was not in top 3. We must search fenAfter.
-        const actual = await session.analyzeFen(fenAfter, { depth: searchDepth, multiPV: 1 });
+        const actual = await session.analyzeFen(fenAfter, { depth: Math.max(10, searchDepth - 2), multiPV: 1 });
         // actual.score is from the opponent's perspective (since fenAfter is opponent's turn).
         // So the mover's score is -actual.score.
         actualMoverScore = -actual.score;
@@ -243,7 +241,17 @@ export async function analyzePgnClientSide(
         materialCount,
       };
 
-      const engineLines = best.lines.map((l) => ({
+      const needsOnlyMoveProbe = shouldProbeOnlyMove(classificationInput);
+      
+      let alternativeLines = best;
+      if (needsOnlyMoveProbe && best.lines.length < 4) {
+        alternativeLines = await session.analyzeFen(fenBefore, {
+          depth: searchDepth,
+          multiPV: 4,
+        });
+      }
+
+      const engineLines = alternativeLines.lines.map((l) => ({
         ...l,
         san: uciToSan(fenBefore, l.san),
         line: [uciToSan(fenBefore, l.san)],
@@ -314,18 +322,9 @@ export function buildClientReport(
 ): AnalysisRun {
   const headers = readHeaders(pgn);
   const sans = evaluations.map((m) => m.san);
-  const cpLossWhite = evaluations.filter((m) => m.side === "white").map((m) => m.cpLoss);
-  const cpLossBlack = evaluations.filter((m) => m.side === "black").map((m) => m.cpLoss);
-
-  const getSigmaAccuracy = (cpLosses: number[]) => {
-    if (cpLosses.length === 0) return 100;
-    const avgLoss = cpLosses.reduce((sum, loss) => sum + loss, 0) / cpLosses.length;
-    return Math.max(0, Math.min(100, 100 * Math.exp(-0.0035 * avgLoss)));
-  };
-
-  const accuracyWhite = getSigmaAccuracy(cpLossWhite);
-  const accuracyBlack = getSigmaAccuracy(cpLossBlack);
-
+  const capsWhite = evaluations.filter((m) => m.side === "white").map((m) => m.caps);
+  const capsBlack = evaluations.filter((m) => m.side === "black").map((m) => m.caps);
+  
   const criticalMoments = evaluations
     .filter((move) => move.cpLoss >= 90)
     .slice(0, 6)
@@ -337,6 +336,8 @@ export function buildClientReport(
       insight: `${move.side === "white" ? "White" : "Black"} lost control after ${move.san}.`,
     }));
 
+  const accuracyWhite = accuracyFromCaps(capsWhite);
+  const accuracyBlack = accuracyFromCaps(capsBlack);
   const opening = detectOpening(sans, headers);
   const title = headers.Event || `${headers.White ?? "White"} vs ${headers.Black ?? "Black"}`;
   const subject = headers.White ?? "Anonymous player";

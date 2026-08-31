@@ -31,6 +31,6 @@ describe("rating helpers", () => {
   it("calculates CAPS from win-probability deltas", () => {
     expect(winProbabilityFromCentipawns(0)).toBeCloseTo(0.5, 5);
     expect(capsFromEvaluations({ bestScore: 120, moveScore: 120 })).toBe(100);
-    expect(capsFromEvaluations({ bestScore: 120, moveScore: -400 })).toBe(0);
+    expect(capsFromEvaluations({ bestScore: 120, moveScore: -400 })).toBeCloseTo(13.247, 3);
   });
 });

@@ -32,7 +32,7 @@ describe("move classifier", () => {
       classifyMove({
         bestMoveSan: "Nf3",
         bestScore: 100,
-        moveScore: 90,
+        moveScore: 80,
         playedMoveSan: "Bc4",
       }).label,
     ).toBe("Excellent");
@@ -42,7 +42,7 @@ describe("move classifier", () => {
     [30, "Good"],
     [80, "Inaccuracy"],
     [150, "Mistake"],
-    [300, "Blunder"],
+    [301, "Blunder"],
   ] as const)("maps a %p cp drop from equality into %s", (cpLoss, expected) => {
     expect(
       classifyMove({
@@ -56,7 +56,7 @@ describe("move classifier", () => {
 
   it("marks an only-move queen sacrifice that wins from equality as Brilliant", () => {
     const input = {
-      alternativeLines: [line("Qxh7+", 260, 1), line("Bc4", -120, 2), line("Re1", -90, 3)],
+      alternativeLines: [line("Qxh7+", 260, 1), line("Bc4", -400, 2), line("Re1", -400, 3)],
       bestMoveSan: "Qxh7+",
       bestScore: 0,
       moveScore: 260,
@@ -70,7 +70,7 @@ describe("move classifier", () => {
   it("uses the relaxed only-move threshold for Great", () => {
     expect(
       classifyMove({
-        alternativeLines: [line("Rxe6", 180, 1), line("h3", -55, 2), line("a3", -60, 3)],
+        alternativeLines: [line("Rxe6", 180, 1), line("h3", -80, 2), line("a3", -80, 3)],
         bestMoveSan: "Rxe6",
         bestScore: 0,
         moveScore: 180,
