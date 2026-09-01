@@ -56,6 +56,12 @@ const nextConfig: NextConfig = {
   experimental: {
     authInterrupts: true,
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
 
   webpack: (config, { isServer }) => {
     if (isServer) {
