@@ -4,7 +4,7 @@ import { parsePgn } from "@/lib/chess/pgn";
 import { capsFromEvaluations } from "@/lib/chess/rating";
 import { classifyMove, shouldProbeOnlyMove } from "@/lib/chess/advanced-classifier";
 import { lookupOpeningBook } from "@/lib/opening-book";
-import type { AnalysisDepth, MoveEvaluation, MoveGrade } from "@/types/platform";
+import type { AnalysisDepth, MoveEvaluation, MoveGrade, EngineLine } from "@/types/platform";
 
 export type MoveAnalysisProgress = {
   move: MoveEvaluation;
@@ -24,7 +24,7 @@ class StockfishClientSession {
   analyzeFen(
     fen: string,
     options: { depth: number; multiPV: number }
-  ): Promise<{ bestMove: string; score: number; lines: { pv: string[], evaluation: { type: string, value: number }, multiPv: number }[]; depth: number }> {
+  ): Promise<{ bestMove: string; score: number; lines: EngineLine[]; depth: number }> {
     return new Promise((resolve, reject) => {
       this.currentSearchId++;
       const sid = this.currentSearchId;
@@ -56,7 +56,7 @@ class StockfishClientSession {
           resolve({
             bestMove: msg.bestmove,
             score: getCpScore(topPv?.evaluation),
-            lines: (msg.lines || []).map((l: { pv: string[], evaluation: { type: string, value: number }, multiPv: number }) => ({
+            lines: (msg.lines || []).map((l: any) => ({
               depth: options.depth,
               line: l.pv,
               nodes: 0,
@@ -98,6 +98,7 @@ function determinePhase(ply: number, moveCount: number): MoveEvaluation["phase"]
 function buildComment(grade: MoveGrade, cpLoss: number) {
   const messages: Record<MoveGrade, string> = {
     Best: "Best move. It lines up with the engine's preferred continuation.",
+    Nice: "A solid, sensible move that doesn't lose your advantage.",
     Brilliant: "You found the cleanest continuation and kept full pressure on the position.",
     Excellent: "Excellent move. It stays very close to the engine's preferred path.",
     Great: "Great find. You found a difficult resource when alternatives dropped winning chances.",
