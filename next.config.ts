@@ -60,7 +60,6 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // @ts-expect-error next config types might be incomplete
   typescript: {
     ignoreBuildErrors: true,
   },
