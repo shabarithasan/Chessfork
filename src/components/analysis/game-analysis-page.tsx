@@ -1210,10 +1210,10 @@ function RightPanel({
             })()}
 
             {/* ── 2. Engine Lines ── */}
-            {!isWhatIfSearching && (() => {
+            {(() => {
               const currentGrade = isLiveActive && currentWhatIfMove ? (currentWhatIfMove.grade ?? currentWhatIfEval?.grade) : selectedMove.grade;
               const isMistake = currentGrade === "Blunder" || currentGrade === "Mistake" || currentGrade === "Inaccuracy";
-              if (isMistake && !revealedBestMove) return null;
+              if (isMistake && !revealedBestMove) return <div className="h-[100px] mt-3.5" />;
 
               let lines: EngineLine[] | undefined;
               let fenBefore = "";
@@ -1239,22 +1239,19 @@ function RightPanel({
                   moveNumber = selectedMove.moveNumber;
                 }
               }
-              if (lines && lines.length > 0) {
-                return (
-                  <AlternativeLines
-                    lines={lines}
-                    fenBefore={fenBefore}
-                    moveNumber={moveNumber}
-                    onSelectLine={onSelectAltLine}
-                    isLive={isLiveEngineActive}
-                  />
-                );
-              }
-              return null;
+              return (
+                <AlternativeLines
+                  lines={lines ?? []}
+                  fenBefore={fenBefore}
+                  moveNumber={moveNumber}
+                  onSelectLine={onSelectAltLine}
+                  isLive={isLiveEngineActive}
+                />
+              );
             })()}
 
             {/* ── 3. Engine Depth Indicator ── */}
-            {!isWhatIfSearching && liveEngine && (
+            {liveEngine && (
             <div className="flex items-center gap-3 mt-[18px]">
               <div className="relative flex flex-1 items-center h-5">
                 {isAnalyzingProp ? (
@@ -1295,10 +1292,10 @@ function RightPanel({
             )}
 
             {/* ── 4. Best move arrow toggle ── */}
-            {!isWhatIfSearching && (() => {
+            {(() => {
               const currentGrade = isLiveActive && currentWhatIfMove ? (currentWhatIfMove.grade ?? currentWhatIfEval?.grade) : selectedMove.grade;
               const isMistake = currentGrade === "Blunder" || currentGrade === "Mistake" || currentGrade === "Inaccuracy";
-              if (isMistake && !revealedBestMove) return null;
+              if (isMistake && !revealedBestMove) return <div className="h-[58px]" />;
 
               return (
                 <div className="mt-3 flex items-center gap-2 shrink-0">

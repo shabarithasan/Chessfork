@@ -41,7 +41,19 @@ function AlternativeLines({ lines, fenBefore, moveNumber, onSelectLine, isLive =
   );
 
   if (!lines || lines.length === 0) {
-    return null;
+    if (isLive) {
+      return (
+        <div className="mt-3.5 flex flex-col gap-1.5 h-[100px]">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center gap-2 overflow-hidden h-[27px] rounded px-1 -mx-1 animate-pulse">
+              <span className="rounded-md border border-neutral-700 bg-neutral-800/50 px-1.5 py-[2px] min-w-[42px] h-[20px]" />
+              <div className="h-[14px] bg-neutral-800/50 rounded w-2/3" />
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return <div className="mt-3.5 h-[100px]" />; // Preserve the layout block height
   }
 
   const startMoveNum = moveNumber ?? 1;
