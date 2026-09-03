@@ -667,6 +667,18 @@ function RightPanel({
       status: m.grade?.toLowerCase() ?? "neutral",
     }));
   }, [moves]);
+
+  const reportScores = useMemo(() => gameHistory.map((p) => Math.max(0, Math.min(100, p.score / 2 + 50))), [gameHistory]);
+  const reportAnnotations = useMemo(() => {
+    const ann: Record<number, string> = {};
+    gameHistory.forEach((p, i) => {
+      const key = p.status.charAt(0).toUpperCase() + p.status.slice(1);
+      if (["Brilliant", "Great", "Best", "Excellent", "Good", "Book", "Inaccuracy", "Mistake", "Blunder", "Miss"].includes(key)) {
+        ann[i] = key;
+      }
+    });
+    return ann;
+  }, [gameHistory]);
   const bestSan = isLiveActive && liveLinesResolved && liveLinesResolved.length > 0
     ? liveLinesResolved[0].san || "the engine move"
     : isLiveActive ? ""
@@ -1260,71 +1272,31 @@ function RightPanel({
                     <span className="absolute top-0 h-full w-[1.5%] rounded-full animate-scan-horizontal bg-amber-400/40" style={{ animationDelay: "0.65s", boxShadow: "rgba(251, 191, 36, 0.2) 0px 0px 4px" }} />
                   </div>
                 ) : (
-                  <div className="flex w-full items-center justify-start ml-2 gap-2">
-                    <button 
-                      type="button" 
-                      onClick={() => {
-                        const fen = isStartPosition ? "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" : selectedMove.fenAfter;
-                        if (startAnalysis) startAnalysis(fen, { depth: 99, multiPV: multiPv });
-                      }}
-                      className="rounded-md border border-[#f3c53d]/30 bg-[#f3c53d]/10 px-2.5 py-[3px] text-[10px] font-semibold text-[#f3c53d] hover:bg-[#f3c53d]/20 transition-colors uppercase tracking-wider"
-                    >
-                      Go deeper
-                    </button>
-                    <select
-                      value={engineDepth ?? 18}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value);
-                        if (setEngineDepth) setEngineDepth(val);
-                        const fen = isStartPosition ? "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" : selectedMove.fenAfter;
-                        if (startAnalysis) startAnalysis(fen, { depth: val, multiPV: multiPv });
-                      }}
-                      className="rounded-md border border-neutral-700 bg-neutral-800 px-1 py-[3px] text-[10px] font-semibold text-neutral-300 hover:bg-neutral-700 transition-colors outline-none cursor-pointer"
-                      title="Engine Depth"
-                    >
-                      <option value={14}>Depth 14</option>
-                      <option value={18}>Depth 18</option>
-                      <option value={20}>Depth 20</option>
-                      <option value={25}>Depth 25</option>
-                      <option value={30}>Depth 30</option>
-                    </select>
-                    <select
-                      value={multiPv}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value);
-                        if (setMultiPv) setMultiPv(val);
-                        const fen = isStartPosition ? "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" : selectedMove.fenAfter;
-                        if (startAnalysis) startAnalysis(fen, { depth: engineDepth ?? 18, multiPV: val });
-                      }}
-                      className="rounded-md border border-neutral-700 bg-neutral-800 px-1 py-[3px] text-[10px] font-semibold text-neutral-300 hover:bg-neutral-700 transition-colors outline-none cursor-pointer"
-                      title="Number of engine lines (Multi-PV)"
-                    >
-                      <option value={1}>1 Line</option>
-                      <option value={2}>2 Lines</option>
-                      <option value={3}>3 Lines</option>
-                      <option value={4}>4 Lines</option>
-                      <option value={5}>5 Lines</option>
-                    </select>
+                  <div className="relative flex w-full items-center justify-center h-full px-2">
+                    {/* Track background */}
+                    <div className="absolute left-2 right-2 h-[2px] bg-neutral-700/60 rounded-full" />
+                    {/* Track fill (mock progress up to the center) */}
+                    <div className="absolute left-2 h-[2px] w-[50%] bg-[#facc15] rounded-l-full" />
+                    {/* Thumb */}
+                    <div className="absolute left-2 w-[5px] h-[5px] bg-[#facc15] rounded-full" />
+                    {/* Pill */}
+                    <div className="relative z-10 flex items-center justify-center rounded-full border border-neutral-500 bg-[#1a1a1a] px-2 py-[1px]">
+                      <span className="font-bold tabular-nums text-[10px] text-[#facc15]">{pillarDepth ?? 18}</span>
+                    </div>
                   </div>
                 )}
-                <div className="absolute left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-md border border-neutral-700 bg-neutral-800 px-1.5 py-0.5 pointer-events-none">
-                  <span className="font-mono font-semibold leading-none tabular-nums text-[11px] text-amber-400">{pillarDepth ?? "—"}</span>
-                </div>
               </div>
-              <button type="button" aria-label="Turn off live engine" aria-pressed="true" onClick={onToggleLiveEngine} className="group/engine relative flex overflow-hidden rounded-lg p-[1.5px] transition-[background-color,transform] duration-150 active:scale-[0.96] h-9 bg-amber-400/50">
-                <span aria-hidden="true" className="coach-explain-wave-rotor" />
-                <span className="relative z-10 flex items-center justify-center rounded-[6.5px] px-3 transition-colors duration-150 bg-neutral-800 text-amber-400">
-                  <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true" focusable="false" data-icon="bolt">
-                    <g data-part="bolt">
-                      <path d="M 10.4 1.51 C 10.55 1.47 11.15 1.48 11.34 1.48 L 13.18 1.48 L 14.65 1.48 C 14.86 1.48 15.28 1.47 15.47 1.5 C 15.5 1.54 15.51 1.55 15.53 1.59 L 15.61 1.62 C 15.72 1.68 15.82 1.78 15.91 1.88 C 15.99 1.95 16.07 2.04 16.15 2.11 C 16.33 2.25 16.52 2.34 16.65 2.54 C 16.74 2.68 16.85 2.81 16.86 2.98 C 16.88 3.15 16.79 3.25 16.72 3.4 C 16.65 3.54 16.59 3.69 16.5 3.83 C 16.5 3.84 16.51 3.89 16.51 3.89 C 16.46 3.96 16.41 4.02 16.38 4.1 C 16.22 4.43 16.05 4.75 15.9 5.08 C 15.88 5.14 15.83 5.19 15.81 5.24 C 15.76 5.33 15.7 5.4 15.66 5.48 C 15.54 5.68 15.44 5.88 15.33 6.08 C 15.22 6.3 15.12 6.53 15.01 6.74 L 14.17 8.41 C 14.09 8.55 13.77 9.03 13.83 9.16 C 13.87 9.19 13.89 9.18 13.95 9.18 C 14.7 9.16 15.49 9.18 16.23 9.18 L 16.89 9.18 C 17.24 9.18 17.48 9.13 17.75 9.38 C 17.76 9.4 17.78 9.41 17.79 9.43 C 18.08 9.66 18.43 10.06 18.68 10.34 C 18.77 10.44 18.72 10.91 18.65 11.03 C 18.59 11.14 18.48 11.26 18.4 11.37 L 17.75 12.26 C 17.54 12.54 17.39 12.83 17.14 13.07 C 17.08 13.13 17.03 13.24 16.98 13.31 C 16.79 13.51 16.64 13.75 16.48 13.97 C 16.37 14.15 16.22 14.3 16.1 14.47 C 15.89 14.74 15.72 15.05 15.5 15.32 C 15.38 15.48 15.25 15.63 15.14 15.79 C 15.01 15.97 14.89 16.16 14.76 16.33 L 12.4 19.52 C 11.76 20.42 11.11 21.32 10.44 22.2 C 10.34 22.33 10.14 22.46 9.98 22.5 C 9.91 22.52 9.63 22.53 9.55 22.5 C 9.39 22.44 9.22 22.22 9.1 22.1 C 8.95 21.93 8.73 21.76 8.59 21.58 C 8.47 21.46 8.36 21.29 8.36 21.11 L 8.36 21.06 C 8.36 20.88 8.33 20.74 8.47 20.61 C 8.54 20.5 8.51 20.31 8.59 20.16 C 8.59 20.07 8.6 19.95 8.63 19.86 C 8.66 19.8 8.67 19.79 8.69 19.71 C 8.69 19.52 8.69 19.51 8.82 19.36 C 8.85 19.23 8.87 19.11 8.91 18.98 C 8.92 18.85 8.9 18.7 9.02 18.62 C 9.08 18.52 9.08 18.38 9.11 18.27 C 9.15 18.12 9.19 17.96 9.24 17.81 C 9.28 17.55 9.2 17.58 9.38 17.35 C 9.41 17.25 9.44 17.11 9.47 17.01 C 9.49 16.84 9.45 16.73 9.58 16.61 C 9.64 16.52 9.66 16.35 9.7 16.23 C 9.72 16.03 9.74 15.93 9.8 15.73 C 9.85 15.56 9.85 15.58 9.94 15.42 C 9.98 15.25 9.94 15.2 10.03 15.04 C 10.04 14.86 10.02 14.81 10.15 14.69 C 10.1 14.66 10.05 14.64 10 14.64 C 9.69 14.63 9.36 14.64 9.06 14.64 L 7.22 14.64 C 7.06 14.64 6.66 14.66 6.54 14.61 C 6.31 14.51 6.11 14.22 5.94 14.04 C 5.76 13.85 5.46 13.62 5.37 13.39 C 5.17 13.05 5.23 12.87 5.37 12.52 C 5.44 12.36 5.46 12.16 5.56 12 C 5.68 11.68 5.75 11.37 5.93 11.07 C 5.96 11.03 5.98 10.93 6.02 10.89 C 6.05 10.82 6.04 10.76 6.06 10.72 C 6.11 10.62 6.19 10.51 6.23 10.4 C 6.27 10.3 6.29 10.18 6.32 10.09 L 6.59 9.48 C 6.68 9.25 6.78 9.07 6.85 8.83 C 6.89 8.71 6.97 8.52 7.02 8.4 C 7.11 8.21 7.17 8.02 7.24 7.82 C 7.34 7.6 7.44 7.4 7.53 7.16 C 7.58 7.04 7.65 6.91 7.7 6.78 C 7.71 6.61 7.77 6.38 7.9 6.26 C 7.99 6.15 8.01 5.95 8.06 5.82 C 8.09 5.74 8.21 5.61 8.24 5.51 C 8.28 5.38 8.29 5.29 8.34 5.15 C 8.39 5.04 8.47 4.94 8.5 4.85 C 8.54 4.74 8.57 4.57 8.62 4.46 C 8.64 4.41 8.7 4.36 8.73 4.29 L 8.71 4.26 C 8.73 4.2 8.79 4.14 8.82 4.09 C 8.84 4.03 8.86 3.93 8.88 3.86 C 8.93 3.75 9 3.64 9.05 3.53 C 9.09 3.43 9.12 3.28 9.17 3.19 C 9.32 2.91 9.42 2.61 9.53 2.33 C 9.62 2.12 9.95 1.73 10.16 1.66 L 10.29 1.62 C 10.32 1.58 10.36 1.54 10.4 1.51 z"></path>
-                      <path d="M 17.79 9.43 C 18.08 9.66 18.43 10.06 18.68 10.34 C 18.77 10.44 18.72 10.91 18.65 11.03 C 18.59 11.14 18.48 11.26 18.4 11.37 L 17.75 12.26 C 17.54 12.54 17.39 12.83 17.14 13.07 C 17.08 13.13 17.03 13.24 16.98 13.31 C 16.79 13.51 16.64 13.75 16.48 13.97 C 16.37 14.15 16.22 14.3 16.1 14.47 C 15.89 14.74 15.72 15.05 15.5 15.32 C 15.38 15.48 15.25 15.63 15.14 15.79 C 15.01 15.97 14.89 16.16 14.76 16.33 L 12.4 19.52 C 11.76 20.42 11.11 21.32 10.44 22.2 C 10.34 22.33 10.14 22.46 9.98 22.5 C 9.91 22.52 9.63 22.53 9.55 22.5 C 9.39 22.44 9.22 22.22 9.1 22.1 C 8.95 21.93 8.73 21.76 8.59 21.58 C 8.58 21.55 8.58 21.51 8.58 21.48 C 8.64 21.54 8.71 21.58 8.77 21.63 C 8.94 21.64 9.16 21.65 9.31 21.55 C 9.66 21.33 9.92 20.86 10.16 20.52 L 11.26 19.01 L 15.33 13.47 L 16.69 11.65 C 17.03 11.19 17.38 10.73 17.71 10.25 C 17.85 10.03 17.92 9.66 17.79 9.43 z" fill-opacity="0.57"></path>
-                      <path d="M 15.91 1.88 C 15.99 1.95 16.07 2.04 16.15 2.11 C 16.33 2.25 16.52 2.34 16.65 2.54 C 16.74 2.68 16.85 2.81 16.86 2.98 C 16.88 3.15 16.79 3.25 16.72 3.4 C 16.65 3.54 16.59 3.69 16.5 3.83 C 16.5 3.84 16.51 3.89 16.51 3.89 C 16.46 3.96 16.41 4.02 16.38 4.1 C 16.22 4.43 16.05 4.75 15.9 5.08 C 15.88 5.14 15.83 5.19 15.81 5.24 C 15.76 5.33 15.7 5.4 15.66 5.48 C 15.54 5.68 15.44 5.88 15.33 6.08 C 15.22 6.3 15.12 6.53 15.01 6.74 L 14.17 8.41 C 14.09 8.55 13.77 9.03 13.83 9.16 C 13.87 9.19 13.89 9.18 13.95 9.18 C 13.84 9.21 13.27 9.18 13.11 9.18 C 13 9.11 12.93 9.07 12.85 8.97 C 12.83 8.86 12.78 8.74 12.81 8.64 C 12.92 8.22 13.21 7.74 13.42 7.35 L 15.14 3.97 C 15.37 3.54 16.17 2.32 15.91 1.88 z" fill-opacity="0.57"></path>
-                      <path d="M 5.37 13.39 C 5.47 13.51 5.56 13.56 5.69 13.65 C 6.03 13.67 6.42 13.66 6.76 13.66 L 8.78 13.66 L 9.44 13.65 C 9.7 13.65 9.99 13.62 10.19 13.83 C 10.29 13.94 10.29 14.06 10.28 14.2 C 10.28 14.34 10.17 14.61 10.17 14.7 L 10.15 14.69 C 10.1 14.66 10.05 14.64 10 14.64 C 9.69 14.63 9.36 14.64 9.06 14.64 L 7.22 14.64 C 7.06 14.64 6.66 14.66 6.54 14.61 C 6.31 14.51 6.11 14.22 5.94 14.04 C 5.76 13.85 5.46 13.62 5.37 13.39 z" fill-opacity="0.57"></path>
-                      <path d="M 10.4 1.51 C 10.55 1.47 11.15 1.48 11.34 1.48 L 13.18 1.48 L 14.65 1.48 C 14.86 1.48 15.28 1.47 15.47 1.5 C 15.5 1.54 15.51 1.55 15.53 1.59 C 15.43 1.65 15.32 1.6 15.21 1.61 C 14.87 1.63 14.53 1.63 14.19 1.63 L 12.05 1.63 L 10.87 1.63 C 10.75 1.63 10.38 1.63 10.29 1.62 C 10.32 1.58 10.36 1.54 10.4 1.51 z" fill-opacity="0.57"></path>
-                      <path d="M 5.56 12 C 5.68 11.68 5.75 11.37 5.93 11.07 C 5.96 11.03 5.98 10.93 6.02 10.89 C 6.01 10.93 5.85 11.42 5.83 11.45 C 5.77 11.54 5.6 11.95 5.56 12 z" fill-opacity="0.57"></path>
-                    </g>
-                  </svg>
-                </span>
+              <button type="button" aria-label="Turn off live engine" aria-pressed="true" onClick={onToggleLiveEngine} className="shrink-0 flex items-center justify-center rounded-xl transition-all duration-150 active:scale-[0.96] h-[34px] w-[38px] bg-[#facc15] hover:bg-[#eab308] text-black shadow-[0_3px_0_#ca8a04]">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true" focusable="false" data-icon="bolt">
+                  <g data-part="bolt">
+                    <path d="M 10.4 1.51 C 10.55 1.47 11.15 1.48 11.34 1.48 L 13.18 1.48 L 14.65 1.48 C 14.86 1.48 15.28 1.47 15.47 1.5 C 15.5 1.54 15.51 1.55 15.53 1.59 L 15.61 1.62 C 15.72 1.68 15.82 1.78 15.91 1.88 C 15.99 1.95 16.07 2.04 16.15 2.11 C 16.33 2.25 16.52 2.34 16.65 2.54 C 16.74 2.68 16.85 2.81 16.86 2.98 C 16.88 3.15 16.79 3.25 16.72 3.4 C 16.65 3.54 16.59 3.69 16.5 3.83 C 16.5 3.84 16.51 3.89 16.51 3.89 C 16.46 3.96 16.41 4.02 16.38 4.1 C 16.22 4.43 16.05 4.75 15.9 5.08 C 15.88 5.14 15.83 5.19 15.81 5.24 C 15.76 5.33 15.7 5.4 15.66 5.48 C 15.54 5.68 15.44 5.88 15.33 6.08 C 15.22 6.3 15.12 6.53 15.01 6.74 L 14.17 8.41 C 14.09 8.55 13.77 9.03 13.83 9.16 C 13.87 9.19 13.89 9.18 13.95 9.18 C 14.7 9.16 15.49 9.18 16.23 9.18 L 16.89 9.18 C 17.24 9.18 17.48 9.13 17.75 9.38 C 17.76 9.4 17.78 9.41 17.79 9.43 C 18.08 9.66 18.43 10.06 18.68 10.34 C 18.77 10.44 18.72 10.91 18.65 11.03 C 18.59 11.14 18.48 11.26 18.4 11.37 L 17.75 12.26 C 17.54 12.54 17.39 12.83 17.14 13.07 C 17.08 13.13 17.03 13.24 16.98 13.31 C 16.79 13.51 16.64 13.75 16.48 13.97 C 16.37 14.15 16.22 14.3 16.1 14.47 C 15.89 14.74 15.72 15.05 15.5 15.32 C 15.38 15.48 15.25 15.63 15.14 15.79 C 15.01 15.97 14.89 16.16 14.76 16.33 L 12.4 19.52 C 11.76 20.42 11.11 21.32 10.44 22.2 C 10.34 22.33 10.14 22.46 9.98 22.5 C 9.91 22.52 9.63 22.53 9.55 22.5 C 9.39 22.44 9.22 22.22 9.1 22.1 C 8.95 21.93 8.73 21.76 8.59 21.58 C 8.47 21.46 8.36 21.29 8.36 21.11 L 8.36 21.06 C 8.36 20.88 8.33 20.74 8.47 20.61 C 8.54 20.5 8.51 20.31 8.59 20.16 C 8.59 20.07 8.6 19.95 8.63 19.86 C 8.66 19.8 8.67 19.79 8.69 19.71 C 8.69 19.52 8.69 19.51 8.82 19.36 C 8.85 19.23 8.87 19.11 8.91 18.98 C 8.92 18.85 8.9 18.7 9.02 18.62 C 9.08 18.52 9.08 18.38 9.11 18.27 C 9.15 18.12 9.19 17.96 9.24 17.81 C 9.28 17.55 9.2 17.58 9.38 17.35 C 9.41 17.25 9.44 17.11 9.47 17.01 C 9.49 16.84 9.45 16.73 9.58 16.61 C 9.64 16.52 9.66 16.35 9.7 16.23 C 9.72 16.03 9.74 15.93 9.8 15.73 C 9.85 15.56 9.85 15.58 9.94 15.42 C 9.98 15.25 9.94 15.2 10.03 15.04 C 10.04 14.86 10.02 14.81 10.15 14.69 C 10.1 14.66 10.05 14.64 10 14.64 C 9.69 14.63 9.36 14.64 9.06 14.64 L 7.22 14.64 C 7.06 14.64 6.66 14.66 6.54 14.61 C 6.31 14.51 6.11 14.22 5.94 14.04 C 5.76 13.85 5.46 13.62 5.37 13.39 C 5.17 13.05 5.23 12.87 5.37 12.52 C 5.44 12.36 5.46 12.16 5.56 12 C 5.68 11.68 5.75 11.37 5.93 11.07 C 5.96 11.03 5.98 10.93 6.02 10.89 C 6.05 10.82 6.04 10.76 6.06 10.72 C 6.11 10.62 6.19 10.51 6.23 10.4 C 6.27 10.3 6.29 10.18 6.32 10.09 L 6.59 9.48 C 6.68 9.25 6.78 9.07 6.85 8.83 C 6.89 8.71 6.97 8.52 7.02 8.4 C 7.11 8.21 7.17 8.02 7.24 7.82 C 7.34 7.6 7.44 7.4 7.53 7.16 C 7.58 7.04 7.65 6.91 7.7 6.78 C 7.71 6.61 7.77 6.38 7.9 6.26 C 7.99 6.15 8.01 5.95 8.06 5.82 C 8.09 5.74 8.21 5.61 8.24 5.51 C 8.28 5.38 8.29 5.29 8.34 5.15 C 8.39 5.04 8.47 4.94 8.5 4.85 C 8.54 4.74 8.57 4.57 8.62 4.46 C 8.64 4.41 8.7 4.36 8.73 4.29 L 8.71 4.26 C 8.73 4.2 8.79 4.14 8.82 4.09 C 8.84 4.03 8.86 3.93 8.88 3.86 C 8.93 3.75 9 3.64 9.05 3.53 C 9.09 3.43 9.12 3.28 9.17 3.19 C 9.32 2.91 9.42 2.61 9.53 2.33 C 9.62 2.12 9.95 1.73 10.16 1.66 L 10.29 1.62 C 10.32 1.58 10.36 1.54 10.4 1.51 z"></path>
+                    <path d="M 17.79 9.43 C 18.08 9.66 18.43 10.06 18.68 10.34 C 18.77 10.44 18.72 10.91 18.65 11.03 C 18.59 11.14 18.48 11.26 18.4 11.37 L 17.75 12.26 C 17.54 12.54 17.39 12.83 17.14 13.07 C 17.08 13.13 17.03 13.24 16.98 13.31 C 16.79 13.51 16.64 13.75 16.48 13.97 C 16.37 14.15 16.22 14.3 16.1 14.47 C 15.89 14.74 15.72 15.05 15.5 15.32 C 15.38 15.48 15.25 15.63 15.14 15.79 C 15.01 15.97 14.89 16.16 14.76 16.33 L 12.4 19.52 C 11.76 20.42 11.11 21.32 10.44 22.2 C 10.34 22.33 10.14 22.46 9.98 22.5 C 9.91 22.52 9.63 22.53 9.55 22.5 C 9.39 22.44 9.22 22.22 9.1 22.1 C 8.95 21.93 8.73 21.76 8.59 21.58 C 8.58 21.55 8.58 21.51 8.58 21.48 C 8.64 21.54 8.71 21.58 8.77 21.63 C 8.94 21.64 9.16 21.65 9.31 21.55 C 9.66 21.33 9.92 20.86 10.16 20.52 L 11.26 19.01 L 15.33 13.47 L 16.69 11.65 C 17.03 11.19 17.38 10.73 17.71 10.25 C 17.85 10.03 17.92 9.66 17.79 9.43 z" fill-opacity="0.57"></path>
+                    <path d="M 15.91 1.88 C 15.99 1.95 16.07 2.04 16.15 2.11 C 16.33 2.25 16.52 2.34 16.65 2.54 C 16.74 2.68 16.85 2.81 16.86 2.98 C 16.88 3.15 16.79 3.25 16.72 3.4 C 16.65 3.54 16.59 3.69 16.5 3.83 C 16.5 3.84 16.51 3.89 16.51 3.89 C 16.46 3.96 16.41 4.02 16.38 4.1 C 16.22 4.43 16.05 4.75 15.9 5.08 C 15.88 5.14 15.83 5.19 15.81 5.24 C 15.76 5.33 15.7 5.4 15.66 5.48 C 15.54 5.68 15.44 5.88 15.33 6.08 C 15.22 6.3 15.12 6.53 15.01 6.74 L 14.17 8.41 C 14.09 8.55 13.77 9.03 13.83 9.16 C 13.87 9.19 13.89 9.18 13.95 9.18 C 13.84 9.21 13.27 9.18 13.11 9.18 C 13 9.11 12.93 9.07 12.85 8.97 C 12.83 8.86 12.78 8.74 12.81 8.64 C 12.92 8.22 13.21 7.74 13.42 7.35 L 15.14 3.97 C 15.37 3.54 16.17 2.32 15.91 1.88 z" fill-opacity="0.57"></path>
+                    <path d="M 5.37 13.39 C 5.47 13.51 5.56 13.56 5.69 13.65 C 6.03 13.67 6.42 13.66 6.76 13.66 L 8.78 13.66 L 9.44 13.65 C 9.7 13.65 9.99 13.62 10.19 13.83 C 10.29 13.94 10.29 14.06 10.28 14.2 C 10.28 14.34 10.17 14.61 10.17 14.7 L 10.15 14.69 C 10.1 14.66 10.05 14.64 10 14.64 C 9.69 14.63 9.36 14.64 9.06 14.64 L 7.22 14.64 C 7.06 14.64 6.66 14.66 6.54 14.61 C 6.31 14.51 6.11 14.22 5.94 14.04 C 5.76 13.85 5.46 13.62 5.37 13.39 z" fill-opacity="0.57"></path>
+                    <path d="M 10.4 1.51 C 10.55 1.47 11.15 1.48 11.34 1.48 L 13.18 1.48 L 14.65 1.48 C 14.86 1.48 15.28 1.47 15.47 1.5 C 15.5 1.54 15.51 1.55 15.53 1.59 C 15.43 1.65 15.32 1.6 15.21 1.61 C 14.87 1.63 14.53 1.63 14.19 1.63 L 12.05 1.63 L 10.87 1.63 C 10.75 1.63 10.38 1.63 10.29 1.62 C 10.32 1.58 10.36 1.54 10.4 1.51 z" fill-opacity="0.57"></path>
+                    <path d="M 5.56 12 C 5.68 11.68 5.75 11.37 5.93 11.07 C 5.96 11.03 5.98 10.93 6.02 10.89 C 6.01 10.93 5.85 11.42 5.83 11.45 C 5.77 11.54 5.6 11.95 5.56 12 z" fill-opacity="0.57"></path>
+                  </g>
+                </svg>
               </button>
             </div>
             )}
@@ -1345,61 +1317,76 @@ function RightPanel({
               );
             })()}
 
+            {/* ── 5. Evaluation Graph ── */}
+            <div className="mt-3 overflow-hidden rounded-lg border border-neutral-700/40 shrink-0">
+              <ChessEvaluationGraph
+                scores={reportScores}
+                annotations={reportAnnotations}
+                currentMoveIndex={currentMoveIndex}
+                onMoveSelect={(index) => {
+                  if (isLiveActive && onSelectWhatIfMove) {
+                    onSelectWhatIfMove(index);
+                  } else {
+                    const target = moves[index];
+                    if (target && setSelectedPly) setSelectedPly(target.ply);
+                  }
+                }}
+              />
+            </div>
+
             {/* ── 6. Nav Controls ── */}
-            <div className="mt-3.5 shrink-0 rounded-2xl bg-[#111111] p-2">
-              <div className="flex items-stretch gap-2">
-                <button
-                  type="button"
-                  aria-label="First move"
-                  onClick={() => {
-                    if (isLiveActive && onSelectWhatIfMove) { onSelectWhatIfMove(0); return; }
-                    setSelectedPly?.(moves[0]?.ply ?? 0);
-                  }}
-                  disabled={currentMoveIndex <= 0}
-                  className="w-12 shrink-0 flex h-[42px] items-center justify-center rounded-xl text-[#171717] transition-all duration-150 active:scale-[0.96] disabled:active:scale-100 bg-[#facc15] hover:bg-[#eab308] disabled:opacity-40 shadow-sm"
-                >
-                  <ChevronsLeft className="h-5 w-5" strokeWidth={2.6} />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Previous move"
-                  onClick={() => {
-                    if (isLiveActive && onSelectWhatIfMove) { onSelectWhatIfMove(Math.max(0, currentMoveIndex - 1)); return; }
-                    const idx = currentMoveIndex - 1;
-                    if (idx >= 0 && moves[idx] && setSelectedPly) setSelectedPly(moves[idx].ply);
-                  }}
-                  disabled={currentMoveIndex <= 0}
-                  className="flex-1 flex h-[42px] items-center justify-center rounded-xl text-[#171717] transition-all duration-150 active:scale-[0.96] disabled:active:scale-100 bg-[#facc15] hover:bg-[#eab308] disabled:opacity-40 shadow-sm"
-                >
-                  <ChevronLeft className="h-5 w-5" strokeWidth={2.6} />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Next move"
-                  onClick={() => {
-                    if (isLiveActive && onSelectWhatIfMove) { onSelectWhatIfMove(Math.min(whatIfMoves ? whatIfMoves.length - 1 : 0, currentMoveIndex + 1)); return; }
-                    const idx = currentMoveIndex + 1;
-                    if (idx < moves.length && moves[idx] && setSelectedPly) setSelectedPly(moves[idx].ply);
-                  }}
-                  disabled={isLiveActive ? currentMoveIndex >= (whatIfMoves ? whatIfMoves.length - 1 : 0) : currentMoveIndex >= moves.length - 1}
-                  className="flex-1 flex h-[42px] items-center justify-center rounded-xl text-[#171717] transition-all duration-150 active:scale-[0.96] disabled:active:scale-100 bg-[#facc15] hover:bg-[#eab308] disabled:opacity-40 shadow-sm"
-                >
-                  <ChevronRight className="h-5 w-5" strokeWidth={2.6} />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Last move"
-                  onClick={() => {
-                    if (isLiveActive && onSelectWhatIfMove) { onSelectWhatIfMove(whatIfMoves ? whatIfMoves.length - 1 : 0); return; }
-                    const last = moves[moves.length - 1];
-                    if (last && setSelectedPly) setSelectedPly(last.ply);
-                  }}
-                  disabled={isLiveActive ? currentMoveIndex >= (whatIfMoves ? whatIfMoves.length - 1 : 0) : currentMoveIndex >= moves.length - 1}
-                  className="w-12 shrink-0 flex h-[42px] items-center justify-center rounded-xl text-[#171717] transition-all duration-150 active:scale-[0.96] disabled:active:scale-100 bg-[#facc15] hover:bg-[#eab308] disabled:opacity-40 shadow-sm"
-                >
-                  <ChevronsRight className="h-5 w-5" strokeWidth={2.6} />
-                </button>
-              </div>
+            <div className="mt-3.5 flex items-center justify-between gap-2.5 shrink-0 pb-1">
+              <button
+                type="button"
+                aria-label="First move"
+                onClick={() => {
+                  if (isLiveActive && onSelectWhatIfMove) { onSelectWhatIfMove(0); return; }
+                  setSelectedPly?.(moves[0]?.ply ?? 0);
+                }}
+                disabled={currentMoveIndex <= 0}
+                className="w-[50px] shrink-0 flex h-[38px] items-center justify-center rounded-lg text-neutral-300 transition-all duration-150 active:scale-[0.96] disabled:active:scale-100 bg-[#2d2d2d] hover:bg-[#3d3d3d] disabled:opacity-40 shadow-[0_4px_0_#1a1a1a]"
+              >
+                <ChevronsLeft className="h-4 w-4" strokeWidth={2.6} />
+              </button>
+              <button
+                type="button"
+                aria-label="Previous move"
+                onClick={() => {
+                  if (isLiveActive && onSelectWhatIfMove) { onSelectWhatIfMove(Math.max(0, currentMoveIndex - 1)); return; }
+                  const idx = currentMoveIndex - 1;
+                  if (idx >= 0 && moves[idx] && setSelectedPly) setSelectedPly(moves[idx].ply);
+                }}
+                disabled={currentMoveIndex <= 0}
+                className="flex-1 flex h-[38px] items-center justify-center rounded-lg text-black transition-all duration-150 active:scale-[0.96] disabled:active:scale-100 bg-[#facc15] hover:bg-[#eab308] disabled:opacity-40 shadow-[0_4px_0_#ca8a04]"
+              >
+                <ChevronLeft className="h-5 w-5" strokeWidth={2.6} />
+              </button>
+              <button
+                type="button"
+                aria-label="Next move"
+                onClick={() => {
+                  if (isLiveActive && onSelectWhatIfMove) { onSelectWhatIfMove(Math.min(whatIfMoves ? whatIfMoves.length - 1 : 0, currentMoveIndex + 1)); return; }
+                  const idx = currentMoveIndex + 1;
+                  if (idx < moves.length && moves[idx] && setSelectedPly) setSelectedPly(moves[idx].ply);
+                }}
+                disabled={isLiveActive ? currentMoveIndex >= (whatIfMoves ? whatIfMoves.length - 1 : 0) : currentMoveIndex >= moves.length - 1}
+                className="flex-1 flex h-[38px] items-center justify-center rounded-lg text-black transition-all duration-150 active:scale-[0.96] disabled:active:scale-100 bg-[#facc15] hover:bg-[#eab308] disabled:opacity-40 shadow-[0_4px_0_#ca8a04]"
+              >
+                <ChevronRight className="h-5 w-5" strokeWidth={2.6} />
+              </button>
+              <button
+                type="button"
+                aria-label="Last move"
+                onClick={() => {
+                  if (isLiveActive && onSelectWhatIfMove) { onSelectWhatIfMove(whatIfMoves ? whatIfMoves.length - 1 : 0); return; }
+                  const last = moves[moves.length - 1];
+                  if (last && setSelectedPly) setSelectedPly(last.ply);
+                }}
+                disabled={isLiveActive ? currentMoveIndex >= (whatIfMoves ? whatIfMoves.length - 1 : 0) : currentMoveIndex >= moves.length - 1}
+                className="w-[50px] shrink-0 flex h-[38px] items-center justify-center rounded-lg text-neutral-300 transition-all duration-150 active:scale-[0.96] disabled:active:scale-100 bg-[#2d2d2d] hover:bg-[#3d3d3d] disabled:opacity-40 shadow-[0_4px_0_#1a1a1a]"
+              >
+                <ChevronsRight className="h-4 w-4" strokeWidth={2.6} />
+              </button>
             </div>
           </div>
         )}
