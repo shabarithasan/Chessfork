@@ -979,13 +979,6 @@ function RightPanel({
               />
             )}
 
-            {/* ── 0. Move Summary Bar ── */}
-            <div className="shrink-0 px-1 pt-1">
-              <MoveDistributionBar
-                stats={reportStats}
-                side={analysis.subjectColor === "white" ? "left" : "right"}
-              />
-            </div>
 
             {/* ── 1. Move Detail Card ── */}
             <div className="min-h-[100px] shrink-0">
