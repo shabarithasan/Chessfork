@@ -53,7 +53,7 @@ export function useEngine() {
           break;
         case "analysis":
           const now = Date.now();
-          if (now - (((worker as unknown) as { _lastUiUpdate?: number })._lastUiUpdate || 0) > 150 || msg.depth >= 14) {
+          if (now - (((worker as unknown) as { _lastUiUpdate?: number })._lastUiUpdate || 0) > 150 || msg.depth >= 14 || msg.depth <= 3) {
             ((worker as unknown) as { _lastUiUpdate?: number })._lastUiUpdate = now;
             setAnalysis({
               evaluation: msg.lines?.[0]?.evaluation || null,
@@ -117,7 +117,7 @@ export function useEngine() {
         return;
       }
 
-      setAnalysis({ evaluation: null, lines: [], bestMove: null, depth: 0, status: "analyzing", fen: "" });
+      setAnalysis((prev) => ({ ...prev, depth: 0, status: "analyzing", fen: normalizedFen }));
       debounceRef.current = setTimeout(() => {
         searchStartedRef.current = sid;
         worker.postMessage({
