@@ -82,7 +82,7 @@ function AlternativeLines({ lines, fenBefore, moveNumber, onSelectLine, isLive =
               <span className="rounded-md border border-neutral-600 bg-transparent text-neutral-200 px-1.5 py-[2px] text-center font-mono font-semibold min-w-[42px] text-[11px]">
                 {formatScore(line.score)}
               </span>
-              <span className="overflow-hidden whitespace-nowrap font-mono text-neutral-400 text-[13px]">
+              <span className="overflow-hidden whitespace-nowrap font-mono text-neutral-300 text-[13px]">
                 {allMoves.map((san, moveIdx) => {
                   let initialTurn = "white";
                   try {
@@ -98,13 +98,13 @@ function AlternativeLines({ lines, fenBefore, moveNumber, onSelectLine, isLive =
                   const isFirst = moveIdx === 0;
                   return (
                     <span key={moveIdx}>
-                      <span className="mr-1 tabular-nums text-neutral-600">
+                      <span className="mr-1 tabular-nums text-neutral-500">
                         {formatMoveNumber(moveNum, moveSide as "white" | "black")}
                       </span>
                       <button
                         type="button"
                         onClick={() => handleLineClick(san)}
-                        className={`-mx-[3px] inline-flex items-center rounded-[3px] px-[3px] transition-colors duration-150 hover:bg-neutral-700 hover:text-white ${
+                        className={`-mx-[3px] inline-flex items-center rounded-[3px] px-[3px] transition-colors duration-150 hover:bg-neutral-600 hover:text-white ${
                           isFirst ? "font-semibold text-white" : ""
                         }`}
                       >
