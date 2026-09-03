@@ -67,7 +67,7 @@ function AlternativeLines({ lines, fenBefore, moveNumber, onSelectLine, isLive =
                 : { duration: 0.6, ease: "easeOut" }}
               className="flex items-center gap-2 overflow-hidden h-[27px] rounded px-1 -mx-1"
             >
-              <span className="rounded border px-1.5 py-0.5 text-center font-mono font-semibold border-neutral-300 bg-neutral-100 text-neutral-900 min-w-[42px] text-[11px]">
+              <span className="rounded-md border border-neutral-600 bg-transparent text-neutral-200 px-1.5 py-[2px] text-center font-mono font-semibold min-w-[42px] text-[11px]">
                 {formatScore(line.score)}
               </span>
               <span className="overflow-hidden whitespace-nowrap font-mono text-neutral-400 text-[13px]">
