@@ -252,11 +252,23 @@ export async function analyzePgnClientSide(
         });
       }
 
-      const engineLines = alternativeLines.lines.map((l) => ({
-        ...l,
-        san: uciToSan(fenBefore, l.san),
-        line: [uciToSan(fenBefore, l.san)],
-      }));
+      const engineLines = alternativeLines.lines.map((l) => {
+        const lineSan: string[] = [];
+        try {
+          const c = new Chess(fenBefore);
+          for (const uci of l.pv) {
+            const m = c.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci.slice(4, 5) || undefined });
+            if (!m) break;
+            lineSan.push(m.san);
+          }
+        } catch {}
+        
+        return {
+          ...l,
+          san: lineSan[0] ?? uciToSan(fenBefore, l.san),
+          line: lineSan.length > 0 ? lineSan : [uciToSan(fenBefore, l.san)],
+        };
+      });
 
       const isBookMove = (Math.floor(index / 2) + 1) <= 8 && cpLoss < 20;
 
