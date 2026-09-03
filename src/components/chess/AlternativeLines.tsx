@@ -63,10 +63,11 @@ function AlternativeLines({ lines, fenBefore, moveNumber, onSelectLine, isLive =
       <div className="flex flex-col gap-1.5">
         {lines.map((line, lineIndex) => {
           const allMoves = [line.san, ...line.line.slice(1)];
-          const animKey = `${line.rank}-${line.san}-${line.score}-${line.depth}`;
+          const stableKey = line.san; // Stable key based on the principal move allows layout animations to track the element as it re-orders
           return (
             <motion.div
-              key={animKey}
+              layout
+              key={stableKey}
               initial={{ backgroundColor: "rgba(251, 191, 36, 0.25)" }}
               animate={isLive && !reduceMotion
                 ? {

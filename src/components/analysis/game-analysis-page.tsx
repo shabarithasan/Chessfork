@@ -1042,11 +1042,11 @@ function RightPanel({
                         )}
                       </div>
                     </div>
-                    {!isWhatIfSearching && (
-                      <div className="mt-3.5">
-                        <button type="button" onClick={handleExplain} disabled={explainLoading} className="group/explain relative w-full overflow-hidden rounded-xl bg-neutral-900 p-[1.5px] transition-transform active:scale-[0.98] disabled:active:scale-100 disabled:opacity-60">
-                          <span aria-hidden="true" className="coach-explain-wave-rotor coach-explain-wave-rotor--dark-button" />
-                          <span className="relative z-10 flex items-center justify-center gap-2 rounded-[10px] bg-[#1a1a1a] font-semibold text-white transition-colors duration-150 group-hover/explain:bg-[#111111] px-3 py-2 text-[13px]">
+                      {!isWhatIfSearching && (
+                        <div className="mt-3 flex">
+                          <button type="button" onClick={handleExplain} disabled={explainLoading} className="group/explain relative overflow-hidden rounded-full bg-neutral-900 p-[1px] transition-transform active:scale-[0.98] disabled:active:scale-100 disabled:opacity-60">
+                            <span aria-hidden="true" className="coach-explain-wave-rotor coach-explain-wave-rotor--dark-button" />
+                            <span className="relative z-10 flex items-center justify-center gap-2 rounded-full bg-[#1a1a1a] font-semibold text-white transition-colors duration-150 group-hover/explain:bg-[#111111] px-4 py-1.5 text-[12.5px]">
                             {explainLoading ? (
                               <>
                                 <Loader2 className="size-4 animate-spin" />
