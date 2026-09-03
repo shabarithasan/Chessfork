@@ -117,7 +117,7 @@ export function useEngine() {
         return;
       }
 
-      setAnalysis((prev) => ({ ...prev, depth: 0, status: "analyzing", fen: normalizedFen }));
+      setAnalysis((prev) => ({ ...prev, depth: 0, status: "analyzing" }));
       debounceRef.current = setTimeout(() => {
         searchStartedRef.current = sid;
         worker.postMessage({

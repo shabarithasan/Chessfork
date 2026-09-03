@@ -611,8 +611,8 @@ function RightPanel({
         nodes: 0,
       }));
     } else if (liveEngine && engineAnalysis?.lines) {
-      // The live engine FEN is the position currently on the board
-      const liveFen = isStartPosition ? STARTING_FEN : selectedMove.fenAfter;
+      // Use the exact FEN that the engine evaluated to prevent parsing errors during transition frames
+      const liveFen = engineAnalysis.fen || (isStartPosition ? STARTING_FEN : selectedMove.fenAfter);
       return engineAnalysis.lines.map((l: any, i: number) => {
         // Convert UCI PV to SAN
         let firstSan = l.pv[0] ?? "";
@@ -1216,8 +1216,14 @@ function RightPanel({
               let moveNumber: number | undefined;
               if (liveLinesResolved && liveLinesResolved.length > 0) {
                 lines = liveLinesResolved;
-                fenBefore = isLiveActive ? whatIfLeafFenResolved : (isStartPosition ? STARTING_FEN : selectedMove.fenAfter);
-                if (!isLiveActive) moveNumber = selectedMove.moveNumber;
+                fenBefore = isLiveActive ? whatIfLeafFenResolved : (engineAnalysis?.fen || (isStartPosition ? STARTING_FEN : selectedMove.fenAfter));
+                if (!isLiveActive) {
+                  try {
+                    moveNumber = parseInt(fenBefore.split(" ")[5], 10) || selectedMove.moveNumber;
+                  } catch {
+                    moveNumber = selectedMove.moveNumber;
+                  }
+                }
               } else if (!isLiveActive && isStartPosition && startEngineLines && startEngineLines.length > 0) {
                 lines = startEngineLines;
                 fenBefore = STARTING_FEN;

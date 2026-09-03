@@ -56,7 +56,16 @@ function AlternativeLines({ lines, fenBefore, moveNumber, onSelectLine, isLive =
     return <div className="mt-3.5 h-[100px]" />; // Preserve the layout block height
   }
 
-  const startMoveNum = moveNumber ?? 1;
+  // Parse move number directly from FEN to ensure it is always perfectly synced
+  let startMoveNum = moveNumber;
+  if (!startMoveNum) {
+    try {
+      const parts = fenBefore.split(" ");
+      startMoveNum = parseInt(parts[5], 10) || 1;
+    } catch {
+      startMoveNum = 1;
+    }
+  }
 
   return (
     <div className="mt-3.5">
