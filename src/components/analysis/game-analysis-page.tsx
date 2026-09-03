@@ -1211,10 +1211,6 @@ function RightPanel({
 
             {/* ── 2. Engine Lines ── */}
             {(() => {
-              const currentGrade = isLiveActive && currentWhatIfMove ? (currentWhatIfMove.grade ?? currentWhatIfEval?.grade) : selectedMove.grade;
-              const isMistake = currentGrade === "Blunder" || currentGrade === "Mistake" || currentGrade === "Inaccuracy";
-              if (isMistake && !revealedBestMove) return <div className="h-[100px] mt-3.5" />;
-
               let lines: EngineLine[] | undefined;
               let fenBefore = "";
               let moveNumber: number | undefined;
@@ -1293,10 +1289,6 @@ function RightPanel({
 
             {/* ── 4. Best move arrow toggle ── */}
             {(() => {
-              const currentGrade = isLiveActive && currentWhatIfMove ? (currentWhatIfMove.grade ?? currentWhatIfEval?.grade) : selectedMove.grade;
-              const isMistake = currentGrade === "Blunder" || currentGrade === "Mistake" || currentGrade === "Inaccuracy";
-              if (isMistake && !revealedBestMove) return <div className="h-[58px]" />;
-
               return (
                 <div className="mt-3 flex items-center gap-2 shrink-0">
                   <button type="button" onClick={onToggleBestMoveArrow} disabled={!selectedMove.engineLines?.[0]?.line?.length} className={`flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 font-bold transition-all duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 h-[46px] text-[14.5px] ${showBestMoveArrow ? 'border-[#f3c53d]/30 bg-[#f3c53d]/10 text-[#f3c53d]' : 'bg-[#facc15] border-transparent text-black hover:bg-[#eab308]'}`}>
