@@ -106,11 +106,15 @@ function AlternativeLines({ lines, fenBefore, moveNumber, onSelectLine, isLive =
                   const moveNum = startMoveNum + moveNumIncrement;
                   
                   const isFirst = moveIdx === 0;
+                  const showMoveNumber = moveSide === "white" || isFirst;
+
                   return (
                     <span key={moveIdx}>
-                      <span className="mr-1 tabular-nums text-neutral-500">
-                        {formatMoveNumber(moveNum, moveSide as "white" | "black")}
-                      </span>
+                      {showMoveNumber && (
+                        <span className="mr-1 tabular-nums text-neutral-500">
+                          {formatMoveNumber(moveNum, moveSide as "white" | "black")}
+                        </span>
+                      )}
                       <button
                         type="button"
                         onClick={() => handleLineClick(san)}

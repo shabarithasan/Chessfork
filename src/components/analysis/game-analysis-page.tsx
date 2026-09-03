@@ -629,7 +629,7 @@ function RightPanel({
         return {
           rank: i + 1,
           san: firstSan,
-          score: l.evaluation.type === "cp" ? Math.round(l.evaluation.value * 100) : (l.evaluation.value > 0 ? 10000 : -10000),
+          score: l.evaluation ? toCentipawns(l.evaluation.value, l.evaluation.type) : 0,
           depth: engineAnalysis.depth,
           mate: l.evaluation.type === "mate" ? l.evaluation.value : undefined,
           line: lineSan.length > 0 ? lineSan : l.pv,
