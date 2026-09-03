@@ -256,7 +256,7 @@ export async function analyzePgnClientSide(
         const lineSan: string[] = [];
         try {
           const c = new Chess(fenBefore);
-          for (const uci of l.pv) {
+          for (const uci of l.line) {
             const m = c.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci.slice(4, 5) || undefined });
             if (!m) break;
             lineSan.push(m.san);
