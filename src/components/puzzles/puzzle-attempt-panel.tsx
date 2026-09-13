@@ -364,7 +364,7 @@ export function PuzzleAttemptPanel({
                        <span className="font-extrabold text-[15px]">{lastMoveSan} is incorrect</span>
                     </div>
                     <p className="text-sm font-medium text-slate-700 leading-snug">
-                      There's a better move on the board. You still have {lives} more attempt{lives !== 1 ? 's' : ''}.
+                      There&apos;s a better move on the board. You still have {lives} more attempt{lives !== 1 ? 's' : ''}.
                     </p>
                   </>
                 )}
