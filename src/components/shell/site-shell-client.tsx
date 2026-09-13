@@ -447,17 +447,7 @@ function dateKeyForWeekIndex(index: number) {
  * The premium desktop navigation sidebar. Shared by the main site shell and
  * the /analysis/[id] workspace so navigation stays identical everywhere.
  */
-export function PremiumSidebar({
-  pathname,
-  onShowWhatsNew,
-  collapsed,
-  onToggleCollapsed,
-}: {
-  pathname: string | null;
-  onShowWhatsNew: () => void;
-  collapsed: boolean;
-  onToggleCollapsed: () => void;
-}) {
+export function PremiumSidebar({ pathname, onShowWhatsNew, collapsed, onToggleCollapsed, viewer }: { pathname: string | null; onShowWhatsNew: () => void; collapsed: boolean; onToggleCollapsed: () => void; viewer: { displayName: string; level?: number } | null; }) {
   const activeLocale = resolveLocaleFromPathname(pathname);
   const homePath = withLocalePrefix("/", activeLocale);
   const authPath = withLocalePrefix("/auth", activeLocale);
