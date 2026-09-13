@@ -1021,18 +1021,31 @@ function RightPanel({
                             return <span>{btn}{(!isMistake || revealedBestMove) && " was more accurate."}</span>;
                           })()}
                         </p>
-                        {!isWhatIfSearching && isLiveActive && llmLoading && (
-                          <p className="mt-1.5 text-[12px] leading-[1.4] text-neutral-500">
-                            Consulting DeepSeek...
-                          </p>
-                        )}
-                        {!isWhatIfSearching && isLiveActive && !llmLoading && llmAnalysis && (
+                          
+                          {/* Explain Move Button */}
+                          {!isWhatIfSearching && isLiveActive && !llmAnalysis && !llmLoading && (
+                            <button
+                              onClick={handleExplainMove}
+                              className="mt-2 flex items-center gap-1.5 rounded-lg border border-[#f3c53d]/40 bg-[#f3c53d]/10 px-3 py-1.5 text-[12px] font-semibold text-[#b88c10] transition-colors hover:bg-[#f3c53d]/20"
+                            >
+                              <Sparkles size={14} className="text-[#f3c53d]" />
+                              Deep Explanation
+                            </button>
+                          )}
+
+                          {!isWhatIfSearching && isLiveActive && llmLoading && (
+                            <p className="mt-1.5 flex items-center gap-2 text-[12px] leading-[1.4] text-neutral-500">
+                              <Loader2 size={12} className="animate-spin text-[#f3c53d]" />
+                              Consulting AI Coach...
+                            </p>
+                          )}
+                          {!isWhatIfSearching && isLiveActive && !llmLoading && llmAnalysis && (
                           <div className="mt-2 space-y-1 rounded-xl border border-[#f3c53d]/30 bg-[#f3c53d]/5 px-3 py-2.5">
                             <div className="flex items-center gap-1.5">
                               <span className="rounded bg-[#f3c53d]/20 px-1.5 py-0.5 text-[10px] font-bold text-[#f3c53d]">AI</span>
                               <span className="text-[12px] font-semibold text-neutral-800">{llmAnalysis.verdict}</span>
                             </div>
-                            <p className="text-[12px] leading-[1.5] text-neutral-700">{llmAnalysis.explanation}</p>
+                            <p className="text-[12px] leading-[1.5] text-neutral-700 whitespace-pre-wrap">{llmAnalysis.explanation}</p>
                             {llmAnalysis.bestContinuation && (
                               <p className="text-[11px] text-neutral-500">
                                 Suggested continuation: <span className="font-mono font-medium text-neutral-700">{llmAnalysis.bestContinuation}</span>
@@ -2181,12 +2194,59 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
     return result;
   }, [whatIfSessionList, isLiveActive, pendingMoveData]);
 
-  /* ── DeepSeek LLM analysis for What-If mode (parallel to engine) ── */
-  // Live moves are evaluated only by the local Stockfish worker. Do not make
-  // a background OpenRouter request on every drop: it is slow and can fail
-  // when AI credits are unavailable.
-  const llmAnalysis: LLMAnalysis | null = null;
-  const llmLoading = false;
+  const [llmAnalysis, setLlmAnalysis] = useState<LLMAnalysis | null>(null);
+  const [llmLoading, setLlmLoading] = useState(false);
+  const [explainedPly, setExplainedPly] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (explainedPly !== selectedPly) {
+      setLlmAnalysis(null);
+      setExplainedPly(null);
+    }
+  }, [selectedPly, explainedPly]);
+
+  const handleExplainMove = async () => {
+    if (llmLoading || !selectedMove) return;
+    setLlmLoading(true);
+    setExplainedPly(selectedPly);
+    
+    try {
+      const res = await fetch("/api/explain-move", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fenBefore: selectedMove.fenBefore,
+          fenAfter: selectedMove.fenAfter,
+          playedMove: selectedMove.san,
+          bestMove: analysis.bestMoves[selectedPly]?.[0] || "",
+          grade: selectedMove.grade,
+          playedEval: selectedMove.evalDisplay ? parseFloat(selectedMove.evalDisplay) * 100 : 0,
+          bestEval: analysis.bestMoves[selectedPly]?.[0] ? 0 : 0, // Fallback
+          evalLoss: selectedMove.cpLoss || 0,
+          depth: 20,
+          topMoves: analysis.bestMoves[selectedPly]?.map(m => ({ san: m, eval: 0 })) || [],
+          sideToMove: selectedMove.side === "w" ? "white" : "black",
+          moveNumber: selectedMove.moveNumber,
+          reasons: []
+        }),
+      });
+      
+      if (!res.ok) throw new Error("Failed to fetch explanation");
+      const data = await res.json();
+      
+      if (data.sections && data.sections.length > 0) {
+        setLlmAnalysis({
+          verdict: "Explanation",
+          explanation: data.sections.map((s: any) => `${s.icon} ${s.title}: ${s.content}`).join("\n\n")
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      setLlmAnalysis({ verdict: "Error", explanation: "Failed to generate explanation." });
+    } finally {
+      setLlmLoading(false);
+    }
+  };
 
   // Selected index derived from session order
   const whatIfSelectedIdx: number = whatIf.selectedId
