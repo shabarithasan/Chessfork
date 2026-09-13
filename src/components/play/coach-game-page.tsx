@@ -22,23 +22,94 @@ export function CoachGamePage() {
   const [game, setGame] = useState(new Chess());
   const [userColor, setUserColor] = useState<"white" | "black">("white");
   const [difficulty, setDifficulty] = useState<Difficulty>("challenging");
+  const [persona, setPersona] = useState<"coach" | "hikaru" | "magnus">("magnus");
   const [gameState, setGameState] = useState<"setup" | "playing" | "blunder_review" | "game_over">("setup");
   const [chatLog, setChatLog] = useState<ChatMessage[]>([]);
+  const chatLogRef = useRef<ChatMessage[]>([]);
+  
+  const [isTyping, setIsTyping] = useState(false);
   
   const { analysis, startAnalysis, stopAnalysis } = useEngine();
   const lastEvalRef = useRef<number>(0);
   const [blunderData, setBlunderData] = useState<{ fen: string; userMove: string; comment: string; bestReply?: string } | null>(null);
   
   const addChat = (text: string, role: "coach" | "system" = "coach") => {
-    setChatLog(prev => [...prev, { id: Math.random().toString(36).slice(2), role, text }]);
+    const newMsg: ChatMessage = { id: Math.random().toString(36).slice(2), role, text };
+    setChatLog(prev => {
+      const next = [...prev, newMsg];
+      chatLogRef.current = next;
+      return next;
+    });
+  };
+
+  const generateCoachResponse = async (contextMsg: string) => {
+    setIsTyping(true);
+    try {
+      const response = await fetch("/api/ai-assistant/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            ...chatLogRef.current.filter(m => m.role === "coach").map(m => ({ role: "assistant", content: m.text })),
+            { role: "user", content: contextMsg }
+          ],
+          pageContext: { type: "coach_chat", data: { persona } }
+        }),
+      });
+      
+      if (!response.ok) throw new Error("Failed to fetch");
+      
+      const reader = response.body?.getReader();
+      if (!reader) return;
+      
+      const decoder = new TextDecoder();
+      let fullText = "";
+      
+      const msgId = Math.random().toString(36).slice(2);
+      setChatLog(prev => {
+         const next = [...prev, { id: msgId, role: "coach", text: "" } as ChatMessage];
+         chatLogRef.current = next;
+         return next;
+      });
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+           if (line.startsWith('data: ')) {
+               const data = line.slice(6);
+               if (data === '[DONE]') continue;
+               try {
+                  const parsed = JSON.parse(data);
+                  const text = parsed.choices[0]?.delta?.content || "";
+                  fullText += text;
+                  setChatLog(prev => {
+                     const next = prev.map(m => m.id === msgId ? { ...m, text: fullText } : m);
+                     chatLogRef.current = next;
+                     return next;
+                  });
+               } catch (e) {}
+           }
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      addChat("I seem to have lost my connection. Anyway, let's keep playing.", "coach");
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const startGame = () => {
     setGame(new Chess());
     setGameState("playing");
     setChatLog([]);
+    chatLogRef.current = [];
     lastEvalRef.current = 0;
-    addChat(`Welcome back. Let's play a ${difficulty} game when you're ready.`);
+    generateCoachResponse(`The game has started. We are playing a ${difficulty} game. I am playing White. Give me a 1-sentence opening greeting.`);
   };
 
   // AI Turn Logic
@@ -54,30 +125,25 @@ export function CoachGamePage() {
          if (analysis.fen !== game.fen()) {
              startAnalysis(game.fen(), { depth: targetDepth, multiPV: 1 });
          } else if (analysis.status === "idle" && analysis.bestMove) {
-             // Engine finished searching
              const currentEval = evalToNumber(analysis.evaluation);
              
-             // Check if user blundered
-             // The evaluation is from the AI's perspective.
-             // If AI's eval jumps by > 1.5 pawns since its last eval, user blundered!
              if (lastEvalRef.current !== 0 && currentEval - lastEvalRef.current > 1.5) {
-                 // Blunder detected!
                  stopAnalysis();
                  setGameState("blunder_review");
-                 const comment = "Looks like you made a mistake. Do you want to take back that move and try something else?";
-                 addChat(comment);
+                 const hist = game.history();
+                 const lastMove = hist[hist.length - 1];
+                 generateCoachResponse(`I just played ${lastMove}. According to the engine, this was a blunder (evaluation dropped by ${((currentEval - lastEvalRef.current) * 100).toFixed(0)} centipawns). Your best reply is ${analysis.bestMove}. Give me a 1-2 sentence roast or comment pointing out my mistake, and ask if I want to take it back.`);
+                 
                  setBlunderData({
                     fen: game.fen(),
-                    userMove: "Mistake", // We could extract the last move
-                    comment,
+                    userMove: lastMove,
+                    comment: "",
                     bestReply: analysis.bestMove
                  });
-                 // Store the new eval so if they continue, we don't re-trigger
                  lastEvalRef.current = currentEval;
                  return;
              }
 
-             // Normal move
              lastEvalRef.current = currentEval;
              const m = game.move(analysis.bestMove);
              if (m) {
@@ -87,7 +153,7 @@ export function CoachGamePage() {
          }
       }
     }
-  }, [game, gameState, userColor, analysis, difficulty, startAnalysis, stopAnalysis]);
+  }, [game, gameState, userColor, analysis, difficulty, startAnalysis, stopAnalysis, persona]);
 
   const onMove = (from: string, to: string) => {
     if (gameState !== "playing") return false;
@@ -115,14 +181,14 @@ export function CoachGamePage() {
     setGame(new Chess(game.fen()));
     setGameState("playing");
     setBlunderData(null);
-    addChat("Good choice. Try to find a better move.", "system");
+    generateCoachResponse("I decided to take back my move and try something else. Acknowledge this quickly and tell me to play a better move.");
   };
 
   const handleContinue = () => {
     setGameState("playing");
     setBlunderData(null);
-    addChat("All right. Let's continue.");
-    // AI makes its move
+    generateCoachResponse("I decided to continue playing anyway. Tell me 'Alright then, let's see how this plays out' or similar.");
+    
     if (blunderData?.bestReply) {
        game.move(blunderData.bestReply);
        setGame(new Chess(game.fen()));
@@ -136,10 +202,15 @@ export function CoachGamePage() {
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
              <div className="size-10 rounded-lg overflow-hidden bg-white/10 flex items-center justify-center border border-white/20">
-               <span className="text-xl">🇳🇴</span>
+               <span className="text-xl">{persona === "hikaru" ? "🇺🇸" : persona === "magnus" ? "🇳🇴" : "🤖"}</span>
              </div>
              <div>
-                <p className="text-sm font-bold text-white">Coach Magnus <span className="text-slate-400 font-normal">(1062)</span></p>
+                <p className="text-sm font-bold text-white">
+                   {persona === "coach" ? "Elite Coach" : persona === "hikaru" ? "Hikaru Nakamura" : "Magnus Carlsen"} 
+                   <span className="text-slate-400 font-normal ml-1">
+                      ({difficulty === "casual" ? 1200 : difficulty === "balanced" ? 1800 : 2882})
+                   </span>
+                </p>
              </div>
           </div>
         </div>
@@ -177,7 +248,7 @@ export function CoachGamePage() {
                 <div key={msg.id} className="flex gap-3">
                    {msg.role === "coach" && (
                      <div className="size-8 rounded-full overflow-hidden bg-amber-500/20 shrink-0 border border-amber-500/30 flex items-center justify-center">
-                        <span className="text-sm">🇳🇴</span>
+                        <span className="text-sm">{persona === "hikaru" ? "🇺🇸" : persona === "magnus" ? "🇳🇴" : "🤖"}</span>
                      </div>
                    )}
                    <div className={`p-3 rounded-2xl text-sm ${msg.role === "coach" ? "bg-white text-black rounded-tl-sm shadow-md" : "bg-white/10 text-white rounded-tr-sm mx-auto italic"}`}>
@@ -186,7 +257,20 @@ export function CoachGamePage() {
                 </div>
               ))}
               
-              {gameState === "blunder_review" && (
+              {isTyping && (
+                <div className="flex gap-3">
+                   <div className="size-8 rounded-full overflow-hidden bg-amber-500/20 shrink-0 border border-amber-500/30 flex items-center justify-center">
+                      <span className="text-sm">{persona === "hikaru" ? "🇺🇸" : persona === "magnus" ? "🇳🇴" : "🤖"}</span>
+                   </div>
+                   <div className="p-3 rounded-2xl text-sm bg-white text-black rounded-tl-sm shadow-md flex items-center gap-1">
+                      <span className="size-1.5 bg-black/40 rounded-full animate-bounce" />
+                      <span className="size-1.5 bg-black/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                      <span className="size-1.5 bg-black/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                   </div>
+                </div>
+              )}
+
+              {gameState === "blunder_review" && !isTyping && (
                  <div className="mt-4 flex gap-2">
                     <button onClick={handleContinue} className="flex-1 py-2.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-bold text-sm transition flex items-center justify-center gap-2 shadow-md">
                        <ArrowRight className="size-4" /> Continue
@@ -200,23 +284,46 @@ export function CoachGamePage() {
 
            {/* SETUP / PLAY CONTROLS */}
            {gameState === "setup" ? (
-             <div className="p-4 bg-[#21201D] border-t border-white/5">
-                <div className="mb-4 space-y-2">
-                   {(["casual", "balanced", "challenging"] as Difficulty[]).map((level) => (
-                      <button
-                        key={level}
-                        onClick={() => setDifficulty(level)}
-                        className={`w-full text-left p-3 rounded-xl border-2 transition-all ${difficulty === level ? "border-[#81B64C] bg-[#81B64C]/10" : "border-white/5 bg-black/20 hover:border-white/10"}`}
-                      >
-                         <p className="font-bold text-white capitalize">{level}</p>
-                         <p className="text-xs text-slate-400 mt-1">
-                            {level === "casual" ? "An easier game so you can focus on learning." : level === "balanced" ? "An even match to play while you learn." : "A hard game that pushes you to compete and learn."}
-                         </p>
-                      </button>
-                   ))}
+             <div className="p-4 bg-[#21201D] border-t border-white/5 space-y-6">
+                <div className="space-y-3">
+                   <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Select Coach</p>
+                   <div className="grid grid-cols-3 gap-2">
+                     {(["coach", "hikaru", "magnus"] as const).map((p) => (
+                       <button
+                         key={p}
+                         onClick={() => setPersona(p)}
+                         className={`p-2 rounded-lg text-sm font-bold transition-all border ${
+                           persona === p 
+                             ? "border-amber-500 bg-amber-500/20 text-white" 
+                             : "border-white/5 bg-black/20 text-slate-400 hover:border-white/20"
+                         }`}
+                       >
+                         {p === "coach" ? "Elite Coach" : p === "hikaru" ? "Hikaru" : "Magnus"}
+                       </button>
+                     ))}
+                   </div>
                 </div>
+
+                <div className="space-y-3">
+                   <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Difficulty</p>
+                   <div className="space-y-2">
+                      {(["casual", "balanced", "challenging"] as Difficulty[]).map((level) => (
+                         <button
+                           key={level}
+                           onClick={() => setDifficulty(level)}
+                           className={`w-full text-left p-3 rounded-xl border-2 transition-all ${difficulty === level ? "border-[#81B64C] bg-[#81B64C]/10" : "border-white/5 bg-black/20 hover:border-white/10"}`}
+                         >
+                            <p className="font-bold text-white capitalize">{level}</p>
+                            <p className="text-xs text-slate-400 mt-1">
+                               {level === "casual" ? "An easier game so you can focus on learning." : level === "balanced" ? "An even match to play while you learn." : "A hard game that pushes you to compete and learn."}
+                            </p>
+                         </button>
+                      ))}
+                   </div>
+                </div>
+
                 <button onClick={startGame} className="w-full py-4 rounded-xl bg-[#81B64C] hover:bg-[#81B64C]/90 text-white font-bold text-lg shadow-lg transition">
-                  Play
+                  Play against {persona === "coach" ? "Elite Coach" : persona === "hikaru" ? "Hikaru" : "Magnus"}
                 </button>
              </div>
            ) : (
