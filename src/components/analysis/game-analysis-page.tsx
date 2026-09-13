@@ -2226,7 +2226,7 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
           bestEval: (selectedMove.score || 0) + (selectedMove.cpLoss || 0),
           evalLoss: selectedMove.cpLoss || 0,
           depth: selectedMove.depth || 20,
-          topMoves: selectedMove.engineLines?.map(line => ({ san: line.pv[0], eval: line.score })) || [],
+          topMoves: selectedMove.engineLines?.map(line => ({ san: line.san, eval: line.score })) || [],
           sideToMove: selectedMove.side,
           moveNumber: selectedMove.moveNumber,
           reasons: []
