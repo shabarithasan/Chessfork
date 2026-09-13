@@ -42,11 +42,29 @@ export function saveAnalysisRun(run: AnalysisRun) {
 export const samplePuzzles: Puzzle[] = [
   {
     id: "puzzle-smothered",
-    fen: "7k/5Q1p/6p1/8/8/8/6PP/6K1 w - - 0 1",
-    prompt: "Force mate in one and finish the attack instantly.",
-    solution: ["Qf8#"],
-    rating: 1360,
-    themes: ["mate", "back-rank", "forcing"],
+    fen: "r4rk1/1b3Npp/8/3Q4/8/8/5PPP/6K1 w - - 0 1",
+    prompt: "Execute the classic smothered mate combination.",
+    solution: ["Nh6+", "Kh8", "Qg8+", "Rxg8", "Nf7#"],
+    rating: 1850,
+    themes: ["mate", "smothered-mate", "sacrifice", "double-check"],
+    sourceGameId: baseAnalysis.id,
+  },
+  {
+    id: "puzzle-opera",
+    fen: "1n2kb1r/p4ppp/4q3/4p1B1/4P3/8/PPP2PPP/2KR4 w k - 0 17",
+    prompt: "Deliver Morphy's famous Opera House mate.",
+    solution: ["Rd8#"],
+    rating: 1200,
+    themes: ["mate", "mate-in-1", "paul-morphy"],
+    sourceGameId: baseAnalysis.id,
+  },
+  {
+    id: "puzzle-backrank",
+    fen: "6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1",
+    prompt: "Find the simplest mate on the board.",
+    solution: ["Ra8#"],
+    rating: 800,
+    themes: ["mate", "mate-in-1", "back-rank"],
     sourceGameId: baseAnalysis.id,
   },
   {
@@ -66,7 +84,7 @@ export const samplePuzzles: Puzzle[] = [
     rating: 1715,
     themes: ["endgame", "conversion", "queen-endgame"],
     sourceGameId: baseAnalysis.id,
-  },
+  }
 ];
 
 export const puzzleLeaderboard: LeaderboardEntry[] = [
