@@ -169,6 +169,8 @@ export const matches = pgTable("matches", {
   whitePlayer: varchar("white_player", { length: 255 }),
   blackPlayer: varchar("black_player", { length: 255 }),
   fen: text("fen").notNull().default("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"),
+  pgn: text("pgn").notNull().default(""),
+  chat: jsonb("chat").default([]),
   status: varchar("status", { length: 20 }).notNull().default("waiting"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });

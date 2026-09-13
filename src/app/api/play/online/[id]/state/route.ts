@@ -19,6 +19,8 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
     id: match.id,
     shortCode: match.shortCode,
     fen: match.fen,
+    pgn: match.pgn,
+    chat: match.chat,
     status: match.status,
     whitePlayer: match.whitePlayer,
     blackPlayer: match.blackPlayer

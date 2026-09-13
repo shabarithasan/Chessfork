@@ -8,7 +8,7 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
   const { id } = await context.params;
   
   try {
-    const { fen, move, playerColor } = await req.json();
+    const { fen, pgn, move, playerColor } = await req.json();
 
     if (!fen || !move || !playerColor) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -42,10 +42,10 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
 
     // Update match in DB
     await db.update(matches)
-      .set({ fen, status })
+      .set({ fen, pgn: pgn || "", status })
       .where(eq(matches.id, id));
 
-    return NextResponse.json({ success: true, fen });
+    return NextResponse.json({ success: true, fen, pgn: pgn || "" });
   } catch (error) {
     console.error("Move error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
