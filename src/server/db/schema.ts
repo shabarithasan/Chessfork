@@ -21,6 +21,11 @@ export const users = pgTable("users", {
   displayName: varchar("display_name", { length: 255 }).notNull(),
   locale: varchar("locale", { length: 8 }).default("en").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  xp: integer("xp").default(0).notNull(),
+  level: integer("level").default(1).notNull(),
+  title: varchar("title", { length: 255 }).default("Novice").notNull(),
+  gamesAnalyzed: integer("games_analyzed").default(0).notNull(),
+  puzzlesSolved: integer("puzzles_solved").default(0).notNull(),
 },
 (table) => ({
   usersEmailUnique: uniqueIndex("users_email_idx").on(table.email),

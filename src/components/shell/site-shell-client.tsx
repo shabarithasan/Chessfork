@@ -668,7 +668,7 @@ export function SiteShellClient({
   viewer,
 }: {
   children: React.ReactNode;
-  viewer: { displayName: string } | null;
+  viewer: { displayName: string; level?: number } | null;
 }) {
   const pathname = useStablePathname();
   const activeLocale = resolveLocaleFromPathname(pathname);
@@ -716,6 +716,7 @@ export function SiteShellClient({
           onShowWhatsNew={openWhatsNew}
           collapsed={collapsed}
           onToggleCollapsed={toggleCollapsed}
+          viewer={viewer}
         />
 
         <div className={cn("min-w-0 overflow-x-hidden transition-all duration-150", collapsed ? "lg:ml-[60px]" : "lg:ml-[256px]")}>

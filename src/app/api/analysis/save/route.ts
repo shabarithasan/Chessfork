@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { persistAnalysisRun } from "@/server/repositories/analysis-repository";
+import { awardUserXp } from "@/server/repositories/user-repository";
+import { XP_AWARDS } from "@/lib/progression";
 import { getCurrentUser } from "@/server/auth/session";
 import { checkRateLimit } from "@/server/rate-limiter";
 import type { AnalysisRun } from "@/types/platform";
@@ -21,7 +23,12 @@ export async function POST(request: Request) {
     }
 
     const run = body as AnalysisRun;
-    await persistAnalysisRun(run, run.source ?? "pgn", await getCurrentUser().then(u => u?.id));
+    const user = await getCurrentUser();
+    await persistAnalysisRun(run, run.source ?? "pgn", user?.id);
+
+    if (user) {
+      await awardUserXp(user.id, XP_AWARDS.ANALYZE_GAME, "gamesAnalyzed").catch(console.error);
+    }
 
     return NextResponse.json({ success: true, id: run.id });
   } catch (error) {

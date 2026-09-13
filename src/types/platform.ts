@@ -39,6 +39,11 @@ export interface UserAccount {
   locale: Locale;
   createdAt: string;
   subscriptionTier: SubscriptionTier;
+  xp?: number;
+  level?: number;
+  title?: string;
+  gamesAnalyzed?: number;
+  puzzlesSolved?: number;
 }
 
 export interface LinkedChessAccount {

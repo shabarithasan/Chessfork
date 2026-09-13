@@ -77,6 +77,11 @@ function toUserAccount(row: {
   locale: string;
   createdAt: Date | string;
   subscriptionTier?: SubscriptionTier | null;
+  xp?: number;
+  level?: number;
+  title?: string;
+  gamesAnalyzed?: number;
+  puzzlesSolved?: number;
 }): UserAccount {
   return {
     id: row.id,
@@ -85,6 +90,11 @@ function toUserAccount(row: {
     locale: (row.locale || "en") as Locale,
     createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : row.createdAt,
     subscriptionTier: row.subscriptionTier ?? "free",
+    xp: row.xp,
+    level: row.level,
+    title: row.title,
+    gamesAnalyzed: row.gamesAnalyzed,
+    puzzlesSolved: row.puzzlesSolved,
   };
 }
 
@@ -332,6 +342,11 @@ async function findOrCreateDatabaseOAuthUser(input: { provider: OAuthProvider; p
         locale: users.locale,
         createdAt: users.createdAt,
         subscriptionTier: subscriptions.tier,
+        xp: users.xp,
+        level: users.level,
+        title: users.title,
+        gamesAnalyzed: users.gamesAnalyzed,
+        puzzlesSolved: users.puzzlesSolved,
       })
       .from(users)
       .leftJoin(subscriptions, eq(subscriptions.userId, users.id))
@@ -811,4 +826,33 @@ export async function getAccountProfile(userId: string): Promise<AccountProfile 
     user,
     linkedAccounts: await listLinkedChessAccounts(userId),
   };
+}
+
+import { calculateLevel, getLevelTitle } from "@/lib/progression";
+
+export async function awardUserXp(userId: string, xpAmount: number, statToIncrement?: "gamesAnalyzed" | "puzzlesSolved") {
+  if (!databaseEnabled()) return null;
+  const db = getDb();
+  
+  // First get current XP
+  const currentUserRows = await db.select({ xp: users.xp, level: users.level, gamesAnalyzed: users.gamesAnalyzed, puzzlesSolved: users.puzzlesSolved }).from(users).where(eq(users.id, userId)).limit(1);
+  if (!currentUserRows[0]) return null;
+  
+  const current = currentUserRows[0];
+  const newXp = current.xp + xpAmount;
+  const newLevel = calculateLevel(newXp);
+  const newTitle = getLevelTitle(newLevel);
+  
+  const updates: any = {
+    xp: newXp,
+    level: newLevel,
+    title: newTitle,
+  };
+  
+  if (statToIncrement === "gamesAnalyzed") updates.gamesAnalyzed = current.gamesAnalyzed + 1;
+  if (statToIncrement === "puzzlesSolved") updates.puzzlesSolved = current.puzzlesSolved + 1;
+  
+  await db.update(users).set(updates).where(eq(users.id, userId));
+  
+  return { newXp, newLevel, newTitle, leveledUp: newLevel > current.level };
 }

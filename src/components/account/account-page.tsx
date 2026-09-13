@@ -5,6 +5,7 @@ import { ChessAccountLinkForm, ProfileSettingsForm } from "@/components/account/
 import { localeNames } from "@/lib/locales";
 import { listAnalysisResponses } from "@/lib/platform-service";
 import { getCurrentUser } from "@/server/auth/session";
+import { getLevelProgress } from "@/lib/progression";
 import { getAccountProfile } from "@/server/repositories/user-repository";
 import type { Locale } from "@/types/platform";
 
@@ -48,6 +49,12 @@ export async function AccountPage({
   const linkedLichess = profile.linkedAccounts.find((account) => account.source === "lichess");
   const latestRun = runs[0];
 
+  const xp = profile.user.xp || 0;
+  const level = profile.user.level || 1;
+  const title = profile.user.title || "Novice";
+  const progress = getLevelProgress(xp, level);
+
+
   return (
     <section className="mx-auto w-full max-w-7xl px-5 py-16 sm:px-8">
       <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr]">
@@ -66,13 +73,52 @@ export async function AccountPage({
               { label: "Plan", value: profile.user.subscriptionTier.toUpperCase() },
               { label: "Linked accounts", value: profile.linkedAccounts.length.toString() },
               { label: "Saved reports", value: runs.length.toString().padStart(2, "0") },
-              { label: "Locale", value: localeNames[profile.user.locale] },
+              { label: "Level", value: `Lv. ${level}` },
             ].map((metric) => (
               <div key={metric.label} className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{metric.label}</p>
                 <p className="mt-3 text-2xl font-semibold text-white">{metric.value}</p>
               </div>
             ))}
+          </div>
+
+          
+          <div className="mt-8 rounded-[2rem] border border-amber-300/30 bg-amber-500/5 p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-300/80">Progression</p>
+            <div className="mt-4 flex items-center justify-between">
+              <div>
+                <p className="text-3xl font-semibold text-white">Level {level}</p>
+                <p className="mt-1 text-sm text-amber-200/70">{title}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xl font-medium text-white">{xp} XP</p>
+                <p className="mt-1 text-xs text-slate-400">Total earned</p>
+              </div>
+            </div>
+            <div className="mt-6">
+              <div className="flex justify-between text-xs text-slate-400 mb-2">
+                <span>{progress.currentLevelXp} XP</span>
+                <span>{progress.nextLevelXp} XP</span>
+              </div>
+              <div className="h-3 w-full rounded-full bg-black/40 overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-amber-500 to-amber-300 rounded-full transition-all duration-1000"
+                  style={{ width: `${progress.percentage}%` }}
+                />
+              </div>
+              <p className="mt-3 text-center text-xs text-slate-500">{progress.nextLevelXp - progress.currentLevelXp} XP to next level</p>
+            </div>
+            
+            <div className="mt-6 grid grid-cols-2 gap-4 border-t border-white/10 pt-6">
+              <div>
+                <p className="text-2xl font-semibold text-white">{profile.user.gamesAnalyzed || 0}</p>
+                <p className="text-xs text-slate-400 uppercase tracking-wider mt-1">Games Analyzed</p>
+              </div>
+              <div>
+                <p className="text-2xl font-semibold text-white">{profile.user.puzzlesSolved || 0}</p>
+                <p className="text-xs text-slate-400 uppercase tracking-wider mt-1">Puzzles Solved</p>
+              </div>
+            </div>
           </div>
 
           <div className="mt-8 rounded-[2rem] border border-white/10 bg-slate-950/45 p-6">

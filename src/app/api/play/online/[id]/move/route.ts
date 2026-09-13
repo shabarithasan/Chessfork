@@ -3,6 +3,9 @@ import { getDb } from "@/server/db/client";
 import { matches } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { Chess } from "chess.js";
+import { getCurrentUser } from "@/server/auth/session";
+import { awardUserXp } from "@/server/repositories/user-repository";
+import { XP_AWARDS } from "@/lib/progression";
 
 export async function POST(req: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
@@ -44,6 +47,13 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
     await db.update(matches)
       .set({ fen, pgn: pgn || "", status })
       .where(eq(matches.id, id));
+
+    if (isGameOver) {
+      const user = await getCurrentUser();
+      if (user) {
+         await awardUserXp(user.id, XP_AWARDS.WIN_ONLINE_MATCH).catch(console.error);
+      }
+    }
 
     return NextResponse.json({ success: true, fen, pgn: pgn || "" });
   } catch (error) {

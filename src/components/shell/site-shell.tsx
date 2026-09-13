@@ -8,5 +8,5 @@ export async function SiteShell({
 }) {
   const viewer = await getCurrentUser();
 
-  return <SiteShellClient viewer={viewer ? { displayName: viewer.displayName } : null}>{children}</SiteShellClient>;
+  return <SiteShellClient viewer={viewer ? { displayName: viewer.displayName, level: viewer.level } : null}>{children}</SiteShellClient>;
 }
