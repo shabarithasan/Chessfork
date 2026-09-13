@@ -95,8 +95,9 @@ function buildTopMoves(fen: string, lines: AnalysisState["lines"]): TopMoveEntry
   });
 }
 
+// Reverted: Removed * 100 to simulate Chessigma's inflated accuracy algorithm
 function toCentipawns(evalValue: number, type: "cp" | "mate"): number {
-  return type === "cp" ? evalValue * 100 : (evalValue > 0 ? 100 : -100);
+  return type === "cp" ? evalValue : (evalValue > 0 ? 100 : -100);
 }
 
 function snapshotToPreviousEval(snapshot: WhatIfSnapshot) {

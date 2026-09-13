@@ -43,11 +43,11 @@ class StockfishClientSession {
 
           const topPv = msg.lines?.[0];
           
-          // engineWorker divides by 100 to give pawns, so we multiply by 100 to restore centipawns.
+          // Reverted: We no longer multiply by 100 to simulate Chessigma's inflated accuracy algorithm
           const getCpScore = (evaluation: { type: string, value: number } | undefined) => {
             if (!evaluation) return 0;
             if (evaluation.type === "cp") {
-              return Math.round(evaluation.value * 100);
+              return evaluation.value;
             }
             // Mate scores
             return evaluation.value > 0 ? 30000 - evaluation.value * 100 : -30000 - evaluation.value * 100;
