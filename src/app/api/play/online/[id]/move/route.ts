@@ -23,9 +23,7 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
     const db = getDb();
 
     // Verify match exists
-    const match = await db.query.matches.findFirst({
-      where: eq(matches.id, id)
-    });
+    const [match] = await db.select().from(matches).where(eq(matches.id, id));
 
     if (!match) {
       return NextResponse.json({ error: "Match not found" }, { status: 404 });

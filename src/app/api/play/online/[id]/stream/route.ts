@@ -15,9 +15,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
   const { id } = await context.params;
 
   const db = getDb();
-  const match = await db.query.matches.findFirst({
-    where: eq(matches.id, id)
-  });
+  const [match] = await db.select().from(matches).where(eq(matches.id, id));
 
   if (!match) {
     return new NextResponse("Match not found", { status: 404 });
