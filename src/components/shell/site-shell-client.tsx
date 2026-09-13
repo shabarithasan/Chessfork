@@ -110,6 +110,7 @@ const navGroups: NavGroup[] = [
     icon: Gamepad2,
     chevron: true,
     flyout: [
+      { href: "/play/online", icon: Swords, label: "Online Multiplayer", description: "Play a live game with a friend." },
       { href: "/play/local", icon: Swords, label: "Player vs Player", description: "Play a local game, then review it with Chessfork." },
       { href: "/games", icon: BookOpen, label: "Saved Games", description: "Browse your saved analysis reports." },
     ],

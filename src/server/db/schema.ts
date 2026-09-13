@@ -163,3 +163,11 @@ export const leaderboardEntries = pgTable(
     leaderboardUnique: uniqueIndex("leaderboard_entries_type_player_idx").on(table.boardType, table.player),
   }),
 );
+export const matches = pgTable("matches", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  whitePlayer: varchar("white_player", { length: 255 }),
+  blackPlayer: varchar("black_player", { length: 255 }),
+  fen: text("fen").notNull().default("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"),
+  status: varchar("status", { length: 20 }).notNull().default("waiting"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});

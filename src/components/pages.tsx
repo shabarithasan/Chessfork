@@ -1941,8 +1941,9 @@ export async function CoachPage() {
   // Create a compact summary of their last few games to feed the AI
   const recentGames = runs.slice(0, 5).map(r => ({
      id: r.id,
-     accuracy: r.accuracies,
-     mistakes: r.evaluations?.filter(e => e.type === "Blunder" || e.type === "Mistake").length || 0,
+     accuracyWhite: r.accuracyWhite,
+     accuracyBlack: r.accuracyBlack,
+     mistakes: r.moveEvaluations?.filter((e: any) => e.type === "Blunder" || e.type === "Mistake").length || 0,
      opening: r.opening,
   }));
 

@@ -1,0 +1,24 @@
+import { NextResponse } from "next/server";
+import { db } from "@/server/db/db";
+import { matches } from "@/server/db/schema";
+import { redisEnabled } from "@/server/env";
+
+export async function POST() {
+  if (!redisEnabled()) {
+    return NextResponse.json({ error: "Redis not enabled" }, { status: 503 });
+  }
+
+  try {
+    const [match] = await db.insert(matches)
+      .values({
+        status: "waiting",
+        fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      })
+      .returning();
+
+    return NextResponse.json({ id: match.id });
+  } catch (error) {
+    console.error("Failed to create match:", error);
+    return NextResponse.json({ error: "Failed to create match" }, { status: 500 });
+  }
+}
