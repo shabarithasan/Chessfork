@@ -2239,12 +2239,14 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
       if (data.sections && data.sections.length > 0) {
         setLlmAnalysis({
           verdict: "Explanation",
-          explanation: data.sections.map((s: any) => `${s.icon} ${s.title}: ${s.content}`).join("\n\n")
+          explanation: data.sections.map((s: any) => `${s.icon} ${s.title}: ${s.content}`).join("\n\n"),
+          score: "",
+          bestContinuation: ""
         });
       }
     } catch (err) {
       console.error(err);
-      setLlmAnalysis({ verdict: "Error", explanation: "Failed to generate explanation." });
+      setLlmAnalysis({ verdict: "Error", explanation: "Failed to generate explanation.", score: "", bestContinuation: "" });
     } finally {
       setLlmLoading(false);
     }
