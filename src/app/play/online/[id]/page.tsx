@@ -1,11 +1,12 @@
 "use client";
-
+import { use } from "react";
 import { useEffect, useState, useRef } from "react";
 import { Chess } from "chess.js";
 import ChessBoard from "@/components/ChessBoard";
 import { Copy, Check, Users } from "lucide-react";
 
-export default function OnlineGamePage({ params }: { params: { id: string } }) {
+export default function OnlineGamePage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   const [game, setGame] = useState(new Chess());
   const [status, setStatus] = useState("connecting"); // connecting, waiting, playing, finished
   const [playerColor, setPlayerColor] = useState<"white" | "black" | "spectator">("spectator");

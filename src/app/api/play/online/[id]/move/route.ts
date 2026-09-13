@@ -6,12 +6,12 @@ import { matches } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { Chess } from "chess.js";
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, context: { params: Promise<{ id: string }> }) {
   if (!redisEnabled()) {
     return NextResponse.json({ error: "Redis not enabled" }, { status: 503 });
   }
 
-  const { id } = params;
+  const { id } = await context.params;
   
   try {
     const { fen, move, playerColor } = await req.json();

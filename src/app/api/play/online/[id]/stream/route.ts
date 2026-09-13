@@ -7,12 +7,12 @@ import { eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
   if (!redisEnabled()) {
     return new NextResponse("Redis is required for multiplayer", { status: 503 });
   }
 
-  const { id } = params;
+  const { id } = await context.params;
 
   const db = getDb();
   const match = await db.query.matches.findFirst({
