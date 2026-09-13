@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>CHESSFORK — The World of Strategy</title>
+<meta name="description" content="CHESSFORK — a cinematic chess experience. One move can change everything." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Ccircle cx='16' cy='11' r='6' fill='%23d9b36a'/%3E%3Cpath d='M11 26c0-5 2.2-7 5-7s5 2 5 7z' fill='%23d9b36a'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/main.css" />
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+</head>
+<body class="locked">
+
+<!-- ============ WEBGL STAGE ============ -->
+<canvas id="gl" aria-hidden="true"></canvas>
+
+<!-- ============ INTRO VEIL (pure black -> point of light -> expansion) ============ -->
+<div id="veil">
+  <div class="dot"></div>
+  <div class="flash"></div>
+</div>
+
+<!-- ============ HUD / NAV (almost invisible) ============ -->
+<header id="hud" aria-hidden="false">
+  <div class="brand">chess<em>Fork</em></div>
+  <button id="menu-btn" aria-label="Open menu">MENU</button>
+  <div id="chapter-tag"><span id="ch-num">00</span><i>/</i><span>06</span><b id="ch-name">PROLOGUE</b></div>
+  <div id="progress"><i id="progress-bar"></i></div>
+  <div id="scroll-hint"><span>SCROLL</span><i></i></div>
+</header>
+
+<!-- ============ MENU OVERLAY ============ -->
+<nav id="menu" aria-hidden="true">
+  <button id="menu-close" aria-label="Close menu">CLOSE</button>
+  <ol>
+    <li data-goto="genesis"><em>01</em><span>GENESIS</span></li>
+    <li data-goto="mind"><em>02</em><span>THE MIND</span></li>
+    <li data-goto="fork"><em>03</em><span>THE FORK</span></li>
+    <li data-goto="chaos"><em>04</em><span>CHAOS</span></li>
+    <li data-goto="arena"><em>05</em><span>THE ARENA</span></li>
+    <li data-goto="mastery"><em>06</em><span>MASTERY</span></li>
+    <li data-goto="finale"><em>07</em><span>MAKE YOUR MOVE</span></li>
+  </ol>
+</nav>
+
+<!-- ============ CINEMATIC TEXT BEATS (fixed overlays, driven by the director) ============ -->
+<main id="story" aria-label="CHESSFORK cinematic story">
+
+  <!-- IMPACT -->
+  <section class="beat" id="b-impact">
+    <h1 class="mega center">
+      <span class="ln"><span>ONE MOVE</span></span>
+      <span class="ln"><span>CAN CHANGE</span></span>
+      <span class="ln gold"><span>EVERYTHING.</span></span>
+    </h1>
+  </section>
+
+  <!-- 01 GENESIS -->
+  <section class="beat" id="b-genesis">
+    <span class="chap"><i>01</i>GENESIS</span>
+    <h2 class="mega left">
+      <span class="ln"><span>EVERY GAME</span></span>
+      <span class="ln"><span>BEGINS WITH</span></span>
+      <span class="ln gold"><span>ONE MOVE.</span></span>
+    </h2>
+  </section>
+
+  <!-- 02 THE MIND -->
+  <section class="beat" id="b-mind-a">
+    <span class="chap"><i>02</i>THE MIND</span>
+    <h2 class="mega left">
+      <span class="ln"><span>THE BOARD</span></span>
+      <span class="ln"><span>ISN'T THE</span></span>
+      <span class="ln"><span>BATTLEFIELD.</span></span>
+    </h2>
+  </section>
+  <section class="beat" id="b-mind-b">
+    <h2 class="mega center gold-solid">
+      <span class="ln"><span>THE MIND IS.</span></span>
+    </h2>
+  </section>
+
+  <!-- 03 THE FORK -->
+  <section class="beat" id="b-fork-a">
+    <span class="chap"><i>03</i>THE FORK</span>
+    <h2 class="mega center"><span class="ln"><span>ONE MOVE.</span></span></h2>
+  </section>
+  <section class="beat" id="b-fork-b">
+    <h2 class="mega center"><span class="ln"><span>TWO TARGETS.</span></span></h2>
+  </section>
+  <section class="beat" id="b-fork-c">
+    <h2 class="forkword" aria-label="FORK">FORK</h2>
+  </section>
+
+  <!-- 04 CHAOS -->
+  <section class="beat" id="b-chaos">
+    <span class="chap"><i>04</i>CHAOS</span>
+    <h2 class="mega center">
+      <span class="ln"><span>THE BEST MOVE</span></span>
+      <span class="ln"><span>IS RARELY</span></span>
+      <span class="ln gold"><span>THE OBVIOUS ONE.</span></span>
+    </h2>
+  </section>
+
+  <!-- 05 ARENA -->
+  <section class="beat" id="b-arena">
+    <span class="chap"><i>05</i>THE ARENA</span>
+    <h2 class="mega left">
+      <span class="ln"><span>PLAY</span></span>
+      <span class="ln"><span>WITHOUT</span></span>
+      <span class="ln gold"><span>LIMITS.</span></span>
+    </h2>
+    <a class="cta ghost" id="arena-cta" href="#" data-noop>ENTER THE ARENA <i>&rarr;</i></a>
+  </section>
+
+  <!-- floating spatial data panels (traveled through, not cards) -->
+  <div id="arena-panels" aria-hidden="true">
+    <div class="panel" data-depth="0.35"><em>LIVE</em><b>128,402</b><span>players online</span></div>
+    <div class="panel" data-depth="0.6"><em>RATED</em><b>2,847,913</b><span>games today</span></div>
+    <div class="panel" data-depth="0.45"><em>ELO</em><b>400 &mdash; 2900</b><span>every level</span></div>
+    <div class="panel" data-depth="0.75"><em>EVENT</em><b>GRAND FORK</b><span>weekly open</span></div>
+    <div class="panel" data-depth="0.55"><em>PING</em><b>14ms</b><span>global servers</span></div>
+    <div class="panel" data-depth="0.9"><em>RANK</em><b>#1</b><span>could be you</span></div>
+  </div>
+
+  <!-- 06 MASTERY -->
+  <section class="beat" id="b-mastery-a">
+    <span class="chap"><i>06</i>MASTERY</span>
+    <h2 class="mega center">
+      <span class="ln"><span>DON'T JUST</span></span>
+      <span class="ln"><span>PLAY CHESS.</span></span>
+    </h2>
+  </section>
+  <section class="beat" id="b-mastery-b">
+    <h2 class="mega center gold-solid"><span class="ln"><span>MASTER IT.</span></span></h2>
+  </section>
+  <div id="ranks" aria-hidden="true">
+    <span data-rank="0">BEGINNER</span>
+    <span data-rank="1">INTERMEDIATE</span>
+    <span data-rank="2">ADVANCED</span>
+    <span data-rank="3">MASTER</span>
+  </div>
+
+  <!-- REVEAL -->
+  <section class="beat" id="b-reveal">
+    <h2 id="wordmark">CHESSFORK</h2>
+    <p class="tag">
+      <span class="ln"><span>YOUR NEXT MOVE</span></span>
+      <span class="ln"><span>STARTS HERE.</span></span>
+    </p>
+  </section>
+
+  <!-- FINALE CTA -->
+  <section class="beat always" id="b-finale">
+    <h2 class="mega center finale-word">
+      <span class="ln"><span>MAKE</span></span>
+      <span class="ln"><span>YOUR</span></span>
+      <span class="ln gold"><span>MOVE.</span></span>
+    </h2>
+    <div class="cta-row">
+      <a class="cta solid" id="play-cta" href="#" data-noop>PLAY CHESS</a>
+      <a class="cta ghost" href="#" data-noop>ENTER THE ARENA</a>
+    </div>
+  </section>
+
+</main>
+
+<!-- scroll runway: the "film" the camera is scrubbed through -->
+<div id="runway" aria-hidden="true"></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

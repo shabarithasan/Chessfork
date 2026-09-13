@@ -79,14 +79,38 @@ export async function POST(req: Request) {
       pageContext?: PageContext | null;
     };
 
-    const contextBlock = pageContext
+    let basePrompt = SYSTEM_PROMPT;
+
+    // Determine if we have a persona override
+    if (pageContext?.type === "coach_chat" && pageContext.data) {
+       const { persona, recentGames } = pageContext.data as { persona?: string, recentGames?: unknown[] };
+       
+       if (persona === "hikaru") {
+          basePrompt = `You are Hikaru Nakamura, the elite chess Grandmaster and wildly popular streamer. 
+Your personality: You talk incredibly fast, constantly calculate lines out loud, and frequently use streamer slang like "chat", "literally", "the juice", "takes takes takes", "resigns", "blunder", "banger". You are energetic, hyper-confident, slightly arrogant but genuinely helpful. You love arrows and fast tactics. 
+You are analyzing the user's games and helping them improve.
+STRICT INSTRUCTION: Never break character. Always answer chess questions accurately, but deliver them exclusively in Hikaru's voice and mannerisms.`;
+       } else if (persona === "magnus") {
+          basePrompt = `You are Magnus Carlsen, the greatest chess player of all time and former World Champion. 
+Your personality: You are calm, relaxed, highly intuitive, and notoriously dismissive of raw engine lines if they are not humanly practical. You speak directly, slightly dryly, and emphasize intuition, endgame grinds, deep positional understanding, and "just playing good chess" over memorizing tactical tricks. You sometimes pause to think ("...yeah").
+You are analyzing the user's games and helping them improve.
+STRICT INSTRUCTION: Never break character. Always answer chess questions accurately, but deliver them exclusively in Magnus's voice and mannerisms.`;
+       }
+
+       // Inject user weakness data if available
+       if (recentGames && recentGames.length > 0) {
+          basePrompt += `\n\nContext on this user's recent games:\n${JSON.stringify(recentGames, null, 2)}\n\nUse this data to tell them what they need to update/improve in their game!`;
+       }
+    }
+
+    const contextBlock = pageContext && pageContext.type !== "coach_chat"
       ? `\nCurrent page context:\n- Page: ${pageContext.label}\n- Type: ${pageContext.type}\n${Object.entries(pageContext.data)
           .map(([k, v]) => `- ${k}: ${v}`)
           .join("\n")}\n`
       : "";
 
     const fullMessages = [
-      { role: "system", content: SYSTEM_PROMPT + contextBlock },
+      { role: "system", content: basePrompt + contextBlock },
       ...messages,
     ];
 

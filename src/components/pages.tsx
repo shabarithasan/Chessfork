@@ -1935,8 +1935,19 @@ export async function GamesPage() {
 }
 
 export async function CoachPage() {
+  const viewer = await getCurrentUser();
+  const runs = viewer ? await listAnalysisResponses(viewer.id) : [];
+  
+  // Create a compact summary of their last few games to feed the AI
+  const recentGames = runs.slice(0, 5).map(r => ({
+     id: r.id,
+     accuracy: r.accuracies,
+     mistakes: r.evaluations?.filter(e => e.type === "Blunder" || e.type === "Mistake").length || 0,
+     opening: r.opening,
+  }));
+
   return (
-    <CoachChatPage />
+    <CoachChatPage recentGames={recentGames} playerName={viewer?.displayName} />
   );
 }
 

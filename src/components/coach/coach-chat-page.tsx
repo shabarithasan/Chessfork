@@ -5,17 +5,32 @@ import { AIMessage } from "@/components/ai/AIMessage";
 import { PromptInputBox } from "@/components/ui/ai-prompt-box";
 import { AILoadingState } from "@/components/ai/AILoadingState";
 import { Sparkles, Trash2, CheckCircle2 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
-export function CoachChatPage() {
+export function CoachChatPage({ recentGames = [], playerName }: { recentGames?: unknown[], playerName?: string | null }) {
   const {
     messages,
     streaming,
     sendMessage,
     clearConversation,
+    setPageContext,
   } = useAI();
 
+  const [persona, setPersona] = useState<"coach" | "hikaru" | "magnus">("coach");
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Inject persona and game history into AI context
+  useEffect(() => {
+    setPageContext({
+      type: "coach_chat",
+      label: "AI Coach Session",
+      data: {
+        persona,
+        playerName,
+        recentGames,
+      }
+    });
+  }, [persona, recentGames, playerName, setPageContext]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -23,6 +38,30 @@ export function CoachChatPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)] max-w-4xl mx-auto w-full px-4 sm:px-6 relative">
+       
+       {/* PERSONA SELECTOR */}
+       <div className="flex justify-center pt-6 pb-2">
+         <div className="bg-black/30 p-1.5 rounded-2xl border border-white/5 flex gap-2 backdrop-blur-md">
+           {[
+             { id: "coach", label: "Elite Coach" },
+             { id: "hikaru", label: "Hikaru Nakamura" },
+             { id: "magnus", label: "Magnus Carlsen" },
+           ].map((p) => (
+             <button
+               key={p.id}
+               onClick={() => setPersona(p.id as "coach" | "hikaru" | "magnus")}
+               className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                 persona === p.id 
+                   ? "bg-amber-500 text-black shadow-lg shadow-amber-500/20" 
+                   : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+               }`}
+             >
+               {p.label}
+             </button>
+           ))}
+         </div>
+       </div>
+
        <div className="flex-1 overflow-y-auto py-8 hide-scrollbar">
           {messages.length === 0 ? (
              <div className="h-full flex flex-col items-center justify-center text-center max-w-2xl mx-auto pb-20">
