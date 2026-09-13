@@ -77,23 +77,12 @@ export function CoachGamePage() {
         if (done) break;
         const chunk = decoder.decode(value, { stream: true });
         
-        const lines = chunk.split('\n');
-        for (const line of lines) {
-           if (line.startsWith('data: ')) {
-               const data = line.slice(6);
-               if (data === '[DONE]') continue;
-               try {
-                  const parsed = JSON.parse(data);
-                  const text = parsed.choices[0]?.delta?.content || "";
-                  fullText += text;
-                  setChatLog(prev => {
-                     const next = prev.map(m => m.id === msgId ? { ...m, text: fullText } : m);
-                     chatLogRef.current = next;
-                     return next;
-                  });
-               } catch (e) {}
-           }
-        }
+        fullText += chunk;
+        setChatLog(prev => {
+            const next = prev.map(m => m.id === msgId ? { ...m, text: fullText } : m);
+            chatLogRef.current = next;
+            return next;
+        });
       }
     } catch (err) {
       console.error(err);
@@ -112,6 +101,8 @@ export function CoachGamePage() {
     generateCoachResponse(`The game has started. We are playing a ${difficulty} game. I am playing White. Give me a 1-sentence opening greeting.`);
   };
 
+  const lastRequestedFenRef = useRef<string | null>(null);
+
   // AI Turn Logic
   useEffect(() => {
     if (gameState !== "playing") return;
@@ -120,11 +111,12 @@ export function CoachGamePage() {
     if (turn !== userColor && !game.isGameOver()) {
       // It's AI's turn
       const targetDepth = difficulty === "casual" ? 5 : difficulty === "balanced" ? 10 : 15;
+      const targetFen = game.fen();
       
-      if (analysis.fen !== game.fen() || analysis.status === "idle") {
-         if (analysis.fen !== game.fen()) {
-             startAnalysis(game.fen(), { depth: targetDepth, multiPV: 1 });
-         } else if (analysis.status === "idle" && analysis.bestMove) {
+      if (lastRequestedFenRef.current !== targetFen) {
+         lastRequestedFenRef.current = targetFen;
+         startAnalysis(targetFen, { depth: targetDepth, multiPV: 1 });
+      } else if (analysis.fen === targetFen && analysis.status === "idle" && analysis.bestMove) {
              const currentEval = evalToNumber(analysis.evaluation);
              
              if (lastEvalRef.current !== 0 && currentEval - lastEvalRef.current > 1.5) {
@@ -150,7 +142,6 @@ export function CoachGamePage() {
                  // eslint-disable-next-line react-hooks/set-state-in-effect
                  setGame(new Chess(game.fen()));
              }
-         }
       }
     }
   }, [game, gameState, userColor, analysis, difficulty, startAnalysis, stopAnalysis, persona]);
@@ -166,7 +157,7 @@ export function CoachGamePage() {
         setGame(new Chess(game.fen()));
         if (game.isGameOver()) {
           setGameState("game_over");
-          addChat("Good game! That's a wrap.");
+          generateCoachResponse(`The game has ended. The result is ${game.isCheckmate() ? "Checkmate" : "Draw"}. Give me a short 1-sentence reaction to the game ending.`);
         }
         return true;
       }
