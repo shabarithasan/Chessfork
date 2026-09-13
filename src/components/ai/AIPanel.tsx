@@ -3,8 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import { useAI, CONVERSATION_STARTERS } from "@/contexts/AIProvider";
 import { AIMessage } from "@/components/ai/AIMessage";
-import { AIChatInput } from "@/components/ai/AIChatInput";
+import { PromptInputBox } from "@/components/ui/ai-prompt-box";
 import { AILoadingState } from "@/components/ai/AILoadingState";
+import { BorderBeam } from "@/components/ui/border-beam";
 import {
   Sparkles,
   X,
@@ -129,6 +130,7 @@ export function AIPanel({ chatEndRef }: { chatEndRef: React.RefObject<HTMLDivEle
           }
         }}
       >
+        <BorderBeam size="md" colorVariant="ocean" className="flex-1 flex flex-col w-full h-full overflow-hidden">
         {/* Resize handle */}
         <div
           className="absolute left-0 top-0 h-full w-1 cursor-col-resize hover:bg-[#3b82f6]/30 transition-colors active:bg-[#3b82f6]/50"
@@ -241,10 +243,10 @@ export function AIPanel({ chatEndRef }: { chatEndRef: React.RefObject<HTMLDivEle
 
         {/* Input */}
         <div className="shrink-0 border-t border-[#2a2f3a] p-4">
-          <AIChatInput
+          <PromptInputBox
             placeholder="Ask ChessFork AI..."
-            onSubmit={handleSubmit}
-            disabled={streaming}
+            onSend={(value) => handleSubmit(value)}
+            isLoading={streaming}
             autoFocus={open}
           />
           <div className="mt-2 flex items-center justify-between px-1">
@@ -257,6 +259,7 @@ export function AIPanel({ chatEndRef }: { chatEndRef: React.RefObject<HTMLDivEle
             </span>
           </div>
         </div>
+      </BorderBeam>
       </div>}
     </>
   );
