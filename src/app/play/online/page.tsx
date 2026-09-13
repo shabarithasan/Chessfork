@@ -17,7 +17,7 @@ export default function PlayOnlineLandingPage() {
       router.push(`/play/online/${id}`);
     } catch (err) {
       console.error(err);
-      alert("Failed to create game. Is Redis enabled?");
+      alert("Failed to create game. Please try again.");
       setIsCreating(false);
     }
   };

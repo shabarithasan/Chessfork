@@ -4,10 +4,6 @@ import { matches } from "@/server/db/schema";
 import { redisEnabled } from "@/server/env";
 
 export async function POST() {
-  if (!redisEnabled()) {
-    return NextResponse.json({ error: "Redis not enabled" }, { status: 503 });
-  }
-
   try {
     const db = getDb();
     const [match] = await db.insert(matches)

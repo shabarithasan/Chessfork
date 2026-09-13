@@ -8,81 +8,63 @@ import { Copy, Check, Users } from "lucide-react";
 export default function OnlineGamePage(props: { params: Promise<{ id: string }> }) {
   const params = use(props.params);
   const [game, setGame] = useState(new Chess());
-  const [status, setStatus] = useState("connecting"); // connecting, waiting, playing, finished
+  const [status, setStatus] = useState("connecting");
   const [playerColor, setPlayerColor] = useState<"white" | "black" | "spectator">("spectator");
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
   
-  // To avoid circular SSE moves triggering our own onMove again
   const lastMoveFenRef = useRef<string>(game.fen());
 
   useEffect(() => {
-    // 1. Establish SSE connection
-    const eventSource = new EventSource(`/api/play/online/${params.id}/stream`);
-
-    eventSource.onmessage = (event) => {
+    let isMounted = true;
+    
+    const fetchState = async () => {
       try {
-        const data = JSON.parse(event.data);
+        const res = await fetch(`/api/play/online/${params.id}/state`);
+        if (!res.ok) throw new Error("Failed to fetch match state");
+        const data = await res.json();
         
-        if (data.type === "connected") {
-           setStatus(data.status);
-           if (data.fen !== lastMoveFenRef.current) {
-             setGame(new Chess(data.fen));
-             lastMoveFenRef.current = data.fen;
-           }
-           
-           // Simple color assignment logic:
-           // If it's a new game (waiting) and we have no color, we claim White.
-           // If we join and someone else is White, we claim Black.
-           // In a real app, this would use DB session IDs. For this demo, we'll use localStorage.
-           const storedColor = localStorage.getItem(`match_${params.id}_color`);
-           if (storedColor) {
-             setPlayerColor(storedColor as "white" | "black");
-             if (data.status === "waiting" && storedColor === "black") {
-               setStatus("playing"); // Both are here
-             }
-           } else {
-             if (data.status === "waiting") {
-                localStorage.setItem(`match_${params.id}_color`, "white");
-                setPlayerColor("white");
-             } else if (data.status === "playing" || data.fen !== "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {
-                // If it's not waiting and we have no color, we must be player 2 (or a spectator)
-                // Let's assume player 2 for simplicity
-                localStorage.setItem(`match_${params.id}_color`, "black");
-                setPlayerColor("black");
-                setStatus("playing");
-             }
-           }
+        if (!isMounted) return;
+
+        setStatus(data.status);
+        if (data.fen !== lastMoveFenRef.current) {
+          setGame(new Chess(data.fen));
+          lastMoveFenRef.current = data.fen;
         }
-        
-        if (data.type === "move") {
-           if (data.fen !== lastMoveFenRef.current) {
-             setGame(new Chess(data.fen));
-             lastMoveFenRef.current = data.fen;
-           }
-           if (data.isGameOver) {
-             setStatus("finished");
-           }
+
+        const storedColor = localStorage.getItem(`match_${params.id}_color`);
+        if (storedColor) {
+          setPlayerColor(storedColor as "white" | "black");
+          if (data.status === "waiting" && storedColor === "black") {
+            setStatus("playing");
+          }
+        } else {
+          if (data.status === "waiting") {
+             localStorage.setItem(`match_${params.id}_color`, "white");
+             setPlayerColor("white");
+          } else if (data.status === "playing" || data.fen !== "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {
+             localStorage.setItem(`match_${params.id}_color`, "black");
+             setPlayerColor("black");
+             setStatus("playing");
+          }
         }
-      } catch (e) {
-        console.error("SSE parse error", e);
+      } catch (err) {
+        if (isMounted) setError("Lost connection to match.");
       }
     };
 
-    eventSource.onerror = () => {
-      setError("Lost connection to match.");
-      eventSource.close();
-    };
+    fetchState();
+    const interval = setInterval(fetchState, 1500);
 
     return () => {
-      eventSource.close();
+      isMounted = false;
+      clearInterval(interval);
     };
   }, [params.id]);
 
   const onMove = (from: string, to: string) => {
     if (status !== "playing") return false;
     
-    // Only allow moves if it's our turn
     const turn = game.turn() === "w" ? "white" : "black";
     if (turn !== playerColor) return false;
 
@@ -93,7 +75,6 @@ export default function OnlineGamePage(props: { params: Promise<{ id: string }> 
         setGame(new Chess(newFen));
         lastMoveFenRef.current = newFen;
 
-        // Broadcast to server
         fetch(`/api/play/online/${params.id}/move`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },

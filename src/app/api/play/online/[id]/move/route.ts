@@ -1,16 +1,10 @@
 import { NextResponse } from "next/server";
-import Redis from "ioredis";
-import { env, redisEnabled } from "@/server/env";
 import { getDb } from "@/server/db/client";
 import { matches } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { Chess } from "chess.js";
 
 export async function POST(req: Request, context: { params: Promise<{ id: string }> }) {
-  if (!redisEnabled()) {
-    return NextResponse.json({ error: "Redis not enabled" }, { status: 503 });
-  }
-
   const { id } = await context.params;
   
   try {
@@ -50,22 +44,6 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
     await db.update(matches)
       .set({ fen, status })
       .where(eq(matches.id, id));
-
-    // Publish to Redis
-    const redis = new Redis(env.REDIS_URL, { maxRetriesPerRequest: null });
-    
-    await redis.publish(
-      `match:${id}`, 
-      JSON.stringify({
-        type: "move",
-        fen,
-        move,
-        playerColor,
-        isGameOver
-      })
-    );
-    
-    redis.quit();
 
     return NextResponse.json({ success: true, fen });
   } catch (error) {
