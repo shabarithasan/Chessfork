@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/server/db/db";
+import { getDb } from "@/server/db/client";
 import { matches } from "@/server/db/schema";
 import { redisEnabled } from "@/server/env";
 
@@ -9,6 +9,7 @@ export async function POST() {
   }
 
   try {
+    const db = getDb();
     const [match] = await db.insert(matches)
       .values({
         status: "waiting",

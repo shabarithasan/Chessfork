@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Redis from "ioredis";
 import { env, redisEnabled } from "@/server/env";
-import { db } from "@/server/db/db";
+import { getDb } from "@/server/db/client";
 import { matches } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 
@@ -14,6 +14,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
   const { id } = params;
 
+  const db = getDb();
   const match = await db.query.matches.findFirst({
     where: eq(matches.id, id)
   });

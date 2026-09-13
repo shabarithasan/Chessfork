@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { Chess } from "chess.js";
-import { ChessBoard } from "@/components/chess/board/ChessBoard";
+import ChessBoard from "@/components/ChessBoard";
 import { Copy, Check, Users } from "lucide-react";
 
 export default function OnlineGamePage({ params }: { params: { id: string } }) {

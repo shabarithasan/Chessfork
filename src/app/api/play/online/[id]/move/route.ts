@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Redis from "ioredis";
 import { env, redisEnabled } from "@/server/env";
-import { db } from "@/server/db/db";
+import { getDb } from "@/server/db/client";
 import { matches } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { Chess } from "chess.js";
@@ -19,6 +19,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!fen || !move || !playerColor) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
+
+    const db = getDb();
 
     // Verify match exists
     const match = await db.query.matches.findFirst({
