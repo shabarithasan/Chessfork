@@ -15,6 +15,7 @@ interface ChessBoardProps {
   preview?: boolean;
   onSquareClick?: (square: string) => void;
   canDragPiece?: (piece: string, square: string) => boolean;
+  pieceTheme?: "standard" | "neo";
 }
 
 export default function ChessBoard({
@@ -27,6 +28,7 @@ export default function ChessBoard({
   preview = false,
   onSquareClick,
   canDragPiece,
+  pieceTheme = "standard",
 }: ChessBoardProps) {
   const options: ChessboardOptions = useMemo(() => {
     const arrows: { startSquare: string; endSquare: string; color: string }[] = [];
@@ -82,7 +84,12 @@ export default function ChessBoard({
 
   return (
     <div
-      className="relative overflow-hidden rounded-md shadow-[0_10px_15px_rgba(0,0,0,.4),0_4px_6px_rgba(0,0,0,.2)] aspect-square"
+      className={
+        "relative overflow-hidden rounded-md shadow-[0_10px_15px_rgba(0,0,0,.4),0_4px_6px_rgba(0,0,0,.2)] aspect-square " +
+        (pieceTheme === "neo" 
+          ? "[&_[data-piece]]:opacity-95 [&_[data-piece]]:saturate-[0.82] [&_[data-piece]]:contrast-[1.14] [&_[data-piece]]:drop-shadow-[0_4px_4px_rgba(0,0,0,0.2)] "
+          : "")
+      }
       style={{ width: boardWidth }}
     >
       <Chessboard options={options} />

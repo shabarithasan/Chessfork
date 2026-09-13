@@ -29,11 +29,11 @@ const stats: Stat[] = [
   },
   {
     label: "Average Analysis Time",
-    value: "< 5s",
+    value: "< 10s",
   },
   {
-    label: "Free. Forever.",
-    value: "100%",
+    label: "No Premium Wall",
+    value: "Free",
   },
 ];
 

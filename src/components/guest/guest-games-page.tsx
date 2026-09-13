@@ -75,7 +75,7 @@ export function GuestGamesPage() {
             </span>
             <div>
               <p className="text-sm font-black">Guest history is on this device</p>
-              <p className="mt-1 text-xs leading-5 text-[#b9fff1]/80">Guests keep the last 10 analyzed games. Sign in for unlimited history across devices.</p>
+              <p className="mt-1 text-xs leading-5 text-[#b9fff1]/80">Guests keep the last 25 analyzed games. Sign in for unlimited history across devices.</p>
             </div>
           </div>
           <Link href="/auth?next=%2Fgames" className="rounded-lg bg-[#00d4aa] px-4 py-2 text-sm font-black text-slate-950 hover:bg-[#26e8c1]">
@@ -86,7 +86,7 @@ export function GuestGamesPage() {
 
       <div className="mt-6 grid gap-3 sm:grid-cols-3">
         {[
-          { icon: Database, label: "Guest games", value: `${stats.games} / 10` },
+          { icon: Database, label: "Guest games", value: `${stats.games} / 25` },
           { icon: BadgeCheck, label: "Average accuracy", value: `${stats.average}%` },
           { icon: Clock3, label: "Openings", value: stats.openings.toString() },
         ].map((metric) => {
@@ -153,7 +153,7 @@ export function GuestGamesPage() {
             <LogIn className="size-10 text-slate-600" />
             <p className="mt-4 text-lg font-black text-white">No guest games yet</p>
             <p className="mt-2 max-w-md text-sm leading-7 text-slate-400">
-              Analyze from Chess.com, Lichess, or PGN and your last 10 reports will appear here automatically.
+              Analyze from Chess.com, Lichess, or PGN and your last 25 reports will appear here automatically.
             </p>
             <Link href="/analyze" className="mt-5 rounded-lg bg-[#00d4aa] px-4 py-2 text-sm font-black text-slate-950 hover:bg-[#26e8c1]">
               Start analyzing

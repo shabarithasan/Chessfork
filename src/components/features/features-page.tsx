@@ -4,7 +4,7 @@ import Link from "next/link";
 const rows = [
   ["Analyze games", "Unlimited", "Unlimited"],
   ["Stockfish 18", "Yes", "Yes"],
-  ["Game history", "Last 10", "Unlimited"],
+  ["Game history", "Last 25", "Unlimited"],
   ["AI Coaching", "No", "Yes"],
   ["Streak sync", "Device only", "All devices"],
   ["Share reports", "Yes", "Yes"],

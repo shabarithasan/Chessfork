@@ -83,25 +83,26 @@ function CrossedWrenchIcon({ className }: { className?: string }) {
 const navGroups: NavGroup[] = [
   { label: "Home", icon: Home, href: "/" },
   {
-    label: "Train",
+    label: "Analyze",
     icon: Zap,
-    badgeLabel: "NEW",
     chevron: true,
     flyout: [
       { href: "/analyze", icon: Search, label: "Game Review", description: "Import a game and walk it move by move with the engine." },
       { href: "/board", icon: LayoutGrid, label: "Analysis Board", description: "Free analysis board with engine evaluation." },
       { href: "/editor", icon: PenSquare, label: "Board Editor", description: "Drag-and-drop position editor. Export FEN/PGN." },
       { href: "/next-move", icon: RefreshCw, label: "Next Move", description: "Engine-best continuation from any FEN." },
+      { href: "/coach", icon: Sparkles, label: "AI Coach", description: "Get AI-powered coaching on your games." },
+      { href: "/coach/globe", icon: Globe, label: "Chess Globe", description: "Watch live chess games around the world." },
     ],
   },
   {
-    label: "Supercoach",
-    icon: Sparkles,
-    badge: "new",
+    label: "Train",
+    icon: Target,
     chevron: true,
     flyout: [
-      { href: "/coach", icon: Sparkles, label: "AI Coach", description: "Get AI-powered coaching on your games." },
-      { href: "/coach/globe", icon: Globe, label: "Chess Globe", description: "Watch live chess games stream around the world." },
+      { href: "/puzzles", icon: Target, label: "Puzzles", description: "Curated puzzles, unlimited. Elo-tracked." },
+      { href: "/daily", icon: Flame, label: "Daily", description: "Daily puzzle challenge." },
+      { href: "/leaderboards/puzzles", icon: Trophy, label: "Leaderboards", description: "Compete on the global puzzle leaderboard." },
     ],
   },
   {
@@ -109,36 +110,21 @@ const navGroups: NavGroup[] = [
     icon: Gamepad2,
     chevron: true,
     flyout: [
-      { href: "/play/local", icon: Swords, label: "Player vs Player", description: "Play a shared local game, then review it with Chessfork." },
-      { href: "#", icon: Gamepad2, label: "Play vs AI", description: "Challenge the engine.", badge: "Soon", disabled: true },
-      { href: "#", icon: User, label: "Online Multiplayer", description: "Play a friend online.", badge: "Soon", disabled: true },
-      { href: "#", icon: PenSquare, label: "Custom Position", description: "Start from any position.", badge: "Future", disabled: true },
+      { href: "/play/local", icon: Swords, label: "Player vs Player", description: "Play a local game, then review it with Chessfork." },
       { href: "/games", icon: BookOpen, label: "Saved Games", description: "Browse your saved analysis reports." },
     ],
   },
   {
-    label: "Tools",
-    icon: CrossedWrenchIcon,
-    chevron: true,
-    flyout: [
-      { href: "/games", icon: BookOpen, label: "Games", description: "Browse your imported games and analysis." },
-      { href: "/more", icon: MoreHorizontal, label: "More Tools", description: "Extra share tools: roast, challenge, opening boss." },
-      { href: "/puzzles", icon: Target, label: "Perfects", description: "Curated puzzles, unlimited. Elo-tracked." },
-      { href: "/daily", icon: Flame, label: "Daily", description: "Daily puzzle challenge." },
-      { href: "/leaderboards/puzzles", icon: Trophy, label: "Leaderboards", description: "Compete on the global puzzle leaderboard." },
-    ],
-  },
-  {
-    label: "About",
+    label: "More",
     icon: Info,
     chevron: true,
     flyout: [
-      { href: "/pricing", icon: CreditCard, label: "Pricing", description: "Plans and membership details." },
+      { href: "/more", icon: MoreHorizontal, label: "More Tools", description: "Extra share tools: roast, challenge, opening boss." },
       { href: "/blog", icon: Newspaper, label: "Blog", description: "Guides, updates, and product news." },
-      { href: "/benchmark", icon: Gauge, label: "Benchmark", description: "Engine speed and accuracy tests." },
+      { href: "/pricing", icon: CreditCard, label: "Pricing", description: "Plans and membership details." },
+      { href: "/about", icon: Info, label: "About", description: "What Chessfork is all about." },
       { href: "/contact", icon: Mail, label: "Contact", description: "Get in touch with the team." },
       { href: "/shop", icon: ShoppingBag, label: "Shop", description: "Merch, gear, and goodies." },
-      { href: "/about", icon: Info, label: "About", description: "What Chessfork is all about." },
     ],
   },
 ];
@@ -691,7 +677,7 @@ export function SiteShellClient({
   const authPath = withLocalePrefix("/auth", activeLocale);
   const unlocalizedPathname =
     activeLocale && pathname?.startsWith(`/${activeLocale}/`) ? pathname.slice(activeLocale.length + 1) : pathname;
-  const isAnalysisWorkspace = pathname ? normalizePath(unlocalizedPathname).startsWith("/analysis/") : false;
+  const isAnalysisWorkspace = pathname ? (normalizePath(unlocalizedPathname).startsWith("/analysis/") || normalizePath(unlocalizedPathname) === "/coach/globe") : false;
   const showShellGuestPrompts = pathname ? !normalizePath(unlocalizedPathname).startsWith("/analysis/") : false;
   const [collapsed, setCollapsed] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);

@@ -17,7 +17,7 @@ export default function BenchmarkPage() {
         <h1 className="text-2xl font-bold text-[var(--text-primary)]">Benchmark</h1>
         <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
           Engine speed and accuracy benchmarks for Chessfork&apos;s Stockfish analysis pipeline are
-          on their way. Check back soon for nodes-per-second and accuracy test results.
+          on their way. Engine benchmarks measure Stockfish 18 WASM performance in your browser. Visit the Analysis Board to see live depth and node counts.
         </p>
       </div>
     </div>

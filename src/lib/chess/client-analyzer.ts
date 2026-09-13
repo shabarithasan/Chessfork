@@ -143,7 +143,7 @@ export async function analyzePgnClientSide(
   const session = new StockfishClientSession();
   const moveEvaluations: MoveEvaluation[] = [];
 
-  // We use the optimized single-threaded Stockfish 17.1 Lite build which easily hits 500k-1M nps.
+  // We use the optimized single-threaded Stockfish 18 Lite build which easily hits 500k-1M nps.
   const searchDepth = options.depth === "deep" ? 18 : 14;
 
   try {

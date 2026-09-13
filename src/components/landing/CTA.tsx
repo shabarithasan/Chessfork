@@ -48,7 +48,7 @@ export function CTA() {
             viewport={{ once: true, margin: "-120px" }}
             whileInView={{ opacity: 1, y: 0 }}
           >
-            Join thousands of players who use ChessFork to analyze, learn, and improve every day. Always free. Always unlimited.
+            Join thousands of players who use ChessFork to analyze, learn, and improve every day. Free analysis. No account required.
           </motion.p>
 
           <motion.div

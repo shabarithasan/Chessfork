@@ -60,7 +60,7 @@ export function Hero() {
           transition={{ delay: 0.4, duration: 0.65, ease: heroEase }}
           className="rounded-full border border-[#00d4aa30] bg-[#00d4aa08] px-4 py-1.5 text-[13px] font-medium tracking-[0.02em] text-[var(--accent)]"
         >
-          ⚡ Powered by Stockfish 18 — The strongest engine ever
+          ⚡ Powered by Stockfish 18 — Open-source chess engine
         </motion.div>
 
         <motion.h1
@@ -97,7 +97,7 @@ export function Hero() {
           transition={{ delay: 1, duration: 0.75, ease: heroEase }}
           className="mt-6 max-w-[480px] text-center text-[15px] font-light leading-7 text-[var(--text-secondary)] md:text-[17px] md:leading-8"
         >
-          Free unlimited chess analysis · Stockfish 18 · AI coaching · No account required
+          Free chess analysis · Stockfish 18 · AI coaching · No account required
         </motion.p>
 
         <motion.div

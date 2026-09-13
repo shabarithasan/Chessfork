@@ -27,6 +27,8 @@ function formatMoveNumber(moveNum: number, side: "white" | "black"): string {
 
 function AlternativeLines({ lines, fenBefore, moveNumber, onSelectLine, isLive = false }: AlternativeLinesProps) {
   const reduceMotion = useReducedMotion();
+  const displayLines = lines?.slice(0, 3) || [];
+  console.log("[AlternativeLines] Rendered with", lines?.length, "lines. First line:", displayLines[0]?.san, "Lines:", displayLines.map(l => l.san));
   const handleLineClick = useCallback(
     (san: string) => {
       try {
@@ -40,7 +42,7 @@ function AlternativeLines({ lines, fenBefore, moveNumber, onSelectLine, isLive =
     [fenBefore, onSelectLine],
   );
 
-  if (!lines || lines.length === 0) {
+  if (!displayLines || displayLines.length === 0) {
     if (isLive) {
       return (
         <div className="mt-3.5 flex flex-col gap-1.5 h-[100px]">
@@ -70,9 +72,9 @@ function AlternativeLines({ lines, fenBefore, moveNumber, onSelectLine, isLive =
   return (
     <div className="mt-3.5">
       <div className="flex flex-col gap-1.5">
-        {lines.map((line, lineIndex) => {
+        {displayLines.map((line, lineIndex) => {
           const allMoves = [line.san, ...line.line.slice(1)];
-          const stableKey = line.san; // Stable key based on the principal move allows layout animations to track the element as it re-orders
+          const stableKey = `${lineIndex}-${line.san}`; // Unique key to prevent React from duplicating nodes if there is a clash
           return (
             <motion.div
               layout

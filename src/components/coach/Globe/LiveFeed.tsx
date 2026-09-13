@@ -9,125 +9,88 @@ interface LiveFeedProps {
   onClose: () => void;
 }
 
-function formatTimeControl(tc: string): string {
-  const [base, inc] = tc.split("+");
-  const baseMin = parseInt(base);
-  if (baseMin < 3) return `🚀 ${tc} Bullet`;
-  if (baseMin < 10) return `⚡ ${tc} Blitz`;
-  if (baseMin < 30) return `⏱ ${tc} Rapid`;
-  return `🏛 ${tc} Classical`;
-}
-
-function getTimeControlColor(tc: string): string {
-  const base = parseInt(tc.split("+")[0]);
-  if (base < 3) return "text-red-400 bg-red-400/10 border-red-400/20";
-  if (base < 10) return "text-yellow-400 bg-yellow-400/10 border-yellow-400/20";
-  if (base < 30) return "text-blue-400 bg-blue-400/10 border-blue-400/20";
-  return "text-purple-400 bg-purple-400/10 border-purple-400/20";
-}
-
-function getCategoryColor(category: string): string {
-  switch (category) {
-    case "Bullet": return "text-red-400 bg-red-400/10 border-red-400/20";
-    case "Blitz": return "text-yellow-400 bg-yellow-400/10 border-yellow-400/20";
-    case "Rapid": return "text-blue-400 bg-blue-400/10 border-blue-400/20";
-    case "Classical": return "text-purple-400 bg-purple-400/10 border-purple-400/20";
-    default: return "text-white/50 bg-white/5 border-white/10";
-  }
+function truncateName(name: string) {
+  if (name.length > 10) return name.substring(0, 8) + "...";
+  return name;
 }
 
 export function LiveFeed({ games, selectedGame, onGameSelect, onClose }: LiveFeedProps) {
   return (
-    <div className="flex flex-col h-full bg-[#040914]/50 backdrop-blur rounded-[1.2rem] border border-white/10 overflow-hidden">
-      <div className="flex items-center justify-between p-3 border-b border-white/10">
-        <h3 className="font-semibold text-white flex items-center gap-2">
+    <div className="flex flex-col h-full bg-[#0a0a0a]/80 backdrop-blur-md rounded-xl border border-white/5 overflow-hidden font-mono">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+        <h3 className="font-semibold text-[#a1a1aa] text-xs tracking-[0.2em] flex items-center gap-2">
           <span className="relative flex size-2">
-            <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex size-2 rounded-full bg-emerald-400" />
+            <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+            <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
           </span>
-          Live Games ({games.length})
+          LIVE FEED
         </h3>
-        <button
-          onClick={onClose}
-          className="p-1 rounded hover:bg-white/10 transition-colors text-white/50 hover:text-white"
-        >
-          ✕
-        </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 space-y-2">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-0 custom-scrollbar">
         {games.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-white/50 gap-2">
-            <span className="text-lg">🌍</span>
-            <p>No live games matching filters</p>
+          <div className="flex flex-col items-center justify-center h-20 text-white/30 text-xs">
+            <p>No live games</p>
           </div>
         ) : (
-          games.map((game) => (
+          games.map((game, i) => (
             <LiveGameCard
               key={game.id}
               game={game}
               isSelected={selectedGame?.id === game.id}
               onClick={() => onGameSelect(game)}
+              isEven={i % 2 === 0}
             />
           ))
         )}
       </div>
+      
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 4px;
+        }
+      `}</style>
     </div>
   );
 }
 
-function LiveGameCard({ game, isSelected, onClick }: { game: LiveChessGame; isSelected: boolean; onClick: () => void }) {
+function LiveGameCard({ game, isSelected, onClick, isEven }: { game: LiveChessGame; isSelected: boolean; onClick: () => void; isEven: boolean }) {
+  const dotColor = game.timeControlCategory === "Bullet" ? "bg-amber-400" : "bg-emerald-500";
+  
   return (
     <button
       onClick={onClick}
-      className={`w-full p-3 rounded-lg border transition-all ${
+      className={`w-full px-4 py-2.5 flex items-center justify-between text-xs transition-colors whitespace-nowrap overflow-hidden ${
         isSelected
-          ? "border-[#f3c53d] bg-[#f3c53d]/10"
-          : "border-white/5 hover:border-white/10 hover:bg-white/5"
+          ? "bg-white/10"
+          : isEven ? "bg-transparent hover:bg-white/5" : "bg-white/[0.02] hover:bg-white/5"
       }`}
     >
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <span className={`text-xs font-medium px-2 py-0.5 rounded ${getCategoryColor(game.timeControlCategory)}`}>
-          {game.timeControlCategory}
-        </span>
-        <span className="text-xs text-white/50">{game.opening}</span>
+      <div className="flex items-center gap-2.5 w-[42%] overflow-hidden">
+        <span className={`shrink-0 size-1.5 rounded-full ${dotColor}`} />
+        <span className="shrink-0 text-emerald-500 font-bold uppercase w-4 text-center">{game.white.country === "XX" ? "--" : game.white.country}</span>
+        <span className="text-[#e4e4e7] font-semibold truncate">{truncateName(game.white.name)}</span>
+        <span className="text-white/30 shrink-0">{game.white.rating}</span>
       </div>
 
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-white truncate">{game.white.name}</span>
-            <span className="text-white/50 text-sm">({game.white.rating})</span>
-            {game.white.flag && <span className="text-white/30">{game.white.flag}</span>}
-            <span className="text-white/30">{game.white.country}</span>
-          </div>
-        </div>
+      <div className="text-white/20 text-[10px] shrink-0 mx-2">vs</div>
 
-        <div className="flex items-center gap-2 px-2 py-1 bg-white/5 rounded">
-          <span className="text-white/50 text-sm">vs</span>
-        </div>
-
-        <div className="flex-1 min-w-0 text-right">
-          <div className="flex items-center justify-end gap-2">
-            {game.black.flag && <span className="text-white/30">{game.black.flag}</span>}
-            <span className="text-white/30">{game.black.country}</span>
-            <span className="text-white/50 text-sm">({game.black.rating})</span>
-            <span className="font-medium text-white truncate">{game.black.name}</span>
-          </div>
-        </div>
+      <div className="flex items-center gap-2 w-[42%] overflow-hidden">
+        <span className="shrink-0 text-emerald-500 font-bold uppercase w-4 text-center">{game.black.country === "XX" ? "--" : game.black.country}</span>
+        <span className="text-[#e4e4e7] font-semibold truncate">{truncateName(game.black.name)}</span>
+        <span className="text-white/30 shrink-0">{game.black.rating}</span>
       </div>
 
-      {game.status === "finished" && game.winner && (
-        <div className="mt-2 text-xs text-emerald-400">
-          Finished · Winner: {game.winner}
-        </div>
-      )}
-
-      {game.status === "playing" && (
-        <div className="mt-2 text-xs text-white/40 font-mono">
-          {game.moves.slice(0, 60)}{game.moves.length > 60 ? "..." : ""}
-        </div>
-      )}
+      <div className="text-white/20 w-8 text-right shrink-0 ml-2">
+        {game.timeControl}
+      </div>
     </button>
   );
 }

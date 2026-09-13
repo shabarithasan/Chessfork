@@ -40,7 +40,7 @@ export function AnalyzePageContent({
           <div>
             <div className="flex items-center gap-3">
               <div className="flex size-12 items-center justify-center rounded-xl bg-emerald-400/15 text-emerald-300"><ScanSearch className="size-6" /></div>
-              <p className="text-xs font-semibold text-neutral-400">Stockfish 17 analysis</p>
+              <p className="text-xs font-semibold text-neutral-400">Stockfish 18 analysis</p>
             </div>
             <h2 className="mt-5 text-xl font-bold tracking-tight text-white">See what changed the game.</h2>
             <p className="mt-2 text-sm leading-6 text-neutral-400">Review every critical moment, understand your mistakes, and find the best continuation in seconds.</p>
@@ -70,7 +70,7 @@ export function AnalyzePageContent({
         {/* Section 1: Free Chess Analysis for Every Game */}
         <ContentSection title="Free Chess Analysis for Every Game">
           <p>
-            Chessfork is a free chess analysis platform powered by Stockfish 17. Paste your Chess.com or Lichess
+            Chessfork is a free chess analysis platform powered by Stockfish 18. Paste your Chess.com or Lichess
             username, pick a game, and get a full move-by-move analysis report in seconds. No daily limit, no premium wall,
             and no sign-up required to start analyzing.
           </p>
@@ -110,8 +110,8 @@ export function AnalyzePageContent({
           <p>
             On Chess.com, you&apos;ll get auto-imported results, daily/rapid/blitz/classic/unlimited/monthly formats by full
             engine viewer. On Chessfork, we can retrieve every game in your history with full Stockfish analysis for
-            free: blitz, rapid, bullet, classical. No restrictions on time controls or number of games. Our base has a
-            20+ engine depth to run searches deeper on higher-level games.
+            free: blitz, rapid, bullet, classical. No restrictions on time controls or number of games.
+            Engine: Stockfish 18 · Depth: 14–24 · MultiPV: 3 lines · Runs in your browser via WebAssembly.
           </p>
         </ContentSection>
 
@@ -121,13 +121,13 @@ export function AnalyzePageContent({
             <FaqItem question="Is Chessfork really free?">
               Yes, completely. This is for you yourself and not just a demo/trial. You can create an account to save your
               games/reports and access more puzzles, but it&apos;s not required to analyze. The chess analysis is powered by
-              Stockfish 17 and runs locally in your browser, which is how we keep it free for everyone.
+              Stockfish 18 and runs locally in your browser, which is how we keep it free for everyone.
             </FaqItem>
 
             <FaqItem question="How is this different from Chess.com analysis?">
-              Chess.com gives you free, one-game reviews per day and locks full game analysis behind a premium
-              subscription. Chessfork removes that limit. You get unlimited game reviews with the same Stockfish
-              engine, full move grading, accuracy scores, and a complete report every time.
+              Chess.com gives you one free game review per day and locks full analysis behind a premium
+              subscription. Chessfork has no daily limit. You get full game reviews with the same Stockfish 18
+              engine, move grading, accuracy scores, and a complete report every time — no account required.
             </FaqItem>
 
             <FaqItem question="What does the analysis report show?">
@@ -149,7 +149,7 @@ export function AnalyzePageContent({
             </FaqItem>
 
             <FaqItem question="How accurate is the chess analysis?">
-              Chessfork uses Stockfish 17, the strongest open-source chess engine in the world. It&apos;s the same
+              Chessfork uses Stockfish 18, the strongest open-source chess engine in the world. It&apos;s the same
               engine used by every major chess platform. The analysis quality is identical to what you would get from
               any full Stockfish analyzer.
             </FaqItem>

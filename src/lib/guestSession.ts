@@ -34,7 +34,7 @@ const guestIdKey = "knightowl_guest_id";
 const guestAnalysesKey = "knightowl_guest_analyses";
 const promptDismissedPrefix = "knightowl_guest_prompt_dismissed_";
 const guestMergeCompleteKey = "knightowl_guest_merge_complete";
-const maxGuestAnalyses = 10;
+const maxGuestAnalyses = 25;
 
 function canUseStorage() {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";

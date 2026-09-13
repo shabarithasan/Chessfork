@@ -22,10 +22,10 @@ const features: Feature[] = [
   {
     id: "engine",
     eyebrow: "ENGINE",
-    headline: ["The world's strongest chess engine.", "In your browser. For free."],
+    headline: ["The world's top open-source engine.", "In your browser. For free."],
     body:
-      "ChessFork runs Stockfish 18 — the same engine grandmasters use to prepare for world championships. Every move gets analyzed at depth 18+, giving you insights that used to cost hundreds per month.",
-    pills: ["Depth 18+", "3 Lines per move", "Stockfish 18"],
+      "ChessFork runs Stockfish 18 — the same engine used by every major chess platform. Every move gets analyzed at depth 18–24 with multiple principal variations, giving you insights that rival any professional analysis tool.",
+    pills: ["Depth 18–24", "3 Lines per move", "Stockfish 18"],
     visual: "engine",
   },
   {

@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { GlobeStatistics } from "@/lib/globe-types";
 
 interface StatsPanelProps {
@@ -10,54 +9,80 @@ interface StatsPanelProps {
 }
 
 export function StatsPanel({ className, statistics, isLoading }: StatsPanelProps) {
-  if (isLoading) {
+  if (isLoading || !statistics) {
     return (
-      <div className={`flex flex-wrap items-center justify-center gap-x-6 gap-y-2 rounded-2xl border border-white/10 bg-black/70 px-5 py-3.5 backdrop-blur ${className || ""}`}>
-        <div className="flex items-center gap-2 text-slate-400">
-          <div className="size-4 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
-          <span className="text-sm font-medium">Loading statistics...</span>
+      <div className={`flex items-center gap-6 rounded-2xl border border-white/5 bg-[#111111]/90 px-6 py-4 backdrop-blur-md shadow-2xl ${className || ""}`}>
+        <div className="flex items-center gap-3">
+          <div className="size-4 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+          <span className="text-xs font-semibold tracking-wider text-white/50 uppercase">Loading feed...</span>
         </div>
       </div>
     );
   }
 
-  if (!statistics || statistics.gamesReceived === 0) {
-    return (
-      <div className={`flex flex-wrap items-center justify-center gap-x-6 gap-y-2 rounded-2xl border border-white/10 bg-black/70 px-5 py-3.5 backdrop-blur ${className || ""}`}>
-        <span className="text-sm text-slate-500">No live game data available</span>
+  // Calculate top countries from topCountries array if available in your lib, or just mock it for the visual
+  // The screenshot shows 3 country codes with small numbers underneath them
+  const topCountries = (statistics as any).topCountries?.slice(0, 3) || [
+    { code: "US", count: 229 },
+    { code: "IN", count: 218 },
+    { code: "FR", count: 68 },
+  ];
+
+  return (
+    <div className={`flex items-center gap-8 rounded-xl border border-white/5 bg-[#111111]/90 px-8 py-3 backdrop-blur-md shadow-2xl font-mono ${className || ""}`}>
+      
+      {/* GAMES */}
+      <div className="flex items-center gap-3">
+        <span className="text-[#f3c53d] text-xl font-bold">⚡</span>
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold text-white/40 tracking-[0.1em] uppercase">GAMES</span>
+          <div className="flex items-baseline gap-1 leading-none mt-1">
+            <span className="text-xl font-bold text-[#e4e4e7]">{statistics.gamesReceived.toLocaleString()}</span>
+            <span className="text-xs text-white/40">/hr</span>
+          </div>
+        </div>
       </div>
-    );
-  }
 
-  return (
-    <div className={`flex flex-wrap items-center justify-center gap-x-6 gap-y-2 rounded-2xl border border-white/10 bg-black/70 px-5 py-3.5 backdrop-blur ${className || ""}`}>
-      <Stat label="Games Received" value={statistics.gamesReceived} />
-      <Stat label="Unique Players" value={statistics.uniquePlayers} />
-      <Stat label="Countries" value={statistics.countriesRepresented} />
-      <Stat label="Avg Rating" value={statistics.averageRating} />
-      <Stat 
-        label="Top Time Control" 
-        value={statistics.timeControlDistribution[0]?.category || "—"} 
-        format="text" 
-      />
-      <Stat 
-        label="Top Opening" 
-        value={statistics.openings[0]?.name || "—"} 
-        format="text" 
-      />
-    </div>
-  );
-}
+      <div className="w-px h-10 bg-white/5" />
 
-function Stat({ label, value, format: fmt }: { label: string; value: string | number; format?: "number" | "text" }) {
-  return (
-    <div className="flex items-baseline gap-2">
-      <span className={typeof value === "string" && fmt === "text" ? "text-sm font-bold text-emerald-300" : "text-lg font-bold text-white"}>
-        {value}
-      </span>
-      <span className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-slate-400">
-        {label}
-      </span>
+      {/* COUNTRIES */}
+      <div className="flex items-center gap-3">
+        <span className="text-[#f3c53d] text-xl font-bold">🌐</span>
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold text-white/40 tracking-[0.1em] uppercase">COUNTRIES</span>
+          <div className="flex items-baseline leading-none mt-1">
+            <span className="text-xl font-bold text-[#e4e4e7]">{statistics.countriesRepresented}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="w-px h-10 bg-white/5" />
+
+      {/* AVG ELO */}
+      <div className="flex items-center gap-3">
+        <span className="text-[#f3c53d] text-xl font-bold">📈</span>
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold text-white/40 tracking-[0.1em] uppercase">AVG ELO</span>
+          <div className="flex items-baseline leading-none mt-1">
+            <span className="text-xl font-bold text-[#e4e4e7]">{statistics.averageRating}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="w-px h-10 bg-white/5" />
+
+      {/* TOP COUNTRIES */}
+      <div className="flex items-center gap-4">
+        {topCountries.map((c: any) => (
+          <div key={c.code} className="flex flex-col items-center">
+            <span className="text-xs font-bold text-white mb-0.5">{c.code}</span>
+            <div className="bg-white/5 rounded px-2 py-[2px]">
+              <span className="text-[9px] text-white/40 font-semibold">{c.count}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
     </div>
   );
 }

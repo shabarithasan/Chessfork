@@ -666,6 +666,16 @@ body:has(.knightowl-landing) {
   animation: scan-horizontal 1.8s ease-in-out infinite;
 }
 
+@keyframes scroll-indicator {
+  0% { transform: translateY(-105%); }
+  70% { transform: translateY(105%); }
+  100% { transform: translateY(105%); }
+}
+
+@utility animate-scroll-indicator {
+  animation: scroll-indicator 1.5s infinite;
+}
+
 /* ===== RESPONSIVE ===== */
 
 @media (max-width: 768px) {
