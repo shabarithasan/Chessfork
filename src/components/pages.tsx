@@ -15,7 +15,7 @@ import { PerfectChallengeCard, type PerfectChallengeProfile } from "@/components
 import { PositionWorkbench } from "@/components/analysis/position-workbench";
 import { RoastCard, type RoastCardMoment } from "@/components/analysis/roast-card";
 import { AuthPage as AuthRoutePage } from "@/components/auth/auth-page";
-import { AiCoachWorkspace } from "@/components/coach/ai-coach-workspace";
+import { CoachChatPage } from "@/components/coach/coach-chat-page";
 import { FeaturesPage } from "@/components/features/features-page";
 import { GuestAnalysisRecorder } from "@/components/guest/guest-analysis-recorder";
 import { GuestGamesPage } from "@/components/guest/guest-games-page";
@@ -1935,20 +1935,8 @@ export async function GamesPage() {
 }
 
 export async function CoachPage() {
-  const viewer = await getCurrentUser();
-  const runs = viewer ? await listAnalysisResponses(viewer.id) : [];
-  const coachRuns = runs.length > 0 ? runs : [baseAnalysis];
-  const latestRun = coachRuns[0] ?? baseAnalysis;
-  const playerName = latestRun.subject ?? viewer?.displayName ?? latestRun.white;
-  const playerColor = latestRun.subjectColor === "black" ? "black" : "white";
-  const initialGames = buildAiCoachGamesFromAnalyses(coachRuns, 50);
-
   return (
-    <AiCoachWorkspace
-      initialGames={initialGames}
-      playerColor={playerColor}
-      playerName={playerName}
-    />
+    <CoachChatPage />
   );
 }
 
