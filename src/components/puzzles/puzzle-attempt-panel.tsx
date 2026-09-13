@@ -1,10 +1,11 @@
 "use client";
 
-import { CheckCircle2, Clipboard, Share2, Sparkles, Target, XCircle } from "lucide-react";
+import { Clipboard, Share2, Sparkles, Target, XCircle } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Chess } from "chess.js";
+import { Chessboard } from "react-chessboard";
 
-import { ChessBoard } from "@/components/analysis/chess-board";
 import { samplePuzzles } from "@/data/sample-data";
 import { siteConfig } from "@/lib/site";
 import type { Puzzle } from "@/types/platform";
@@ -30,6 +31,11 @@ export function PuzzleAttemptPanel({
 }: PuzzleAttemptPanelProps) {
   const availablePuzzles = puzzles.length > 0 ? puzzles : samplePuzzles;
   const [selectedId, setSelectedId] = useState(availablePuzzles[0]?.id ?? samplePuzzles[0].id);
+  const activePuzzle = availablePuzzles.find((puzzle) => puzzle.id === selectedId) ?? availablePuzzles[0];
+
+  const [game, setGame] = useState(new Chess(activePuzzle.fen));
+  const [moveIndex, setMoveIndex] = useState(0);
+
   const [guess, setGuess] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [rating, setRating] = useState<number | null>(null);
@@ -39,11 +45,25 @@ export function PuzzleAttemptPanel({
   const [attemptCount, setAttemptCount] = useState(0);
   const [shareStatus, setShareStatus] = useState<string | null>(null);
 
-  const activePuzzle = availablePuzzles.find((puzzle) => puzzle.id === selectedId) ?? availablePuzzles[0];
-
-  if (!activePuzzle) {
-    return null;
-  }
+  // When puzzle changes, reset everything
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setGame(new Chess(activePuzzle.fen));
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMoveIndex(0);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setGuess("");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMessage(null);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setRating(null);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCorrect(null);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setError(null);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setShareStatus(null);
+  }, [activePuzzle.fen]);
 
   const guessedMove = guess.trim();
   const perfectMove = activePuzzle.solution[0] ?? "the engine move";
@@ -131,12 +151,7 @@ export function PuzzleAttemptPanel({
     }
   }
 
-  async function submitAttempt() {
-    if (!guess.trim()) {
-      setError("Enter a move before submitting the position.");
-      return;
-    }
-
+  async function submitAttempt(finalGuess: string) {
     setPending(true);
     setError(null);
     setShareStatus(null);
@@ -149,7 +164,7 @@ export function PuzzleAttemptPanel({
         },
         body: JSON.stringify({
           puzzleId: activePuzzle.id,
-          move: guess.trim(),
+          move: finalGuess,
           elapsedMs: 42000,
         }),
       });
@@ -175,15 +190,72 @@ export function PuzzleAttemptPanel({
     }
   }
 
+  function onPieceDrop(args: { sourceSquare: string, targetSquare: string | null, piece: any }) {
+    if (correct !== null || pending) return false;
+
+    const { sourceSquare, targetSquare, piece } = args;
+    if (!targetSquare) return false;
+
+    const gameCopy = new Chess(game.fen());
+    let move;
+    try {
+      move = gameCopy.move({
+        from: sourceSquare,
+        to: targetSquare,
+        promotion: typeof piece === "object" && piece.pieceType && piece.pieceType.length === 2 ? piece.pieceType[1].toLowerCase() : "q",
+      });
+    } catch {
+      return false;
+    }
+
+    if (!move) return false;
+
+    const expectedSan = activePuzzle.solution[moveIndex];
+    if (move.san === expectedSan) {
+      // Correct move
+      setGame(gameCopy);
+      setError(null);
+      
+      if (moveIndex === 0) {
+        setGuess(move.san);
+      }
+
+      const nextIndex = moveIndex + 1;
+      
+      if (nextIndex >= activePuzzle.solution.length) {
+        // Puzzle fully solved!
+        setMoveIndex(nextIndex);
+        setCorrect(true);
+        void submitAttempt(moveIndex === 0 ? move.san : guess); 
+      } else {
+        // Computer replies
+        setMoveIndex(nextIndex + 1);
+        setTimeout(() => {
+          const compGame = new Chess(gameCopy.fen());
+          compGame.move(activePuzzle.solution[nextIndex]);
+          setGame(compGame);
+        }, 300);
+      }
+      return true;
+    } else {
+      // Incorrect move
+      setError(`Incorrect move. Try again!`);
+      if (moveIndex === 0) {
+        setGuess(move.san);
+        setCorrect(false);
+        void submitAttempt(move.san);
+      }
+      return false; // Piece snaps back
+    }
+  }
+
   function selectPuzzle(puzzleId: string) {
     setSelectedId(puzzleId);
-    setGuess("");
-    setMessage(null);
-    setRating(null);
-    setCorrect(null);
-    setError(null);
-    setShareStatus(null);
   }
+
+  const darkSquareStyle = { backgroundColor: "#769656" };
+  const lightSquareStyle = { backgroundColor: "#eeeed2" };
+  const dropSquareStyle = { boxShadow: "inset 0 0 1px 4px rgba(255,255,255,0.3)" };
 
   return (
     <div className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(245,158,11,0.1),rgba(15,23,42,0.9)_32%,rgba(2,6,23,0.96))] p-6 shadow-[0_24px_80px_rgba(2,6,23,0.24)] sm:p-8">
@@ -196,7 +268,7 @@ export function PuzzleAttemptPanel({
           <div className="mt-6 flex flex-wrap gap-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-amber-100">
               <Sparkles className="size-3.5" />
-              Problem to Perfect
+              Playable Tactics
             </span>
             <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
               {activePuzzle.rating} rating
@@ -245,10 +317,6 @@ export function PuzzleAttemptPanel({
             </div>
           ) : null}
 
-          <div className="mt-6 rounded-[1.8rem] border border-white/10 bg-slate-950/55 p-4">
-            <ChessBoard fen={activePuzzle.fen} className="max-w-none" />
-          </div>
-
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <div className="rounded-[1.3rem] border border-white/10 bg-slate-950/70 p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Difficulty</p>
@@ -271,47 +339,45 @@ export function PuzzleAttemptPanel({
           </div>
         </div>
 
-        <div className="rounded-[1.7rem] border border-white/10 bg-slate-950/78 p-5 shadow-[0_20px_60px_rgba(2,6,23,0.22)] sm:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Active position</p>
-              <p className="mt-3 text-xl font-semibold text-white">{activePuzzle.prompt}</p>
+        <div className="rounded-[1.7rem] border border-white/10 bg-slate-950/78 p-5 shadow-[0_20px_60px_rgba(2,6,23,0.22)] sm:p-6 flex flex-col justify-between">
+          <div>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Active position</p>
+                <p className="mt-3 text-xl font-semibold text-white">{activePuzzle.prompt}</p>
+              </div>
+              <div className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-2 text-sm font-semibold text-emerald-400 animate-pulse">
+                Your Turn
+              </div>
             </div>
-            <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200">
-              SAN move
-            </div>
+
+            <p className="mt-4 text-sm leading-7 text-slate-300">
+              Drag and drop the pieces on the board to solve the puzzle. Find the best move for the current position!
+            </p>
           </div>
 
-          <p className="mt-4 text-sm leading-7 text-slate-300">
-            Enter the best move in SAN notation, for example <span className="font-semibold text-white">Qf8#</span> or{" "}
-            <span className="font-semibold text-white">Bxf7+</span>.
-          </p>
+          <div className="mt-6 rounded-lg overflow-hidden border-2 border-[#2a2f3a] shadow-2xl mx-auto w-full max-w-[400px] aspect-square">
+            <Chessboard
+              options={{
+                position: game.fen(),
+                onPieceDrop,
+                darkSquareStyle,
+                lightSquareStyle,
+                dropSquareStyle,
+                animationDurationInMs: 200,
+                boardOrientation: activePuzzle.fen.includes(" w ") ? "white" : "black",
+              }}
+            />
+          </div>
 
-          <input
-            value={guess}
-            onChange={(event) => setGuess(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                void submitAttempt();
-              }
-            }}
-            placeholder="Type your move"
-            className="mt-6 h-14 w-full rounded-[1.4rem] border border-white/10 bg-slate-900/90 px-4 text-sm text-slate-100 outline-none transition focus:border-amber-300/70"
-          />
+          {error && <p className="mt-4 text-center font-medium text-rose-400">{error}</p>}
 
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={submitAttempt}
-              disabled={pending}
-              className="rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {pending ? "Checking..." : "Submit attempt"}
-            </button>
+          <div className="mt-6 flex flex-wrap gap-3 justify-center">
             <button
               type="button"
               onClick={() => {
+                setGame(new Chess(activePuzzle.fen));
+                setMoveIndex(0);
                 setGuess("");
                 setMessage(null);
                 setRating(null);
@@ -319,13 +385,11 @@ export function PuzzleAttemptPanel({
                 setError(null);
                 setShareStatus(null);
               }}
-              className="rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:bg-white/10"
+              className="rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:bg-white/10 w-full sm:w-auto"
             >
-              Reset board notes
+              Reset Puzzle
             </button>
           </div>
-
-          {error ? <p className="mt-4 text-sm text-rose-300">{error}</p> : null}
 
           {message ? (
             <div
@@ -398,13 +462,6 @@ export function PuzzleAttemptPanel({
             </div>
           </div>
 
-          <div className="mt-6 rounded-[1.3rem] border border-white/10 bg-white/[0.03] p-4 text-sm leading-7 text-slate-300">
-            <span className="inline-flex items-center gap-2 font-semibold text-white">
-              <CheckCircle2 className="size-4 text-emerald-300" />
-              Every solve becomes a portable proof card.
-            </span>{" "}
-            The board, result, and source lesson stay connected so one missed tactic can become tomorrow&apos;s perfect recall.
-          </div>
         </div>
       </div>
     </div>
