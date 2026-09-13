@@ -9,6 +9,7 @@ export default function OnlineGamePage(props: { params: Promise<{ id: string }> 
   const params = use(props.params);
   const [game, setGame] = useState(new Chess());
   const [status, setStatus] = useState("connecting");
+  const [shortCode, setShortCode] = useState("");
   const [playerColor, setPlayerColor] = useState<"white" | "black" | "spectator">("spectator");
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
@@ -27,6 +28,8 @@ export default function OnlineGamePage(props: { params: Promise<{ id: string }> 
         if (!isMounted) return;
 
         setStatus(data.status);
+        if (data.shortCode) setShortCode(data.shortCode);
+        
         if (data.fen !== lastMoveFenRef.current) {
           setGame(new Chess(data.fen));
           lastMoveFenRef.current = data.fen;
@@ -148,20 +151,30 @@ export default function OnlineGamePage(props: { params: Promise<{ id: string }> 
                    <Users size={24} />
                  </div>
                  <p className="font-bold text-white">Waiting for opponent</p>
-                 <p className="text-sm text-slate-400">Share this link with a friend to start playing.</p>
+                 <p className="text-sm text-slate-400">Share this code with a friend to start playing:</p>
                  
-                 <div className="flex items-center gap-2 bg-black/40 p-2 rounded-lg border border-white/10">
-                   <input 
-                     readOnly 
-                     value={typeof window !== "undefined" ? window.location.href : ""} 
-                     className="bg-transparent flex-1 text-sm text-slate-300 outline-none w-full"
-                   />
-                   <button 
-                     onClick={copyLink}
-                     className="p-2 rounded bg-white/10 hover:bg-white/20 transition text-white shrink-0"
-                   >
-                     {copied ? <Check size={16} className="text-green-400" /> : <Copy size={16} />}
-                   </button>
+                 <div className="flex flex-col gap-3">
+                   <div className="bg-black/50 border border-amber-500/30 rounded-xl p-4 text-center">
+                     <span className="text-3xl font-mono font-bold tracking-[0.2em] text-amber-500">
+                       {shortCode || "..."}
+                     </span>
+                   </div>
+                   
+                   <p className="text-xs text-slate-500 uppercase tracking-wider font-bold mt-2">or send link</p>
+                   
+                   <div className="flex items-center gap-2 bg-black/40 p-2 rounded-lg border border-white/10">
+                     <input 
+                       readOnly 
+                       value={typeof window !== "undefined" ? window.location.href : ""} 
+                       className="bg-transparent flex-1 text-xs text-slate-300 outline-none w-full"
+                     />
+                     <button 
+                       onClick={copyLink}
+                       className="p-2 rounded bg-white/10 hover:bg-white/20 transition text-white shrink-0"
+                     >
+                       {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+                     </button>
+                   </div>
                  </div>
                </div>
              ) : status === "playing" ? (

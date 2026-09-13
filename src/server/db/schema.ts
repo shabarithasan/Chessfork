@@ -165,6 +165,7 @@ export const leaderboardEntries = pgTable(
 );
 export const matches = pgTable("matches", {
   id: uuid("id").defaultRandom().primaryKey(),
+  shortCode: varchar("short_code", { length: 6 }).unique(),
   whitePlayer: varchar("white_player", { length: 255 }),
   blackPlayer: varchar("black_player", { length: 255 }),
   fen: text("fen").notNull().default("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"),

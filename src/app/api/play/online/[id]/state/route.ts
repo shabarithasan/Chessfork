@@ -17,6 +17,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
 
   return NextResponse.json({
     id: match.id,
+    shortCode: match.shortCode,
     fen: match.fen,
     status: match.status,
     whitePlayer: match.whitePlayer,
