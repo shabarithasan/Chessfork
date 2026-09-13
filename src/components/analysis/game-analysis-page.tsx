@@ -491,6 +491,7 @@ function RightPanel({
   onSelectWhatIfMove,
   llmAnalysis,
   llmLoading = false,
+  onExplainMove,
   currentSession,
   onPlayBestMove,
   isTrainerMode,
@@ -535,6 +536,7 @@ function RightPanel({
   onSelectWhatIfMove?: (idx: number) => void;
   llmAnalysis?: LLMAnalysis | null;
   llmLoading?: boolean;
+  onExplainMove?: () => void;
   currentSession?: WhatIfSnapshot | null;
   onPlayBestMove?: (san: string) => void;
 
@@ -1025,7 +1027,7 @@ function RightPanel({
                           {/* Explain Move Button */}
                           {!isWhatIfSearching && isLiveActive && !llmAnalysis && !llmLoading && (
                             <button
-                              onClick={handleExplainMove}
+                              onClick={onExplainMove}
                               className="mt-2 flex items-center gap-1.5 rounded-lg border border-[#f3c53d]/40 bg-[#f3c53d]/10 px-3 py-1.5 text-[12px] font-semibold text-[#b88c10] transition-colors hover:bg-[#f3c53d]/20"
                             >
                               <Sparkles size={14} className="text-[#f3c53d]" />
@@ -2691,6 +2693,7 @@ function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
           onSelectWhatIfMove={onSelectWhatIfMove}
           llmAnalysis={llmAnalysis}
           llmLoading={llmLoading}
+          onExplainMove={handleExplainMove}
           currentSession={whatIf.currentSession}
           isTrainerMode={isTrainerMode}
           trainerMistakes={trainerMistakes}
