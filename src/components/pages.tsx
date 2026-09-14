@@ -1293,7 +1293,7 @@ export async function AnalysisReportPage({ analysisId }: { analysisId: string })
       </div>
 
       <div className="mt-5">
-        <GameAnalysisPage analysis={analysis} />
+        <GameAnalysisPage analysis={analysis} viewer={viewer} />
       </div>
     </div>
   );

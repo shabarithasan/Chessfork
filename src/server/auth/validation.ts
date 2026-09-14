@@ -29,6 +29,7 @@ export const signInSchema = z.object({
 export const profileSchema = z.object({
   displayName: z.string().trim().min(2, "Use at least 2 characters.").max(40, "Keep it under 40 characters."),
   locale: localeEnum,
+  coachPersona: z.string().optional(),
 });
 
 export const linkedAccountSchema = z.object({

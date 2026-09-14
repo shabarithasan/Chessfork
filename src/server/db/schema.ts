@@ -26,6 +26,7 @@ export const users = pgTable("users", {
   title: varchar("title", { length: 255 }).default("Novice").notNull(),
   gamesAnalyzed: integer("games_analyzed").default(0).notNull(),
   puzzlesSolved: integer("puzzles_solved").default(0).notNull(),
+  coachPersona: varchar("coach_persona", { length: 64 }).default("default").notNull(),
 },
 (table) => ({
   usersEmailUnique: uniqueIndex("users_email_idx").on(table.email),

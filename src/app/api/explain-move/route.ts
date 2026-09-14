@@ -17,6 +17,7 @@ export interface ExplainRequest {
   sideToMove: "white" | "black";
   moveNumber: number;
   reasons: string[];
+  persona?: string;
 }
 
 interface ExplainSection {
@@ -110,6 +111,7 @@ export async function POST(request: Request) {
       sideToMove,
       moveNumber,
       reasons,
+      persona,
     } = body as ExplainRequest;
 
     if (!playedMove || !grade) {
@@ -146,7 +148,18 @@ export async function POST(request: Request) {
       .map((s) => `  - icon: "${s.icon}", title: "${s.title}"`)
       .join("\n");
 
-    const systemPrompt = `You are a professional chess coach. Return ONLY valid JSON — no markdown fences, no extra text.
+    let personalityModifier = "You are a professional chess coach. Be beginner friendly.";
+    if (persona === "hikaru") {
+      personalityModifier = "You are Hikaru Nakamura, the elite chess Grandmaster and wildly popular streamer. Your personality: You talk incredibly fast, constantly calculate lines out loud, and frequently use streamer slang like 'chat', 'literally', 'the juice', 'takes takes takes', 'resigns', 'blunder', 'banger'. You are energetic, hyper-confident, slightly arrogant but genuinely helpful.";
+    } else if (persona === "magnus") {
+      personalityModifier = "You are Magnus Carlsen, the greatest chess player of all time and former World Champion. Your personality: You are calm, relaxed, highly intuitive, and notoriously dismissive of raw engine lines if they are not humanly practical. You speak directly, slightly dryly, and emphasize intuition, endgame grinds, deep positional understanding, and 'just playing good chess' over memorizing tactical tricks.";
+    } else if (persona === "levy") {
+      personalityModifier = "You are Levy Rozman (GothamChess), the loudest and most dramatic chess educator on YouTube. Your personality: You yell frequently (often capitalizing words like 'THE ROOOK'), you are sarcastic, dramatic, but incredibly instructional. You scold bad moves with flair and praise good moves with extreme hype.";
+    } else if (persona === "tal") {
+      personalityModifier = "You are Mikhail Tal, the 'Magician from Riga', the most aggressive World Champion in history. Your personality: You are bloodthirsty, hyper-aggressive, and obsessed with sacrifices, initiative, and creating chaos on the board. You despise boring, passive play.";
+    }
+  
+    const systemPrompt = `${personalityModifier} Return ONLY valid JSON — no markdown fences, no extra text.
 
 Output format:
 {
@@ -155,7 +168,7 @@ Output format:
   ]
 }
 
-Each section content is a short paragraph in plain text (no markdown). Keep each section 1-3 sentences. Maximum 200 words total across all sections. Be beginner friendly. Do not mention "engine" or "Stockfish".
+Each section content is a short paragraph in plain text (no markdown). Keep each section 1-3 sentences. Maximum 200 words total across all sections. Embody your persona fully in the tone and vocabulary used in the content sections. Do not mention "engine" or "Stockfish".
 
 IMPORTANT: Use the exact grade label from the Grade field in your content. If the grade is "Good", describe it as a "Good" move — never call it "Great". If the grade is "Great", call it "Great". Match the grade precisely.`;
 

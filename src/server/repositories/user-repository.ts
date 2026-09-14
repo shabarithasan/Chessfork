@@ -82,6 +82,7 @@ function toUserAccount(row: {
   title?: string;
   gamesAnalyzed?: number;
   puzzlesSolved?: number;
+  coachPersona?: string;
 }): UserAccount {
   return {
     id: row.id,
@@ -95,6 +96,7 @@ function toUserAccount(row: {
     title: row.title,
     gamesAnalyzed: row.gamesAnalyzed,
     puzzlesSolved: row.puzzlesSolved,
+    coachPersona: row.coachPersona ?? "default",
   };
 }
 
@@ -347,6 +349,7 @@ async function findOrCreateDatabaseOAuthUser(input: { provider: OAuthProvider; p
         title: users.title,
         gamesAnalyzed: users.gamesAnalyzed,
         puzzlesSolved: users.puzzlesSolved,
+        coachPersona: users.coachPersona,
       })
       .from(users)
       .leftJoin(subscriptions, eq(subscriptions.userId, users.id))

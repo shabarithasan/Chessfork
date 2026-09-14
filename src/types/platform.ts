@@ -44,6 +44,7 @@ export interface UserAccount {
   title?: string;
   gamesAnalyzed?: number;
   puzzlesSolved?: number;
+  coachPersona?: string;
 }
 
 export interface LinkedChessAccount {

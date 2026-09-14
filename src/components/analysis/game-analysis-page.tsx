@@ -2074,15 +2074,15 @@ function BoardWorkspace({
   );
 }
 
-export function GameAnalysisPage({ analysis }: { analysis: AnalysisRun }) {
+export function GameAnalysisPage({ analysis, viewer }: { analysis: AnalysisRun, viewer?: { coachPersona?: string; level?: number; displayName?: string } | null }) {
   return (
     <SettingsProvider>
-      <GameAnalysisPageInner analysis={analysis} />
+      <GameAnalysisPageInner analysis={analysis} viewer={viewer} />
     </SettingsProvider>
   );
 }
 
-function GameAnalysisPageInner({ analysis }: { analysis: AnalysisRun }) {
+function GameAnalysisPageInner({ analysis, viewer }: { analysis: AnalysisRun, viewer?: { coachPersona?: string; level?: number; displayName?: string } | null }) {
   const moves = analysis.moveEvaluations;
   const pathname = useStablePathname();
   const [navCollapsed, setNavCollapsed] = useState(false);

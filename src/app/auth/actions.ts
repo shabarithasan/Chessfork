@@ -147,6 +147,7 @@ export async function updateProfileAction(
   const validatedFields = profileSchema.safeParse({
     displayName: formData.get("displayName"),
     locale: formData.get("locale"),
+    coachPersona: formData.get("coachPersona"),
   });
 
   if (!validatedFields.success) {

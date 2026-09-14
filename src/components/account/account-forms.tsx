@@ -75,6 +75,22 @@ export function ProfileSettingsForm({
         <FieldErrors errors={state.errors?.locale} />
       </label>
 
+      <label htmlFor="account-coach-persona" className="block">
+        <span className="text-sm font-medium text-slate-200">AI Coach Persona</span>
+        <select
+          id="account-coach-persona"
+          name="coachPersona"
+          defaultValue={user.coachPersona || "default"}
+          className="mt-3 h-13 w-full rounded-[1.2rem] border border-white/10 bg-slate-950/80 px-4 text-sm text-slate-100 outline-none transition focus:border-amber-300/60"
+        >
+          <option value="default">Default (Professional)</option>
+          <option value="hikaru">Hikaru (Fast & Energetic)</option>
+          <option value="magnus">Magnus (Pragmatic & Calm)</option>
+          <option value="levy">GothamChess (Dramatic & Loud)</option>
+          <option value="tal">Tal (Bloodthirsty Attacker)</option>
+        </select>
+      </label>
+
       <ActionMessage status={state.status} message={state.message} />
       <button
         type="submit"
