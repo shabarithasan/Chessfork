@@ -16,6 +16,7 @@ export default function PlayOnlineLandingPage() {
       const res = await fetch("/api/play/online", { method: "POST" });
       if (!res.ok) throw new Error("Failed to create game");
       const { id } = await res.json();
+      localStorage.setItem(`match_${id}_color`, "white");
       router.push(`/play/online/${id}`);
     } catch (err) {
       console.error(err);
@@ -33,6 +34,7 @@ export default function PlayOnlineLandingPage() {
       const res = await fetch(`/api/play/online/join?code=${joinCode}`);
       if (!res.ok) throw new Error("Match not found");
       const { id } = await res.json();
+      localStorage.setItem(`match_${id}_color`, "black");
       router.push(`/play/online/${id}`);
     } catch (err) {
       console.error(err);

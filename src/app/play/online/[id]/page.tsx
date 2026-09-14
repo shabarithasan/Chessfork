@@ -64,12 +64,17 @@ export default function OnlineGamePage(props: { params: Promise<{ id: string }> 
             setStatus("playing");
           }
         } else {
+          // If we reach here, we did not create the game (since host gets color injected on creation).
+          // We must be the guest joining via direct URL.
+          localStorage.setItem(`match_${params.id}_color`, "black");
+          setPlayerColor("black");
           if (data.status === "waiting") {
-             localStorage.setItem(`match_${params.id}_color`, "white");
-             setPlayerColor("white");
-          } else if (data.status === "playing" || data.fen !== "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {
-             localStorage.setItem(`match_${params.id}_color`, "black");
-             setPlayerColor("black");
+             // Let the server know someone joined
+             if (data.shortCode) {
+                fetch(`/api/play/online/join?code=${data.shortCode}`).catch(() => {});
+             }
+             setStatus("playing");
+          } else {
              setStatus("playing");
           }
         }

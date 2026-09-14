@@ -21,6 +21,10 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Match not found" }, { status: 404 });
     }
 
+    if (match.status === "waiting") {
+      await db.update(matches).set({ status: "playing" }).where(eq(matches.id, match.id));
+    }
+
     return NextResponse.json({ id: match.id });
   } catch (error) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
