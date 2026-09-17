@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DM_Mono, DM_Sans, Syne } from "next/font/google";
+import { Inter, Space_Grotesk, DM_Mono } from "next/font/google";
 
 import { SiteShell } from "@/components/shell/site-shell";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -8,22 +8,22 @@ import { siteConfig } from "@/lib/site";
 
 import "./globals.css";
 
-const dmSans = DM_Sans({
+const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["300", "400", "500"],
+  weight: ["300", "400", "500", "600", "700"],
+});
+
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 const dmMono = DM_Mono({
   variable: "--font-code",
   subsets: ["latin"],
   weight: ["400", "500"],
-});
-
-const syne = Syne({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["400", "700", "800"],
 });
 
 const defaultTitle = "ChessFork — Free Chess Analysis Powered by Stockfish 18";
@@ -83,7 +83,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${dmSans.variable} ${dmMono.variable} ${syne.variable} h-full scroll-smooth antialiased`}
+      className={`${inter.variable} ${dmMono.variable} ${spaceGrotesk.variable} h-full scroll-smooth antialiased`}
       data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
