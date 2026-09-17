@@ -254,8 +254,9 @@ export function ImportWorkbench({
     lichess: Globe,
   } satisfies Record<SourceType, typeof FileText>;
   const sourceLogos: Partial<Record<SourceType, { src: string; alt: string }>> = {
-    chesscom: { src: "/images/platforms/chesscom.svg", alt: "Chess.com" },
-    lichess: { src: "/images/platforms/lichess.svg", alt: "Lichess" },
+    chesscom: { src: isSpotlight ? "/images/platforms/chesscom-pawn.svg" : "/images/platforms/chesscom.svg", alt: "Chess.com" },
+    lichess: { src: isSpotlight ? "/images/platforms/lichess-icon.svg" : "/images/platforms/lichess.svg", alt: "Lichess" },
+    pgn: isSpotlight ? { src: "/images/platforms/pgn-icon.svg", alt: "PGN" } : undefined,
   };
   const sampleHandles =
     source === "chesscom"
@@ -559,29 +560,31 @@ export function ImportWorkbench({
               }}
               className={cn(
                 "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition active:scale-[0.97]",
-                isSpotlight && "relative h-16 flex-row justify-center gap-3 border-2 px-6 py-2 text-center rounded-xl min-w-[130px] flex-1 sm:flex-none",
+                isSpotlight && "relative h-16 flex-row justify-center gap-3 border-2 px-6 py-2 text-center rounded-xl min-w-[130px] flex-1 sm:flex-none overflow-hidden",
                 source === option
                   ? isSpotlight
-                    ? "border-[#ffc629] bg-[#ffc629]/8 text-[#ffc629]"
+                    ? "border-[#ffc629] text-white"
                     : "bg-amber-400 text-[#0a0a0a]"
                   : isSpotlight
                     ? "border-white/[0.06] bg-white/[0.02] text-neutral-400 hover:border-white/15 hover:bg-white/[0.04] hover:text-neutral-200"
                     : "text-neutral-500 hover:text-white",
               )}
             >
+              {isSpotlight && source === option && (
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#ffc629]/20 to-transparent opacity-60" />
+              )}
               {logo ? (
                 <Image
                   alt={logo.alt}
-                  className={cn("size-4 rounded", isSpotlight && "size-6")}
+                  className={cn("size-4 rounded relative z-10", isSpotlight && "size-6")}
                   height={24}
                   src={logo.src}
                   width={24}
                 />
               ) : (
-                <Icon className={cn("size-4", isSpotlight && "size-6 stroke-[1.5]")} />
+                <Icon className={cn("size-4 relative z-10", isSpotlight && "size-6 stroke-[1.5]")} />
               )}
-              <span className={cn(isSpotlight && "text-[15px] font-medium")}>{sourceDetails[option].label}</span>
-              {isSpotlight && source === option ? <span className="absolute right-2 top-2 size-1.5 rounded-full bg-[#ffc629]" /> : null}
+              <span className={cn(isSpotlight && "text-[15px] font-medium relative z-10")}>{sourceDetails[option].label}</span>
             </button>
           );
         })}
