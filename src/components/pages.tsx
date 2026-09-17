@@ -1330,17 +1330,46 @@ export function EditorPage() {
 
 export function NextMovePage() {
   return (
-    <section className="mx-auto w-full max-w-7xl px-5 py-16 sm:px-8">
-      <SectionLabel>Best move</SectionLabel>
-      <SectionTitle>Evaluate one position at a time with cache-aware scoring.</SectionTitle>
-      <SectionCopy>
-        This page hits the position evaluation API directly and returns the recommended move plus a deterministic cache key behind
-        the scenes.
-      </SectionCopy>
-      <div className="mt-10">
-        <PositionWorkbench mode="next-move" initialFen={samplePuzzles[2].fen} />
-      </div>
-    </section>
+    <>
+      <section className="mx-auto w-full max-w-[85rem] px-5 pb-12 pt-16 sm:px-8 sm:pt-24 lg:pt-32">
+        <div className="mx-auto max-w-3xl text-center">
+          <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
+            Chess AI Next Move Calculator. Find the Best Move, Free
+          </h1>
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-neutral-400">
+            Paste a FEN or play from any opening. Powered by Stockfish 18 running directly in your browser. Free, unlimited, no sign-up required.
+          </p>
+        </div>
+
+        <div className="mt-16 sm:mt-20">
+          <PositionWorkbench mode="next-move" initialFen={samplePuzzles[2].fen} />
+        </div>
+      </section>
+
+      <section className="mx-auto w-full max-w-3xl px-5 pb-24 sm:px-8">
+        <div className="prose prose-invert prose-amber max-w-none prose-headings:font-semibold prose-a:font-semibold prose-a:text-amber-400 hover:prose-a:text-amber-300">
+          <h2>How the Chess Move Calculator Works</h2>
+          <p>
+            This chess calculator uses <strong>Stockfish 18</strong>, the world's strongest open-source chess AI, to find the best next move in any position. Think of it as your AI chess helper: paste a position, and the chess engine finds the best move instantly. Unlike other tools, everything runs entirely in your browser using WebAssembly. No data is sent to any server.
+          </p>
+          <p>
+            Set up your chess position using FEN notation or by playing moves from the starting position, then hit Find Best Move. The chess position calculator analyzes to depth 20+ depending on your device, returning the strongest move suggestion along with a numerical evaluation. You can find the best chess move online without downloading anything.
+          </p>
+
+          <h2>When to Use a Chess Move Calculator</h2>
+          <ul>
+            <li>Studying a position from a chess book or course</li>
+            <li>Checking your analysis of a critical game moment</li>
+            <li>Learning the best response to an opening you faced</li>
+            <li>Understanding why a move is good or bad</li>
+            <li>Solving chess puzzles when you're stuck</li>
+          </ul>
+          <p>
+            Practice finding the best move with our <Link href="/puzzles">unlimited chess puzzles</Link>.
+          </p>
+        </div>
+      </section>
+    </>
   );
 }
 

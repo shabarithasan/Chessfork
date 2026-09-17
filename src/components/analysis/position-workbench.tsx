@@ -318,7 +318,7 @@ export function PositionWorkbench({
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,25rem)]">
-      <div className="rounded-xl border border-neutral-800 bg-[linear-gradient(180deg,rgba(41,41,38,0.96),rgba(24,24,24,0.98))] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-6">
+      <div className={`rounded-xl border border-neutral-800 bg-[linear-gradient(180deg,rgba(41,41,38,0.96),rgba(24,24,24,0.98))] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-6 ${mode === "next-move" ? "xl:order-2" : ""}`}>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-amber-400">
@@ -403,7 +403,7 @@ export function PositionWorkbench({
         </div>
       </div>
 
-      <aside className="space-y-4">
+      <aside className={`space-y-4 ${mode === "next-move" ? "xl:order-1" : ""}`}>
         <ChessBoard
           fen={chess ? deferredFen : initialFen}
           arrows={boardArrows}
