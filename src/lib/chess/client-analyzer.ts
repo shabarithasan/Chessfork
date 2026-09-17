@@ -386,7 +386,7 @@ export function buildClientReport(
       evaluations,
       moveCount: evaluations.length,
       openingName: opening.name,
-      subject,
+      subject: actualSubject,
       white: headers.White ?? "White",
       black: headers.Black ?? "Black",
     }),
