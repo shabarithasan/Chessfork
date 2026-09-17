@@ -3,6 +3,7 @@
 import { Chess, type Square } from "chess.js";
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { Chessboard } from "react-chessboard";
 
 import { ChessBoard, type BoardArrow, type BoardHighlight } from "@/components/analysis/chess-board";
 import type { AnalysisDepth, EngineLine } from "@/types/platform";
@@ -463,15 +464,39 @@ export function PositionWorkbench({
       </div>
 
       <aside className={`space-y-4 ${mode === "next-move" || mode === "board" ? "xl:order-1" : ""}`}>
-        <ChessBoard
-          fen={chess ? deferredFen : initialFen}
-          arrows={boardArrows}
-          evaluation={result?.score}
-          evaluationLabel={result ? formatEngineScore(result.score) : undefined}
-          highlights={boardHighlights}
-          onSquareClick={handleSquareClick}
-          className="mx-auto max-w-none"
-        />
+        <div className="relative overflow-hidden rounded-lg shadow-[0_20px_40px_rgba(0,0,0,.6),0_8px_16px_rgba(0,0,0,.4)] w-full aspect-square max-w-none">
+          <Chessboard
+            options={{
+              position: chess ? deferredFen : initialFen,
+              onPieceDrop: ({ sourceSquare, targetSquare }) => {
+                const current = loadChess(fen);
+                if (!current) return false;
+                if (!targetSquare) return false;
+                try {
+                  const move = current.move({
+                    from: sourceSquare,
+                    to: targetSquare,
+                    promotion: "q",
+                  });
+                  setFenHistory((history) => [...history, fen]);
+                  applyFen(current.fen(), `${move.san} played. Engine is updating from the new position.`);
+                  return true;
+                } catch {
+                  return false;
+                }
+              },
+              arrows: boardArrows.map((a) => ({
+                startSquare: a.from,
+                endSquare: a.to,
+                color: "rgba(59, 130, 246, 0.7)",
+              })),
+              boardOrientation: "white",
+              allowDrawingArrows: true,
+              showNotation: true,
+              animationDurationInMs: 200,
+            }}
+          />
+        </div>
 
         <div className="rounded-lg border border-neutral-800 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.035))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
           <div className="flex flex-wrap items-center justify-between gap-2">
