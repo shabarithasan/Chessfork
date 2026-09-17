@@ -332,7 +332,8 @@ import type { AnalysisRun } from "@/types/platform";
 export function buildClientReport(
   evaluations: MoveEvaluation[],
   pgn: string,
-  depth: AnalysisDepth
+  depth: AnalysisDepth,
+  subject?: string
 ): AnalysisRun {
   const headers = readHeaders(pgn);
   const sans = evaluations.map((m) => m.san);
@@ -354,7 +355,9 @@ export function buildClientReport(
   const accuracyBlack = accuracyFromCaps(capsBlack);
   const opening = detectOpening(sans, headers);
   const title = headers.Event || `${headers.White ?? "White"} vs ${headers.Black ?? "Black"}`;
-  const subject = headers.White ?? "Anonymous player";
+  
+  // Use provided subject, or fall back to White
+  const actualSubject = subject ?? (headers.White ?? "Anonymous player");
   const shareSlug = slugify(`${title}-${hashString(pgn)}-v2`);
 
   return {
@@ -374,8 +377,8 @@ export function buildClientReport(
     mode: "browser",
     depth,
     status: "complete",
-    subject,
-    subjectColor: (subject && headers.Black && headers.Black.toLowerCase() === subject.toLowerCase()) ? "black" : "white",
+    subject: actualSubject,
+    subjectColor: (actualSubject && headers.Black && headers.Black.toLowerCase() === actualSubject.toLowerCase()) ? "black" : "white",
     createdAt: new Date().toISOString(),
     summary: `${opening.name} analyzed over ${evaluations.length} plies. ${criticalMoments.length} critical moments, ${Math.round(accuracyWhite)}% vs ${Math.round(accuracyBlack)}% accuracy.`,
     story: buildAnalysisStory({
