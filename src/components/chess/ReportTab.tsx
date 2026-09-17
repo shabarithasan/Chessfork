@@ -19,6 +19,7 @@ export interface ReportTabStats {
   Great: { left: number; right: number };
   Best: { left: number; right: number };
   Good: { left: number; right: number };
+  Book: { left: number; right: number };
   Inaccuracy: { left: number; right: number };
   Mistake: { left: number; right: number };
   Blunder: { left: number; right: number };
@@ -57,6 +58,7 @@ const BADGE_IMG: Record<string, string> = {
   very_good: "https://cdn.chessigma.dev/moves/very_good.png",
   best: "https://cdn.chessigma.dev/moves/best.png",
   good: "https://cdn.chessigma.dev/moves/good.png",
+  book: "https://cdn.chessigma.dev/moves/book.png",
   inaccuracy: "https://cdn.chessigma.dev/moves/inaccuracy.png",
   mistake: "https://cdn.chessigma.dev/moves/mistake.png",
   blunder: "https://cdn.chessigma.dev/moves/blunder.png",
@@ -76,6 +78,7 @@ const STAT_ROWS: {
   { key: "Best",      label: "Best",     badge: "best",      zeroColor: "#525252", countColor: "#6b8841" },
   { key: "Excellent", label: "Nice",     badge: "good",      zeroColor: "#525252", countColor: "#6b8841" },
   { key: "Good",      label: "Ok",       badge: "good",      zeroColor: "#525252", countColor: "#6b8841" },
+  { key: "Book",      label: "Book",     badge: "book",      zeroColor: "#525252", countColor: "#a5978a" },
   { key: "Inaccuracy",label: "Strange",  badge: "inaccuracy",zeroColor: "#525252", countColor: "#eac069" },
   { key: "Mistake",   label: "Bad",      badge: "mistake",   zeroColor: "#525252", countColor: "#d88c39" },
   { key: "Blunder",   label: "Clown",    badge: "blunder",   zeroColor: "#525252", countColor: "#a2251c" },
@@ -184,7 +187,7 @@ export function ReportTab({
     }
   });
 
-  const visibleRows = showAll ? STAT_ROWS : STAT_ROWS.slice(0, 6);
+  const visibleRows = showAll ? STAT_ROWS : STAT_ROWS.slice(0, 7);
 
   return (
     <div className="flex flex-col text-[#171717]">

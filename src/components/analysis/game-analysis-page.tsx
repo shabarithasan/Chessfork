@@ -784,6 +784,7 @@ function RightPanel({
       Great: { left: 0, right: 0 },
       Best: { left: 0, right: 0 },
       Good: { left: 0, right: 0 },
+      Book: { left: 0, right: 0 },
       Inaccuracy: { left: 0, right: 0 },
       Mistake: { left: 0, right: 0 },
       Blunder: { left: 0, right: 0 },
@@ -795,6 +796,7 @@ function RightPanel({
       else if (m.grade === "Great") stats.Great[side]++;
       else if (m.grade === "Best") stats.Best[side]++;
       else if (m.grade === "Good") stats.Good[side]++;
+      else if (m.grade === "Book") stats.Book[side]++;
       else if (m.grade === "Inaccuracy") stats.Inaccuracy[side]++;
       else if (m.grade === "Mistake") stats.Mistake[side]++;
       else if (m.grade === "Blunder") stats.Blunder[side]++;
@@ -832,7 +834,7 @@ function RightPanel({
   const coachReview = useMemo(() => {
     const reviewFor = (side: "left" | "right") => {
       const good =
-        reportStats.Brilliant[side] + reportStats.Excellent[side] + reportStats.Great[side] + reportStats.Best[side] + reportStats.Good[side];
+        reportStats.Brilliant[side] + reportStats.Excellent[side] + reportStats.Great[side] + reportStats.Best[side] + reportStats.Good[side] + reportStats.Book[side];
       const bad = reportStats.Inaccuracy[side] + reportStats.Mistake[side] + reportStats.Blunder[side];
       if (good + bad === 0) return "good" as const;
       return good >= bad ? ("good" as const) : ("bad" as const);
