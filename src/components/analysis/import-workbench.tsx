@@ -559,37 +559,29 @@ export function ImportWorkbench({
                 resetChessComSelection();
               }}
               className={cn(
-                "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition active:scale-[0.97]",
-                isSpotlight && "relative h-16 flex-row justify-center gap-3 border-2 px-6 py-2 text-center rounded-xl min-w-[130px] flex-1 sm:flex-none overflow-hidden transition-colors duration-300",
+                "inline-flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all duration-300 active:scale-[0.97]",
+                isSpotlight ? "relative h-16 flex-row justify-center gap-3 border-2 px-6 py-2 text-center rounded-xl min-w-[130px] flex-1 sm:flex-none" : "rounded-lg",
                 source === option
                   ? isSpotlight
-                    ? "border-[#ffc629] text-white"
+                    ? "border-[#ffc629] bg-[#ffc629]/10 text-white"
                     : "bg-amber-400 text-[#0a0a0a]"
                   : isSpotlight
                     ? "border-white/[0.06] bg-white/[0.02] text-neutral-400 hover:border-white/15 hover:bg-white/[0.04] hover:text-neutral-200"
                     : "text-neutral-500 hover:text-white",
               )}
             >
-              {isSpotlight && (
-                <div 
-                  className={cn(
-                    "absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#ffc629]/20 to-transparent transition-opacity duration-300",
-                    source === option ? "opacity-60" : "opacity-0"
-                  )} 
-                />
-              )}
               {logo ? (
                 <Image
                   alt={logo.alt}
-                  className={cn("size-4 rounded relative z-10", isSpotlight && "size-6")}
+                  className={cn("size-4 rounded", isSpotlight && "size-6")}
                   height={24}
                   src={logo.src}
                   width={24}
                 />
               ) : (
-                <Icon className={cn("size-4 relative z-10", isSpotlight && "size-6 stroke-[1.5]")} />
+                <Icon className={cn("size-4", isSpotlight && "size-6 stroke-[1.5]")} />
               )}
-              <span className={cn(isSpotlight && "text-[15px] font-medium relative z-10 transition-colors duration-300")}>{sourceDetails[option].label}</span>
+              <span className={cn(isSpotlight && "text-[15px] font-medium transition-colors duration-300")}>{sourceDetails[option].label}</span>
             </button>
           );
         })}
