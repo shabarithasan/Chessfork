@@ -1301,14 +1301,73 @@ export async function AnalysisReportPage({ analysisId }: { analysisId: string })
 
 export function BoardPage() {
   return (
-    <section className="mx-auto w-full max-w-7xl px-5 py-16 sm:px-8">
-      <SectionLabel>Analysis board</SectionLabel>
-      <SectionTitle>Inspect any position with a reusable board surface.</SectionTitle>
-      <SectionCopy>The board module is shared by analysis, puzzles, next-move, and study pages.</SectionCopy>
-      <div className="mt-10">
-        <PositionWorkbench mode="board" initialFen={samplePuzzles[1].fen} />
-      </div>
-    </section>
+    <>
+      <section className="mx-auto w-full max-w-[85rem] px-5 pb-12 pt-16 sm:px-8 sm:pt-24 lg:pt-32">
+        <div className="mx-auto max-w-3xl text-center">
+          <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
+            Free Chess Analysis Board
+          </h1>
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-neutral-400">
+            Paste a FEN or PGN, explore variations, and read Stockfish 18's evaluation in real time. Runs in your browser, no sign-up.
+          </p>
+        </div>
+
+        <div className="mt-16 sm:mt-20">
+          <PositionWorkbench mode="board" initialFen={samplePuzzles[1].fen} />
+        </div>
+      </section>
+
+      <section className="mx-auto w-full max-w-3xl px-5 pb-24 sm:px-8">
+        <div className="prose prose-invert prose-amber max-w-none prose-headings:font-semibold prose-a:font-semibold prose-a:text-amber-400 hover:prose-a:text-amber-300">
+          <h2>How the Chess Analysis Board Works</h2>
+          <p>
+            This online chess analysis board uses <strong>Stockfish 18</strong>, the world's strongest open-source chess engine, to evaluate any position you set up. Everything runs locally in your browser through WebAssembly — no positions are sent to a server, and there is no rate limit.
+          </p>
+          <p>
+            Load a game by pasting a PGN, jump to a single position with a FEN string, or just play moves from the starting position. As you click through the move tree, the engine continuously updates its evaluation, principal variation, and depth. Try alternative moves and the board branches into a side line you can explore independently.
+          </p>
+          <p>
+            The current position is mirrored back into the URL as a <code>?fen=</code> parameter — this chess analysis board carries the FEN in the URL automatically, so you can copy the link to share or bookmark the exact position you are looking at.
+          </p>
+
+          <h2>Three Ways to Load a Position</h2>
+          <h3>Paste a PGN</h3>
+          <p>
+            Drop in any PGN — from Chess.com, Lichess, or a tournament report — and step through every move with engine evaluation.
+          </p>
+          <h3>Paste a FEN</h3>
+          <p>
+            Jump straight to a specific position from a book, puzzle, or live game. The engine starts analyzing the moment the FEN is valid.
+          </p>
+          <h3>Play From Scratch</h3>
+          <p>
+            Start from the opening position and play moves on the board to reach the position you want to analyze.
+          </p>
+          <p>
+            Need to set the position from scratch with arbitrary pieces? Use the <Link href="/editor">chess board editor</Link>.
+          </p>
+
+          <h2>Reading the Engine Evaluation</h2>
+          <ul>
+            <li><strong>+1.0</strong>: White is ahead by roughly one pawn</li>
+            <li><strong>-2.5</strong>: Black is ahead by roughly 2.5 pawns</li>
+            <li><strong>#3</strong>: Forced checkmate in 3 moves</li>
+            <li><strong>0.0</strong>: The position is roughly equal</li>
+          </ul>
+          <p>
+            Evaluations are always from White's perspective. Deeper search produces more accurate numbers.
+          </p>
+
+          <h2>Free Alternative to the Chess.com Analysis Board</h2>
+          <p>
+            Most chess sites limit how much you can analyze for free. The Chess.com analysis board caps free Game Review at one game per day and locks deeper engine lines behind a paid plan. Lichess offers an unlimited free analysis board — Chessfork matches that and adds a focused move-review interface, a 9-tier move quality grading system, and a built-in position editor.
+          </p>
+          <p>
+            Chessfork runs Stockfish 18 directly on your device. There is no daily quota, no premium tier required for the engine, and no account creation. Need to review a full game with annotations and reports? <Link href="/">Run a full game review on the home page</Link>.
+          </p>
+        </div>
+      </section>
+    </>
   );
 }
 
