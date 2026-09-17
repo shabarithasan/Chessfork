@@ -51,6 +51,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "www.chess.com",
       },
+      {
+        protocol: "https",
+        hostname: "cdn.chessigma.dev",
+      },
     ],
   },
   experimental: {

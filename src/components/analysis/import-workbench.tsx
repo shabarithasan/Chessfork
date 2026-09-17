@@ -254,8 +254,8 @@ export function ImportWorkbench({
     lichess: Globe,
   } satisfies Record<SourceType, typeof FileText>;
   const sourceLogos: Partial<Record<SourceType, { src: string; alt: string }>> = {
-    chesscom: { src: isSpotlight ? "/images/platforms/chesscom-pawn.svg" : "/images/platforms/chesscom.svg", alt: "Chess.com" },
-    lichess: { src: isSpotlight ? "/images/platforms/lichess-icon.svg" : "/images/platforms/lichess.svg", alt: "Lichess" },
+    chesscom: { src: isSpotlight ? "https://cdn.chessigma.dev/icons/chesscom.webp" : "/images/platforms/chesscom.svg", alt: "Chess.com" },
+    lichess: { src: isSpotlight ? "https://cdn.chessigma.dev/icons/lichess.webp" : "/images/platforms/lichess.svg", alt: "Lichess" },
     pgn: isSpotlight ? { src: "/images/platforms/pgn-icon.svg", alt: "PGN" } : undefined,
   };
   const sampleHandles =
