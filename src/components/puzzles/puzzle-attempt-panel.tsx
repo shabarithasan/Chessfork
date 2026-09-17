@@ -204,7 +204,7 @@ export function PuzzleAttemptPanel({
   }
 
   function onPieceDrop(args: { sourceSquare: string, targetSquare: string | null, piece: { pieceType: string } }) {
-    if (correct !== null || pending || lastMoveState === "incorrect" || lastMoveState === "solved") return false;
+    if (pending || lastMoveState === "incorrect" || lastMoveState === "solved") return false;
 
     const { sourceSquare, targetSquare, piece } = args;
     if (!targetSquare) return false;
@@ -230,7 +230,7 @@ export function PuzzleAttemptPanel({
       setGame(gameCopy);
       setError(null);
       
-      if (moveIndex === 0) {
+      if (moveIndex === 0 && correct === null) {
         setGuess(move.san);
       }
 
@@ -240,8 +240,10 @@ export function PuzzleAttemptPanel({
         // Puzzle fully solved!
         setLastMoveState("solved");
         setMoveIndex(nextIndex);
-        setCorrect(true);
-        void submitAttempt(moveIndex === 0 ? move.san : guess); 
+        if (correct === null) {
+          setCorrect(true);
+          void submitAttempt(moveIndex === 0 ? move.san : guess); 
+        }
       } else {
         // Computer replies
         setLastMoveState("correct");
@@ -261,7 +263,7 @@ export function PuzzleAttemptPanel({
       setWrongFen(gameCopy.fen()); // Keep the board showing the wrong move until they hit retry
       setLives((l) => Math.max(0, l - 1));
 
-      if (moveIndex === 0) {
+      if (moveIndex === 0 && correct === null) {
         setGuess(move.san);
         setCorrect(false);
         void submitAttempt(move.san);
