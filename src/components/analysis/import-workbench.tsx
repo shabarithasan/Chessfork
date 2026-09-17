@@ -559,29 +559,29 @@ export function ImportWorkbench({
               }}
               className={cn(
                 "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition active:scale-[0.97]",
-                isSpotlight && "relative min-h-24 flex-col justify-center gap-2 border px-2 py-4 text-center sm:min-h-28",
+                isSpotlight && "relative min-h-[6.5rem] flex-col justify-center gap-3 border-2 px-3 py-5 text-center sm:min-h-[7.5rem] rounded-xl",
                 source === option
                   ? isSpotlight
-                    ? "border-[#ffc629] bg-[#ffc629]/10 text-[#ffc629] shadow-[inset_0_0_0_1px_rgba(255,198,41,0.22)]"
+                    ? "border-[#ffc629] bg-[#ffc629]/8 text-[#ffc629]"
                     : "bg-amber-400 text-[#0a0a0a]"
                   : isSpotlight
-                    ? "border-white/10 bg-white/[0.015] text-neutral-300 hover:border-white/20 hover:bg-white/[0.04] hover:text-white"
+                    ? "border-white/[0.06] bg-white/[0.02] text-neutral-400 hover:border-white/15 hover:bg-white/[0.04] hover:text-neutral-200"
                     : "text-neutral-500 hover:text-white",
               )}
             >
               {logo ? (
                 <Image
                   alt={logo.alt}
-                  className={cn("size-4 rounded", isSpotlight && "size-7")}
-                  height={28}
+                  className={cn("size-4 rounded", isSpotlight && "size-8")}
+                  height={32}
                   src={logo.src}
-                  width={28}
+                  width={32}
                 />
               ) : (
-                <Icon className={cn("size-4", isSpotlight && "size-7 stroke-[1.7]")} />
+                <Icon className={cn("size-4", isSpotlight && "size-8 stroke-[1.5]")} />
               )}
-              {sourceDetails[option].label}
-              {isSpotlight && source === option ? <span className="absolute right-2 top-2 size-2 rounded-full bg-[#ffc629]" /> : null}
+              <span className={cn(isSpotlight && "text-[13px] font-semibold tracking-[0.08em]")}>{sourceDetails[option].label}</span>
+              {isSpotlight && source === option ? <span className="absolute right-2.5 top-2.5 size-[7px] rounded-full bg-[#ffc629]" /> : null}
             </button>
           );
         })}

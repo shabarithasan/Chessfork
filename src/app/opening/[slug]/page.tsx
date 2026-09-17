@@ -6,6 +6,7 @@ import { getOpeningBySlug, topChessOpenings } from "@/data/openings";
 import { getOpeningRuns, averageAccuracyForRuns } from "@/lib/seo/chess-stats";
 import { createSeoMetadata } from "@/lib/seo/metadata";
 import { listAnalysisResponses } from "@/lib/platform-service";
+import { OpeningTrainer } from "@/components/opening/opening-trainer";
 
 type OpeningPageProps = {
   params: Promise<{ slug: string }>;
@@ -76,6 +77,17 @@ export default async function Page({ params }: OpeningPageProps) {
           >
             Analyze your {opening.name} games →
           </Link>
+
+          {opening.mainLine && opening.trainColor && (
+            <div className="mt-12">
+              <OpeningTrainer 
+                openingName={opening.name} 
+                mainLine={opening.mainLine} 
+                trainColor={opening.trainColor as "white" | "black"} 
+              />
+            </div>
+          )}
+
         </div>
 
         <div className="rounded-xl border border-[#1e1e2e] bg-[#111118] p-5 shadow-[0_0_20px_rgba(0,212,170,0.08)]">

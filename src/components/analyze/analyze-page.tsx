@@ -28,28 +28,28 @@ export function AnalyzePageContent({
           <div>
             <div className="flex items-center gap-3">
               <div className="flex size-12 items-center justify-center rounded-xl bg-amber-400/15 text-amber-300"><BrainCircuit className="size-6" /></div>
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-400"><Sparkles className="size-4 text-amber-300" />Personal training</div>
+              <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-neutral-400"><Sparkles className="size-4 text-amber-300" />Personal training</div>
             </div>
-            <h2 className="mt-5 text-xl font-bold tracking-tight text-white">Turn every game into your next lesson.</h2>
+            <h2 className="mt-5 text-lg font-bold uppercase tracking-[0.15em] text-white">Personal Training</h2>
             <p className="mt-2 text-sm leading-6 text-neutral-400">Chessfork Coach finds the patterns behind your misses and builds a training plan around your games.</p>
           </div>
-          <Link href="/coach" className="mt-6 flex items-center justify-center gap-2 rounded-lg bg-[#ffc629] px-5 py-3 text-sm font-bold text-slate-950 transition hover:brightness-110 active:scale-[0.98]">Meet your coach <ArrowRight className="size-4" /></Link>
+          <Link href="/coach" className="mt-6 flex items-center justify-center gap-2 rounded-lg bg-[#ffc629] px-5 py-3 text-sm font-bold uppercase tracking-[0.15em] text-slate-950 transition hover:brightness-110 active:scale-[0.98]">Meet your coach <ArrowRight className="size-4" /></Link>
         </div>
 
         <div className="flex min-h-[280px] flex-col justify-between rounded-xl border border-white/10 bg-[#202020] p-5 shadow-[0_12px_35px_rgba(0,0,0,0.16)] sm:p-6">
           <div>
             <div className="flex items-center gap-3">
-              <div className="flex size-12 items-center justify-center rounded-xl bg-emerald-400/15 text-emerald-300"><ScanSearch className="size-6" /></div>
-              <p className="text-xs font-semibold text-neutral-400">Stockfish 18 analysis</p>
+              <div className="flex size-12 items-center justify-center rounded-xl bg-neutral-800 text-white border border-white/10"><ScanSearch className="size-6" /></div>
+              <p className="text-xs font-semibold uppercase tracking-[0.1em] text-neutral-400">Stockfish 18 analysis</p>
             </div>
-            <h2 className="mt-5 text-xl font-bold tracking-tight text-white">See what changed the game.</h2>
+            <h2 className="mt-5 text-lg font-bold uppercase tracking-[0.15em] text-white">Stockfish 18 Analysis</h2>
             <p className="mt-2 text-sm leading-6 text-neutral-400">Review every critical moment, understand your mistakes, and find the best continuation in seconds.</p>
             <div className="mt-5 grid grid-cols-2 gap-2">
-              <div className="rounded-lg border border-white/10 bg-black/15 p-3"><Gauge className="size-4 text-emerald-300" /><p className="mt-2 text-sm font-semibold text-white">Move grades</p></div>
-              <div className="rounded-lg border border-white/10 bg-black/15 p-3"><ScanSearch className="size-4 text-amber-300" /><p className="mt-2 text-sm font-semibold text-white">Best lines</p></div>
+              <div className="rounded-lg border border-white/10 bg-black/15 p-3"><Gauge className="size-4 text-neutral-300" /><p className="mt-2 text-xs font-semibold uppercase tracking-[0.1em] text-white">Move grades</p></div>
+              <div className="rounded-lg border border-white/10 bg-black/15 p-3"><ScanSearch className="size-4 text-neutral-300" /><p className="mt-2 text-xs font-semibold uppercase tracking-[0.1em] text-white">Best lines</p></div>
             </div>
           </div>
-          <Link href="#analyze-game" className="mt-6 flex items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10 active:scale-[0.98]">Analyze a game <ArrowRight className="size-4" /></Link>
+          <Link href="#analyze-game" className="mt-6 flex items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 px-5 py-3 text-sm font-bold uppercase tracking-[0.15em] text-white transition hover:bg-white/10 active:scale-[0.98]">Analyze a game <ArrowRight className="size-4" /></Link>
         </div>
       </div>
 
@@ -175,7 +175,7 @@ export function AnalyzePageContent({
 function ContentSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">{title}</h2>
+      <h2 className="text-xl font-bold uppercase tracking-[0.15em] text-white sm:text-2xl">{title}</h2>
       <div className="mt-4 space-y-4 text-sm leading-7 text-neutral-400">
         {children}
       </div>
@@ -186,7 +186,7 @@ function ContentSection({ title, children }: { title: string; children: React.Re
 function FaqItem({ question, children }: { question: string; children: React.ReactNode }) {
   return (
     <div>
-      <h3 className="text-sm font-semibold text-white">{question}</h3>
+      <h3 className="text-sm font-semibold uppercase tracking-[0.08em] text-white">{question}</h3>
       <p className="mt-2 text-sm leading-7 text-neutral-400">{children}</p>
     </div>
   );
