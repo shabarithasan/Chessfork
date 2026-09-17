@@ -2,6 +2,7 @@
 
 import { Chess, type Square } from "chess.js";
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 import { ChessBoard, type BoardArrow, type BoardHighlight } from "@/components/analysis/chess-board";
 import type { AnalysisDepth, EngineLine } from "@/types/platform";
@@ -89,7 +90,28 @@ export function PositionWorkbench({
   mode: PositionWorkbenchMode;
   initialFen: string;
 }) {
-  const [fen, setFen] = useState(initialFen);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  
+  const [fen, setFen] = useState(() => {
+    const urlFen = searchParams.get("fen");
+    if (urlFen && loadChess(urlFen)) {
+      return urlFen;
+    }
+    return initialFen;
+  });
+
+  useEffect(() => {
+    if (mode !== "board") return;
+    const urlFen = searchParams.get("fen");
+    if (fen && fen !== urlFen) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("fen", fen);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    }
+  }, [fen, mode, pathname, router, searchParams]);
+
   const [fenHistory, setFenHistory] = useState<string[]>([]);
   const [requestedDepth, setRequestedDepth] = useState<AnalysisDepth>("quick");
   const [result, setResult] = useState<EvaluationResponse | null>(null);
@@ -318,7 +340,7 @@ export function PositionWorkbench({
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,25rem)]">
-      <div className={`rounded-xl border border-neutral-800 bg-[linear-gradient(180deg,rgba(41,41,38,0.96),rgba(24,24,24,0.98))] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-6 ${mode === "next-move" ? "xl:order-2" : ""}`}>
+      <div className={`rounded-xl border border-neutral-800 bg-[linear-gradient(180deg,rgba(41,41,38,0.96),rgba(24,24,24,0.98))] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-6 ${mode === "next-move" || mode === "board" ? "xl:order-2" : ""}`}>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-amber-400">
@@ -364,14 +386,51 @@ export function PositionWorkbench({
           </div>
         </div>
 
-        <label className="mt-5 block">
-          <span className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">FEN</span>
-          <textarea
-            value={fen}
-            onChange={(event) => handleFenChange(event.target.value)}
-            className="mt-2 min-h-24 w-full rounded-lg border border-neutral-800 bg-neutral-950/75 px-4 py-4 font-mono text-xs leading-6 text-neutral-100 outline-none transition focus:border-amber-400/70"
-          />
-        </label>
+          <div className="mt-5 space-y-4">
+            <label className="block">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">FEN</span>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(fen)}
+                  className="text-[0.65rem] font-semibold uppercase tracking-wider text-amber-500 hover:text-amber-400"
+                >
+                  Copy FEN
+                </button>
+              </div>
+              <textarea
+                value={fen}
+                onChange={(event) => handleFenChange(event.target.value)}
+                className="min-h-16 w-full rounded-lg border border-neutral-800 bg-neutral-950/75 px-4 py-3 font-mono text-xs leading-6 text-neutral-100 outline-none transition focus:border-amber-400/70"
+                spellCheck={false}
+              />
+            </label>
+
+            {mode === "board" && (
+              <label className="block">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">PGN</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (chess) {
+                        navigator.clipboard.writeText(chess.pgn());
+                      }
+                    }}
+                    className="text-[0.65rem] font-semibold uppercase tracking-wider text-amber-500 hover:text-amber-400"
+                  >
+                    Copy PGN
+                  </button>
+                </div>
+                <textarea
+                  readOnly
+                  value={chess ? chess.pgn() : ""}
+                  className="min-h-24 w-full rounded-lg border border-neutral-800 bg-neutral-950/75 px-4 py-3 font-mono text-xs leading-6 text-neutral-400 outline-none"
+                  spellCheck={false}
+                />
+              </label>
+            )}
+          </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
           <button
@@ -403,7 +462,7 @@ export function PositionWorkbench({
         </div>
       </div>
 
-      <aside className={`space-y-4 ${mode === "next-move" ? "xl:order-1" : ""}`}>
+      <aside className={`space-y-4 ${mode === "next-move" || mode === "board" ? "xl:order-1" : ""}`}>
         <ChessBoard
           fen={chess ? deferredFen : initialFen}
           arrows={boardArrows}

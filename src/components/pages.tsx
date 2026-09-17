@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PricingPage } from "@/components/pricing/pricing-page";
@@ -1313,7 +1314,9 @@ export function BoardPage() {
         </div>
 
         <div className="mt-16 sm:mt-20">
-          <PositionWorkbench mode="board" initialFen={samplePuzzles[1].fen} />
+          <Suspense fallback={<div className="h-96 w-full animate-pulse rounded-xl bg-neutral-800/50" />}>
+            <PositionWorkbench mode="board" initialFen={samplePuzzles[1].fen} />
+          </Suspense>
         </div>
       </section>
 
