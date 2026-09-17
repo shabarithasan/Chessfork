@@ -560,7 +560,7 @@ export function ImportWorkbench({
               }}
               className={cn(
                 "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition active:scale-[0.97]",
-                isSpotlight && "relative h-16 flex-row justify-center gap-3 border-2 px-6 py-2 text-center rounded-xl min-w-[130px] flex-1 sm:flex-none overflow-hidden",
+                isSpotlight && "relative h-16 flex-row justify-center gap-3 border-2 px-6 py-2 text-center rounded-xl min-w-[130px] flex-1 sm:flex-none overflow-hidden transition-colors duration-300",
                 source === option
                   ? isSpotlight
                     ? "border-[#ffc629] text-white"
@@ -570,8 +570,13 @@ export function ImportWorkbench({
                     : "text-neutral-500 hover:text-white",
               )}
             >
-              {isSpotlight && source === option && (
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#ffc629]/20 to-transparent opacity-60" />
+              {isSpotlight && (
+                <div 
+                  className={cn(
+                    "absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#ffc629]/20 to-transparent transition-opacity duration-300",
+                    source === option ? "opacity-60" : "opacity-0"
+                  )} 
+                />
               )}
               {logo ? (
                 <Image
@@ -584,7 +589,7 @@ export function ImportWorkbench({
               ) : (
                 <Icon className={cn("size-4 relative z-10", isSpotlight && "size-6 stroke-[1.5]")} />
               )}
-              <span className={cn(isSpotlight && "text-[15px] font-medium relative z-10")}>{sourceDetails[option].label}</span>
+              <span className={cn(isSpotlight && "text-[15px] font-medium relative z-10 transition-colors duration-300")}>{sourceDetails[option].label}</span>
             </button>
           );
         })}
