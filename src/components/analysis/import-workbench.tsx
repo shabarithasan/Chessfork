@@ -543,7 +543,7 @@ export function ImportWorkbench({
     <>
       <div className={cn("min-w-0", isSpotlight && "rounded-xl border border-white/10 bg-[#202020] p-4 shadow-[0_12px_35px_rgba(0,0,0,0.16)] sm:p-6")}>
       <div className={cn("flex min-w-0 flex-wrap items-center gap-2", isSpotlight ? "grid grid-cols-3 gap-3" : "")}>
-        {(["pgn", "chesscom", "lichess"] as SourceType[]).map((option) => {
+        {(["chesscom", "lichess", "pgn"] as SourceType[]).map((option) => {
           const Icon = sourceIcons[option];
           const logo = sourceLogos[option];
 
@@ -559,7 +559,7 @@ export function ImportWorkbench({
               }}
               className={cn(
                 "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition active:scale-[0.97]",
-                isSpotlight && "relative min-h-[6.5rem] flex-col justify-center gap-3 border-2 px-3 py-5 text-center sm:min-h-[7.5rem] rounded-xl",
+                isSpotlight && "relative h-16 flex-row justify-center gap-3 border-2 px-6 py-2 text-center rounded-xl min-w-[130px] flex-1 sm:flex-none",
                 source === option
                   ? isSpotlight
                     ? "border-[#ffc629] bg-[#ffc629]/8 text-[#ffc629]"
@@ -572,16 +572,16 @@ export function ImportWorkbench({
               {logo ? (
                 <Image
                   alt={logo.alt}
-                  className={cn("size-4 rounded", isSpotlight && "size-8")}
-                  height={32}
+                  className={cn("size-4 rounded", isSpotlight && "size-6")}
+                  height={24}
                   src={logo.src}
-                  width={32}
+                  width={24}
                 />
               ) : (
-                <Icon className={cn("size-4", isSpotlight && "size-8 stroke-[1.5]")} />
+                <Icon className={cn("size-4", isSpotlight && "size-6 stroke-[1.5]")} />
               )}
-              <span className={cn(isSpotlight && "text-[13px] font-semibold tracking-[0.08em]")}>{sourceDetails[option].label}</span>
-              {isSpotlight && source === option ? <span className="absolute right-2.5 top-2.5 size-[7px] rounded-full bg-[#ffc629]" /> : null}
+              <span className={cn(isSpotlight && "text-[15px] font-medium")}>{sourceDetails[option].label}</span>
+              {isSpotlight && source === option ? <span className="absolute right-2 top-2 size-1.5 rounded-full bg-[#ffc629]" /> : null}
             </button>
           );
         })}
