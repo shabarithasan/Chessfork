@@ -95,9 +95,9 @@ function buildTopMoves(fen: string, lines: AnalysisState["lines"]): TopMoveEntry
   });
 }
 
-// Reverted: Removed * 100 to simulate Chessigma's inflated accuracy algorithm
+// engineWorker.js outputs pawns. Multiply by 100 to pass centipawns to grading functions
 function toCentipawns(evalValue: number, type: "cp" | "mate"): number {
-  return type === "cp" ? evalValue : (evalValue > 0 ? 100 : -100);
+  return type === "cp" ? evalValue * 100 : (evalValue > 0 ? 30000 : -30000);
 }
 
 function snapshotToPreviousEval(snapshot: WhatIfSnapshot) {

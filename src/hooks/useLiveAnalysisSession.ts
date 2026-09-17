@@ -222,7 +222,7 @@ export function useLiveAnalysisSession() {
       });
 
       if (!abortControllerRef.current.signal.aborted) {
-        const completeData = buildClientReport(evaluations, pgn, mode === "deep" ? "deep" : "quick");
+        const completeData = buildClientReport(evaluations, pgn, mode === "deep" ? "deep" : "quick", subject);
         
         try {
           await fetch("/api/analysis/save", {

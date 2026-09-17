@@ -43,11 +43,12 @@ class StockfishClientSession {
 
           const topPv = msg.lines?.[0];
           
-          // Reverted: We no longer multiply by 100 to simulate Chessigma's inflated accuracy algorithm
           const getCpScore = (evaluation: { type: string, value: number } | undefined) => {
             if (!evaluation) return 0;
             if (evaluation.type === "cp") {
-              return evaluation.value;
+              // engineWorker.js divides by 100, so we must multiply by 100 to restore centipawns
+              // for capsFromEvaluations and classifyMove which expect centipawns.
+              return evaluation.value * 100;
             }
             // Mate scores
             return evaluation.value > 0 ? 30000 - evaluation.value * 100 : -30000 - evaluation.value * 100;
