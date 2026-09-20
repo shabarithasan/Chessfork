@@ -1315,7 +1315,7 @@ export function BoardPage() {
 
         <div className="mt-16 sm:mt-20">
           <Suspense fallback={<div className="h-96 w-full animate-pulse rounded-xl bg-neutral-800/50" />}>
-            <PositionWorkbench mode="board" initialFen={samplePuzzles[1].fen} />
+            <PositionWorkbench mode="board" initialFen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" />
           </Suspense>
         </div>
       </section>

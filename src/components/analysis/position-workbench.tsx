@@ -6,6 +6,7 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Chessboard } from "react-chessboard";
 
 import { ChessBoard, type BoardArrow, type BoardHighlight } from "@/components/analysis/chess-board";
+import { useEngine } from "@/hooks/useEngine";
 import type { AnalysisDepth, EngineLine } from "@/types/platform";
 
 interface EvaluationResponse {
@@ -125,6 +126,18 @@ export function PositionWorkbench({
   const deferredFen = useDeferredValue(fen);
   const chess = useMemo(() => loadChess(deferredFen), [deferredFen]);
   const isLiveMode = liveModes.has(mode);
+  
+  const { analysis: engineAnalysis, startAnalysis, stopAnalysis } = useEngine();
+  
+  useEffect(() => {
+    if (isLiveMode && fen) {
+      startAnalysis(fen, { depth: 22, multiPV: 3 });
+    }
+  }, [fen, isLiveMode, startAnalysis]);
+
+  useEffect(() => {
+    return () => stopAnalysis();
+  }, [stopAnalysis]);
   const legalMovesFromSelected = useMemo(() => {
     if (!chess || !selectedSquare) {
       return [];
@@ -149,34 +162,70 @@ export function PositionWorkbench({
 
     return highlights;
   }, [legalMovesFromSelected, selectedSquare]);
-  const engineLines = useMemo(
-    () =>
-      result?.engineLines?.length
-        ? result.engineLines
-        : result
-          ? [
-              {
-                depth: result.depth,
-                line: result.principalVariation,
-                nodes: result.nodes,
-                rank: 1,
-                san: result.bestMove,
-                score: result.score,
-              },
-            ]
-          : [],
-    [result],
-  );
+  const engineLines = useMemo(() => {
+    if (isLiveMode) {
+      if (engineAnalysis.fen !== deferredFen || !engineAnalysis.lines.length) return [];
+      const sign = chess?.turn() === "b" ? -1 : 1;
+      return engineAnalysis.lines.map((l) => {
+        const c = loadChess(engineAnalysis.fen);
+        let san = l.pv[0];
+        let from = "";
+        let to = "";
+        const lineSan: string[] = [];
+        try {
+          for (const moveUci of l.pv) {
+            const move = c!.move({
+              from: moveUci.slice(0, 2),
+              to: moveUci.slice(2, 4),
+              promotion: moveUci.slice(4, 5) || undefined,
+            });
+            lineSan.push(move.san);
+          }
+          if (lineSan.length > 0) san = lineSan[0];
+        } catch {}
+        
+        return {
+          rank: l.multiPv,
+          san,
+          score: l.evaluation.type === "cp"
+            ? l.evaluation.value * sign
+            : (l.evaluation.value > 0 ? 30000 : -30000) * sign,
+          depth: engineAnalysis.depth,
+          mate: l.evaluation.type === "mate" ? l.evaluation.value * sign : undefined,
+          line: lineSan,
+          nodes: 0,
+        };
+      });
+    }
+
+    return result?.engineLines?.length
+      ? result.engineLines
+      : result
+        ? [
+            {
+              depth: result.depth,
+              line: result.principalVariation,
+              nodes: result.nodes,
+              rank: 1,
+              san: result.bestMove,
+              score: result.score,
+            },
+          ]
+        : [];
+  }, [isLiveMode, engineAnalysis, deferredFen, result, chess]);
   const boardArrows = useMemo<BoardArrow[]>(() => {
-    if (!result || resultFen !== deferredFen) {
-      return [];
+    if (isLiveMode) {
+      if (engineAnalysis.fen !== deferredFen || !engineLines.length) return [];
+    } else {
+      if (!result || resultFen !== deferredFen) return [];
     }
 
     const seen = new Set<string>();
     const arrows: BoardArrow[] = [];
+    const sourceFen = isLiveMode ? engineAnalysis.fen : resultFen;
 
     for (const line of engineLines.slice(0, 3)) {
-      const arrow = deriveArrowFromSan(resultFen, line.san, arrowToneForLine(line.rank));
+      const arrow = deriveArrowFromSan(sourceFen, line.san, arrowToneForLine(line.rank));
       if (!arrow) {
         continue;
       }
@@ -191,7 +240,7 @@ export function PositionWorkbench({
     }
 
     return arrows;
-  }, [deferredFen, engineLines, result, resultFen]);
+  }, [isLiveMode, engineAnalysis.fen, deferredFen, engineLines, result, resultFen]);
 
   const evaluatePosition = useCallback(async (targetFen = fen, reason: "manual" | "live" = "manual") => {
     const targetChess = loadChess(targetFen);
@@ -341,11 +390,120 @@ export function PositionWorkbench({
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,25rem)]">
-      <div className={`rounded-xl border border-neutral-800 bg-[linear-gradient(180deg,rgba(41,41,38,0.96),rgba(24,24,24,0.98))] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-6 ${mode === "next-move" || mode === "board" ? "xl:order-2" : ""}`}>
+      {mode === "board" ? (
+        <div className="rounded-xl border border-neutral-800 bg-[#121624] flex flex-col overflow-hidden shadow-[0_24px_80px_rgba(0,0,0,0.28)] xl:order-2 p-4 min-h-[40rem] max-h-[800px]">
+          <div className="flex bg-[#0b0d14] p-1 rounded-lg shrink-0">
+            <button className="flex-1 bg-[#1c2130] shadow text-white py-1.5 rounded-md text-sm font-semibold">Analysis</button>
+            <button className="flex-1 text-neutral-400 py-1.5 text-sm font-semibold hover:bg-white/5 rounded-md transition">Coach</button>
+          </div>
+
+          <div className="flex items-center justify-between mt-4">
+            <span className="bg-amber-400/10 text-amber-400 border border-amber-400/20 px-3 py-1 rounded-md font-mono font-bold text-sm">
+              {engineLines.length > 0 ? formatEngineScore(engineLines[0].score) : "0.00"}
+            </span>
+            <span className="text-neutral-400 text-sm font-medium">Depth {engineAnalysis.depth} &bull; SF 18 WASM</span>
+          </div>
+
+          <button
+            onClick={() => {
+              const best = engineLines[0];
+              if (!best || !chess) return;
+              try {
+                const current = loadChess(fen);
+                const move = current?.move(best.san);
+                if (move && current) {
+                  setFenHistory((h) => [...h, fen]);
+                  applyFen(current.fen(), `${move.san} played. Engine is updating.`);
+                }
+              } catch {}
+            }}
+            className="w-full mt-4 bg-amber-400 hover:bg-amber-500 text-black font-bold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 shrink-0"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/><path d="m15 6-6 6 6 6"/></svg>
+            Follow Best Line
+          </button>
+
+          <div className="mt-4 flex-1 overflow-y-auto space-y-1">
+            {engineLines.map((line, idx) => (
+              <div key={idx} className="flex gap-3 text-sm items-center hover:bg-white/5 p-2 rounded-lg cursor-pointer transition-colors" onClick={() => {
+                try {
+                  const current = loadChess(fen);
+                  const move = current?.move(line.san);
+                  if (move && current) {
+                    setFenHistory((h) => [...h, fen]);
+                    applyFen(current.fen(), `${move.san} played. Engine is updating.`);
+                  }
+                } catch {}
+              }}>
+                <span className="w-8 font-mono font-bold text-neutral-200 shrink-0">{line.san}</span>
+                <span className="w-12 font-mono text-neutral-400 text-right shrink-0">{formatEngineScore(line.score)}</span>
+                {idx === 0 && (
+                  <span className="flex items-center gap-1 bg-[#282d3b] text-[#a0aab8] px-2 py-0.5 rounded-full text-[0.65rem] uppercase tracking-wider font-bold shrink-0">
+                    <span className="text-amber-400 text-xs">🌟</span> is best
+                  </span>
+                )}
+                <span className="text-neutral-500 truncate min-w-0 flex-1">{line.line.slice(1).join(" ")}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-neutral-800 flex justify-between gap-2 shrink-0">
+            <button onClick={undoMove} disabled={fenHistory.length === 0} className="flex-1 bg-[#282d3b] hover:bg-[#343b4d] disabled:opacity-50 text-white font-semibold py-2 rounded-lg transition">
+              Undo
+            </button>
+            <button onClick={resetBoard} className="flex-1 bg-[#282d3b] hover:bg-[#343b4d] text-white font-semibold py-2 rounded-lg transition">
+              Reset
+            </button>
+          </div>
+          
+          <div className="mt-4 space-y-4 shrink-0">
+            <label className="block">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">FEN</span>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(fen)}
+                  className="text-[0.65rem] font-semibold uppercase tracking-wider text-amber-500 hover:text-amber-400"
+                >
+                  Copy FEN
+                </button>
+              </div>
+              <textarea
+                value={fen}
+                onChange={(event) => handleFenChange(event.target.value)}
+                className="min-h-16 w-full rounded-lg border border-neutral-800 bg-[#0b0d14] px-4 py-3 font-mono text-xs leading-6 text-neutral-100 outline-none transition focus:border-amber-400/70"
+                spellCheck={false}
+              />
+            </label>
+            
+            <label className="block">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">PGN</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (chess) navigator.clipboard.writeText(chess.pgn());
+                  }}
+                  className="text-[0.65rem] font-semibold uppercase tracking-wider text-amber-500 hover:text-amber-400"
+                >
+                  Copy PGN
+                </button>
+              </div>
+              <textarea
+                value={chess ? chess.pgn() : ""}
+                readOnly
+                className="min-h-24 w-full rounded-lg border border-neutral-800 bg-[#0b0d14] px-4 py-3 font-mono text-xs leading-6 text-neutral-400 outline-none"
+                spellCheck={false}
+              />
+            </label>
+          </div>
+        </div>
+      ) : (
+      <div className={`rounded-xl border border-neutral-800 bg-[linear-gradient(180deg,rgba(41,41,38,0.96),rgba(24,24,24,0.98))] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-6 ${mode === "next-move" ? "xl:order-2" : ""}`}>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-amber-400">
-              {mode === "board" ? "Live analysis board" : mode === "editor" ? "Position editor" : "Best move engine"}
+              {mode === "editor" ? "Position editor" : "Best move engine"}
             </p>
             <h2 className="text-2xl font-semibold text-white">Move pieces and watch the engine respond.</h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-neutral-300">
@@ -387,51 +545,26 @@ export function PositionWorkbench({
           </div>
         </div>
 
-          <div className="mt-5 space-y-4">
-            <label className="block">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">FEN</span>
-                <button
-                  type="button"
-                  onClick={() => navigator.clipboard.writeText(fen)}
-                  className="text-[0.65rem] font-semibold uppercase tracking-wider text-amber-500 hover:text-amber-400"
-                >
-                  Copy FEN
-                </button>
-              </div>
-              <textarea
-                value={fen}
-                onChange={(event) => handleFenChange(event.target.value)}
-                className="min-h-16 w-full rounded-lg border border-neutral-800 bg-neutral-950/75 px-4 py-3 font-mono text-xs leading-6 text-neutral-100 outline-none transition focus:border-amber-400/70"
-                spellCheck={false}
-              />
-            </label>
-
-            {mode === "board" && (
-              <label className="block">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">PGN</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (chess) {
-                        navigator.clipboard.writeText(chess.pgn());
-                      }
-                    }}
-                    className="text-[0.65rem] font-semibold uppercase tracking-wider text-amber-500 hover:text-amber-400"
-                  >
-                    Copy PGN
-                  </button>
-                </div>
-                <textarea
-                  readOnly
-                  value={chess ? chess.pgn() : ""}
-                  className="min-h-24 w-full rounded-lg border border-neutral-800 bg-neutral-950/75 px-4 py-3 font-mono text-xs leading-6 text-neutral-400 outline-none"
-                  spellCheck={false}
-                />
-              </label>
-            )}
-          </div>
+        <div className="mt-5 space-y-4">
+          <label className="block">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">FEN</span>
+              <button
+                type="button"
+                onClick={() => navigator.clipboard.writeText(fen)}
+                className="text-[0.65rem] font-semibold uppercase tracking-wider text-amber-500 hover:text-amber-400"
+              >
+                Copy FEN
+              </button>
+            </div>
+            <textarea
+              value={fen}
+              onChange={(event) => handleFenChange(event.target.value)}
+              className="min-h-16 w-full rounded-lg border border-neutral-800 bg-neutral-950/75 px-4 py-3 font-mono text-xs leading-6 text-neutral-100 outline-none transition focus:border-amber-400/70"
+              spellCheck={false}
+            />
+          </label>
+        </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
           <button
@@ -462,6 +595,7 @@ export function PositionWorkbench({
           {error ?? message}
         </div>
       </div>
+      )}
 
       <aside className={`space-y-4 ${mode === "next-move" || mode === "board" ? "xl:order-1" : ""}`}>
         <div className="relative overflow-hidden rounded-lg shadow-[0_20px_40px_rgba(0,0,0,.6),0_8px_16px_rgba(0,0,0,.4)] w-full aspect-square max-w-none">
@@ -498,42 +632,44 @@ export function PositionWorkbench({
           />
         </div>
 
-        <div className="rounded-lg border border-neutral-800 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.035))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-lime-300">Engine lines</p>
-              <p className="mt-1 text-sm text-neutral-400">Best line is solid, alternatives are lighter.</p>
-            </div>
-            {result ? (
-              <span className="rounded-full border border-neutral-800 bg-black/20 px-3 py-1 text-xs font-semibold text-neutral-300">
-                Depth {result.depth} / {formatNodes(result.nodes)} nodes
-              </span>
-            ) : null}
-          </div>
-
-          <div className="mt-4 space-y-2">
-            {engineLines.length > 0 ? (
-              engineLines.slice(0, 5).map((line) => (
-                <div key={`${line.rank}-${line.san}`} className="rounded-[1rem] border border-neutral-800 bg-black/16 px-3 py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-neutral-500">{lineLabel(line.rank)}</p>
-                      <p className="mt-1 truncate text-lg font-semibold text-white">{line.san}</p>
-                    </div>
-                    <span className="rounded-full border border-neutral-800 bg-neutral-800/30 px-2 py-1 text-xs font-semibold text-neutral-300">
-                      {formatEngineScore(line.score)}
-                    </span>
-                  </div>
-                  <p className="mt-2 truncate text-sm text-neutral-400">{line.line.join(" ") || "No stored continuation"}</p>
-                </div>
-              ))
-            ) : (
-              <div className="rounded-[1rem] border border-neutral-800 bg-black/16 px-3 py-3 text-sm leading-6 text-neutral-400">
-                {pending ? "Waiting for engine output..." : "Move a piece or click Analyze now to generate engine lines."}
+        {mode !== "board" && (
+          <div className="rounded-lg border border-neutral-800 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.035))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-lime-300">Engine lines</p>
+                <p className="mt-1 text-sm text-neutral-400">Best line is solid, alternatives are lighter.</p>
               </div>
-            )}
+              {result ? (
+                <span className="rounded-full border border-neutral-800 bg-black/20 px-3 py-1 text-xs font-semibold text-neutral-300">
+                  Depth {result.depth} / {formatNodes(result.nodes)} nodes
+                </span>
+              ) : null}
+            </div>
+
+            <div className="mt-4 space-y-2">
+              {engineLines.length > 0 ? (
+                engineLines.slice(0, 5).map((line) => (
+                  <div key={`${line.rank}-${line.san}`} className="rounded-[1rem] border border-neutral-800 bg-black/16 px-3 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-neutral-500">{lineLabel(line.rank)}</p>
+                        <p className="mt-1 truncate text-lg font-semibold text-white">{line.san}</p>
+                      </div>
+                      <span className="rounded-full border border-neutral-800 bg-neutral-800/30 px-2 py-1 text-xs font-semibold text-neutral-300">
+                        {formatEngineScore(line.score)}
+                      </span>
+                    </div>
+                    <p className="mt-2 truncate text-sm text-neutral-400">{line.line.join(" ") || "No stored continuation"}</p>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-[1rem] border border-neutral-800 bg-black/16 px-3 py-3 text-sm leading-6 text-neutral-400">
+                  {pending ? "Waiting for engine output..." : "Move a piece or click Analyze now to generate engine lines."}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </aside>
     </div>
   );
