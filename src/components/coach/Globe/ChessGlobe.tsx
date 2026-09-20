@@ -23,9 +23,7 @@ import { GlobeStatsBar } from "./GlobeStatsBar";
 import { GlobeInsightBubble } from "./GlobeInsightBubble";
 import { GlobeGamePopup } from "./GlobeGamePopup";
 
-const MAPBOX_TOKEN =
-  "";
-
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
 const EMPTY_FC: any = { type: "FeatureCollection", features: [] };
 
 const LAYER_GLOW = {
