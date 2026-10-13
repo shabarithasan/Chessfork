@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Message } from "@/contexts/AIProvider";
 import { Bot, User, ChevronDown, ChevronRight, Copy, Check } from "lucide-react";
+import { useAI } from "@/contexts/AIProvider";
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -46,15 +47,24 @@ function ThinkingBlock({ children }: { children: string }) {
 
 export function AIMessage({ message }: { message: Message }) {
   const isUser = message.role === "user";
+  const { coachAvatar } = useAI();
 
   return (
     <div className={`group/message flex gap-3 ${isUser ? "flex-row-reverse" : ""} animate-fadeIn`}>
       <div
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
-          isUser ? "bg-[#3b82f6]/20 text-[#3b82f6]" : "bg-[#f3c53d]/20 text-[#f3c53d]"
+        className={`flex shrink-0 items-center justify-center rounded-xl overflow-hidden ${
+          isUser ? "bg-[#3b82f6]/20 text-[#3b82f6] h-8 w-8" : "bg-neutral-800/50 border border-neutral-700/50 shadow-inner h-9 w-9"
         }`}
       >
-        {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+        {isUser ? (
+          <User className="h-4 w-4" />
+        ) : (
+          <img 
+            src={coachAvatar} 
+            alt="AI Coach" 
+            className={coachAvatar?.includes('pawn') ? "w-[120%] h-[120%] object-cover object-center translate-y-[10%]" : "w-full h-full object-cover"} 
+          />
+        )}
       </div>
       <div className={`group relative min-w-0 max-w-[85%] ${isUser ? "items-end" : "items-start"}`}>
         <div

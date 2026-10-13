@@ -1,22 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Preloader } from "@/components/cinematic/Preloader";
 import { CinematicOverlay } from "@/components/ui/CinematicOverlay";
 import { HomepageCanvasSlider } from "@/components/cinematic/HomepageCanvasSlider";
 import { SlideTextOverlay } from "@/components/cinematic/SlideTextOverlay";
 import { cinematicTimeline } from "@/data/timeline";
-import { cn } from "@/lib/utils";
 
 export function CinematicSequence() {
-  const [isReady, setIsReady] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
 
   return (
     <>
-      <Preloader onComplete={() => setIsReady(true)} />
-
-      <div className={cn("transition-opacity duration-1000", isReady ? "opacity-100" : "opacity-0")}>
+      <div className="opacity-100">
         {/* Three.js WebGL Canvas — renders 3D cylinder of video planes */}
         <HomepageCanvasSlider
           slides={cinematicTimeline.media.map((slide) => ({

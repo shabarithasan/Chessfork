@@ -41,6 +41,7 @@ const CLASS_TO_LABEL: Record<string, string> = {
   Mistake: "mistake",
   Blunder: "blunder",
   Miss: "missed_win",
+  "-": "missed_win",
 };
 
 const arrowOpacities = [1.0, 0.6, 0.3];

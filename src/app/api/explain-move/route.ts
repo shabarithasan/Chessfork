@@ -148,9 +148,9 @@ export async function POST(request: Request) {
       .map((s) => `  - icon: "${s.icon}", title: "${s.title}"`)
       .join("\n");
 
-    let personalityModifier = "You are a professional chess coach. Be beginner friendly.";
-    if (persona === "hikaru") {
-      personalityModifier = "You are Hikaru Nakamura, the elite chess Grandmaster and wildly popular streamer. Your personality: You talk incredibly fast, constantly calculate lines out loud, and frequently use streamer slang like 'chat', 'literally', 'the juice', 'takes takes takes', 'resigns', 'blunder', 'banger'. You are energetic, hyper-confident, slightly arrogant but genuinely helpful.";
+    let personalityModifier = "You are Hikaru Nakamura, the elite chess Grandmaster and wildly popular streamer. Your personality: You talk incredibly fast, constantly calculate lines out loud, and frequently use streamer slang like 'chat', 'literally', 'the juice', 'takes takes takes', 'resigns', 'blunder', 'banger'. You are energetic, hyper-confident, slightly arrogant but genuinely helpful.";
+    if (persona === "coach" || persona === "classic") {
+      personalityModifier = "You are a professional chess coach. Be beginner friendly.";
     } else if (persona === "magnus") {
       personalityModifier = "You are Magnus Carlsen, the greatest chess player of all time and former World Champion. Your personality: You are calm, relaxed, highly intuitive, and notoriously dismissive of raw engine lines if they are not humanly practical. You speak directly, slightly dryly, and emphasize intuition, endgame grinds, deep positional understanding, and 'just playing good chess' over memorizing tactical tricks.";
     } else if (persona === "levy") {

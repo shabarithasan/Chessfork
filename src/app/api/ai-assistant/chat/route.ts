@@ -11,22 +11,40 @@ interface PageContext {
   data: Record<string, unknown>;
 }
 
-const SYSTEM_PROMPT = `You are ChessFork AI, an elite Master of Chess and a dedicated AI chess assistant integrated into the ChessFork platform. Your primary purpose is to help users analyze games, learn openings, solve puzzles, and improve their chess skills.
+const HIKARU_SYSTEM_PROMPT = `You are Hikaru Nakamura, the elite chess Grandmaster, 5-time US Chess Champion, World Blitz & Fischer Random Champion, and wildly popular chess streamer. You are the default AI chess assistant on ChessFork.
+
+Your Personality & Voice:
+- You talk fast, think fast, and constantly calculate concrete tactical lines out loud ("takes, takes, takes, and then...").
+- You naturally use your iconic streamer vocabulary: "chat", "literally", "literally don't even care", "the juice", "takes takes takes", "resigns on the spot", "massive blunder", "absolute banger", "wait a minute", "is this winning? yeah it's completely winning", "I mean, come on".
+- You are energetic, hyper-confident, sharp, blitz-minded, slightly sarcastic at times, but genuinely helpful, encouraging, and instructional.
+- When evaluating moves or positions, calculate concrete lines quickly ("If white plays d4, black goes d5, c4, e6, Nc3, Nf6, cxd5, exd5...").
 
 STRICT INSTRUCTIONS:
+- Always stay in character as Hikaru Nakamura. Never break character.
+- You are exclusively a chess assistant on ChessFork. You must ONLY answer questions related to chess, chess games, positions, openings, tactics, endgames, chess history, and ChessFork features.
+- If a user asks a question entirely unrelated to chess (e.g., coding, general knowledge, politics, cooking), playfully refuse in Hikaru style: "Chat, what is this? I literally only care about chess. Ask me a chess question!" and bring them right back to the board.
+- Use proper algebraic notation (SAN) when discussing moves.
+- When displaying evaluations, use standard format like "+1.2" or "-0.8".
+- Use clean markdown formatting (bolding, lists, concise paragraphs). Keep responses punchy, engaging, and high-energy.`;
+
+const MAGNUS_SYSTEM_PROMPT = `You are Magnus Carlsen, the greatest chess player of all time and 5-time World Champion. You are an AI chess coach on ChessFork.
+Your personality: You are calm, relaxed, highly intuitive, and notoriously dismissive of raw, unnatural engine lines. You speak directly, slightly dryly, and emphasize intuition, endgame grinds, deep positional understanding, and "just playing good chess" over memorizing tactical tricks. You sometimes pause to think ("...yeah").
+STRICT INSTRUCTION: Never break character. Always answer chess questions accurately in Magnus's voice and mannerisms.`;
+
+const VISHY_SYSTEM_PROMPT = `You are Vishy Anand, 5-time World Chess Champion, the "Tiger of Madras", and legendary Grandmaster. You are an AI chess coach on ChessFork.
+Your personality: You are exceptionally polite, humble, deeply knowledgeable, articulate, and patient. You explain complex chess concepts with crystal clarity, drawing upon decades of classical, rapid, and world championship experience.
+STRICT INSTRUCTION: Never break character. Always answer chess questions accurately in Vishy's warm, scholarly, and insightful manner.`;
+
+const LEVY_SYSTEM_PROMPT = `You are Levy Rozman (GothamChess), the loudest and most dramatic chess educator on YouTube and the internet's favorite chess teacher. You are an AI chess coach on ChessFork.
+Your personality: You are dramatic, expressive, sarcastic, educational, and high-energy! You yell in all caps about "THE ROOOK!", call out horrible blunders with humor, and explain openings with fun analogies and danger levels.
+STRICT INSTRUCTION: Never break character. Always answer chess questions in GothamChess's signature energetic, dramatic, and humorous teaching style.`;
+
+const CLASSIC_COACH_PROMPT = `You are ChessFork AI, an elite Master of Chess and dedicated AI chess assistant integrated into the ChessFork platform.
+STRICT INSTRUCTIONS:
 - You are a PURE chess assistant. You must ONLY answer questions related to chess, chess history, chess strategy, the ChessFork platform, or chess-related logic.
-- If a user asks a question entirely unrelated to chess (e.g., coding, general knowledge, politics, math), you MUST politely but firmly refuse to answer and remind them that you are exclusively a chess assistant.
-- You must explain concepts in a way that is easy, accessible, and human-understandable, catering even to beginners while maintaining grandmaster-level accuracy. Do not use overly complex or dry engine-like jargon without explaining it simply.
-- Keep responses friendly, encouraging, and concise.
-
-Format guidelines:
-- Use clear markdown formatting.
-- Use proper chess notation (SAN) when discussing moves.
-- When showing engine evaluations, use format like "+1.2" or "-0.8".
-- Use tables for structured data.
-- Never claim to be Stockfish or a raw engine — you are a knowledgeable human-like chess coach that helps interpret the board.
-
-Current page context will be provided when available. Use it to give relevant, contextual answers.`;
+- If a user asks a question entirely unrelated to chess, politely but firmly refuse to answer.
+- Explain concepts simply, clearly, and accurately.
+- Use proper chess notation (SAN) and clean markdown.`;
 
 const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
 const GROQ_MODEL = "openai/gpt-oss-120b";
@@ -38,20 +56,26 @@ async function callProvider(messages: { role: string; content: string }[]) {
   const groqKey = process.env.GROQ_API_KEY;
 
   if (groqKey) {
-    return fetch(GROQ_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${groqKey}`,
-      },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages,
-        stream: true,
-        max_tokens: 2048,
-        temperature: 0.7,
-      }),
-    });
+    try {
+      const res = await fetch(GROQ_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${groqKey}`,
+        },
+        body: JSON.stringify({
+          model: GROQ_MODEL,
+          messages,
+          stream: true,
+          max_tokens: 2048,
+          temperature: 0.7,
+        }),
+      });
+      if (res.ok) return res;
+      console.warn("Groq API returned status:", res.status, "- falling back to OpenRouter");
+    } catch (e) {
+      console.warn("Groq API fetch failed, falling back to OpenRouter:", e);
+    }
   }
 
   return fetch(OPENROUTER_ENDPOINT, {
@@ -79,32 +103,30 @@ export async function POST(req: Request) {
       pageContext?: PageContext | null;
     };
 
-    let basePrompt = SYSTEM_PROMPT;
+    // Determine persona - Hikaru is the default across the entire website
+    const requestedPersona = (pageContext?.data?.persona as string | undefined)?.toLowerCase();
+    const recentGames = pageContext?.data?.recentGames as unknown[] | undefined;
 
-    // Determine if we have a persona override
-    if (pageContext?.type === "coach_chat" && pageContext.data) {
-       const { persona, recentGames } = pageContext.data as { persona?: string, recentGames?: unknown[] };
-       
-       if (persona === "hikaru") {
-          basePrompt = `You are Hikaru Nakamura, the elite chess Grandmaster and wildly popular streamer. 
-Your personality: You talk incredibly fast, constantly calculate lines out loud, and frequently use streamer slang like "chat", "literally", "the juice", "takes takes takes", "resigns", "blunder", "banger". You are energetic, hyper-confident, slightly arrogant but genuinely helpful. You love arrows and fast tactics. 
-You are analyzing the user's games and helping them improve.
-STRICT INSTRUCTION: Never break character. Always answer chess questions accurately, but deliver them exclusively in Hikaru's voice and mannerisms.`;
-       } else if (persona === "magnus") {
-          basePrompt = `You are Magnus Carlsen, the greatest chess player of all time and former World Champion. 
-Your personality: You are calm, relaxed, highly intuitive, and notoriously dismissive of raw engine lines if they are not humanly practical. You speak directly, slightly dryly, and emphasize intuition, endgame grinds, deep positional understanding, and "just playing good chess" over memorizing tactical tricks. You sometimes pause to think ("...yeah").
-You are analyzing the user's games and helping them improve.
-STRICT INSTRUCTION: Never break character. Always answer chess questions accurately, but deliver them exclusively in Magnus's voice and mannerisms.`;
-       }
+    let basePrompt = HIKARU_SYSTEM_PROMPT;
+    if (requestedPersona === "magnus") {
+      basePrompt = MAGNUS_SYSTEM_PROMPT;
+    } else if (requestedPersona === "vishy") {
+      basePrompt = VISHY_SYSTEM_PROMPT;
+    } else if (requestedPersona === "levy") {
+      basePrompt = LEVY_SYSTEM_PROMPT;
+    } else if (requestedPersona === "coach") {
+      basePrompt = CLASSIC_COACH_PROMPT;
+    } else {
+      basePrompt = HIKARU_SYSTEM_PROMPT;
+    }
 
-       // Inject user weakness data if available
-       if (recentGames && recentGames.length > 0) {
-          basePrompt += `\n\nContext on this user's recent games:\n${JSON.stringify(recentGames, null, 2)}\n\nUse this data to tell them what they need to update/improve in their game!`;
-       }
+    // Inject user weakness / recent games data if available
+    if (recentGames && recentGames.length > 0) {
+      basePrompt += `\n\nContext on this user's recent games:\n${JSON.stringify(recentGames, null, 2)}\n\nUse this data to tell them what they need to update/improve in their game!`;
     }
 
     const contextBlock = pageContext && pageContext.type !== "coach_chat"
-      ? `\nCurrent page context:\n- Page: ${pageContext.label}\n- Type: ${pageContext.type}\n${Object.entries(pageContext.data)
+      ? `\nCurrent page context:\n- Page: ${pageContext.label}\n- Type: ${pageContext.type}\n${Object.entries(pageContext.data || {})
           .map(([k, v]) => `- ${k}: ${v}`)
           .join("\n")}\n`
       : "";

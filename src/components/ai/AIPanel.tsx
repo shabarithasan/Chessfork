@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useAI, CONVERSATION_STARTERS } from "@/contexts/AIProvider";
+import { useAI, CONVERSATION_STARTERS, COACH_AVATARS } from "@/contexts/AIProvider";
 import { AIMessage } from "@/components/ai/AIMessage";
 import { PromptInputBox } from "@/components/ui/ai-prompt-box";
 import { AILoadingState } from "@/components/ai/AILoadingState";
 import { BorderBeam } from "@/components/ui/border-beam";
 import {
-  Sparkles,
   X,
   Trash2,
   PanelRightOpen,
@@ -23,6 +22,8 @@ export function AIPanel({ chatEndRef }: { chatEndRef: React.RefObject<HTMLDivEle
     closeAI,
     sendMessage,
     clearConversation,
+    coachAvatar,
+    setCoachAvatar,
   } = useAI();
 
   const panelRef = useRef<HTMLDivElement>(null);
@@ -144,12 +145,23 @@ export function AIPanel({ chatEndRef }: { chatEndRef: React.RefObject<HTMLDivEle
 
         {/* Header */}
         <div className="flex shrink-0 items-center gap-3 border-b border-[#2a2f3a] px-5 py-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#3b82f6]/20 to-[#3b82f6]/5">
-            <Sparkles className="h-4 w-4 text-[#3b82f6]" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl overflow-hidden bg-neutral-800/50 border border-neutral-700/50 shadow-inner">
+            <img 
+              src={coachAvatar} 
+              alt="AI Coach" 
+              className={coachAvatar.includes('pawn') ? "w-[120%] h-[120%] object-cover object-center translate-y-[10%]" : "w-full h-full object-cover"} 
+              onClick={() => {
+                const currentIndex = COACH_AVATARS.findIndex(c => c.url === coachAvatar);
+                const nextIndex = (currentIndex + 1) % COACH_AVATARS.length;
+                setCoachAvatar(COACH_AVATARS[nextIndex].url);
+              }}
+              style={{ cursor: 'pointer' }}
+              title="Click to change coach"
+            />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-white">ChessFork AI</h2>
+              <h2 className="text-sm font-semibold text-white">{coachAvatar.includes("coachhikaru") ? "Hikaru Nakamura" : coachAvatar.includes("coachmagnus") ? "Magnus Carlsen" : coachAvatar.includes("coachvishy") ? "Vishy Anand" : coachAvatar.includes("coachlevy") ? "GothamChess" : "ChessFork AI"}</h2>
               <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 Online
@@ -190,12 +202,16 @@ export function AIPanel({ chatEndRef }: { chatEndRef: React.RefObject<HTMLDivEle
           {!hasMessages ? (
             <div className="flex h-full flex-col justify-center">
               <div className="mb-6 text-center">
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#3b82f6]/20 to-[#3b82f6]/5">
-                  <Sparkles className="h-7 w-7 text-[#3b82f6]" />
-                </div>
-                <h3 className="text-base font-semibold text-white">ChessFork AI</h3>
+                <div className="mx-auto mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl overflow-hidden bg-neutral-800/50 border border-neutral-700/50 shadow-inner">
+                    <img 
+                      src={coachAvatar} 
+                      alt="AI Coach" 
+                      className={coachAvatar.includes('pawn') ? "w-[120%] h-[120%] object-cover object-center translate-y-[10%]" : "w-full h-full object-cover"}
+                    />
+                  </div>
+                <h3 className="text-base font-semibold text-white">{coachAvatar.includes("coachhikaru") ? "Hikaru Nakamura" : coachAvatar.includes("coachmagnus") ? "Magnus Carlsen" : coachAvatar.includes("coachvishy") ? "Vishy Anand" : coachAvatar.includes("coachlevy") ? "GothamChess" : "ChessFork AI"}</h3>
                 <p className="mt-1 text-xs text-neutral-500">
-                  Your chess analysis assistant
+                  {coachAvatar.includes("coachhikaru") ? "Grandmaster & Streamer • AI Assistant" : coachAvatar.includes("coachmagnus") ? "Grandmaster & 5x World Champion" : coachAvatar.includes("coachvishy") ? "Grandmaster & 5x World Champion" : coachAvatar.includes("coachlevy") ? "International Master & Chess Educator" : "Your chess analysis assistant"}
                 </p>
                 {pageContext && (
                   <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#3b82f6]/10 px-3 py-1 text-xs text-[#3b82f6]">
@@ -228,8 +244,12 @@ export function AIPanel({ chatEndRef }: { chatEndRef: React.RefObject<HTMLDivEle
               ))}
               {streaming && (
                 <div className="flex gap-3 animate-fadeIn">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#f3c53d]/20 text-[#f3c53d]">
-                    <Sparkles className="h-4 w-4" />
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl overflow-hidden bg-neutral-800/50 border border-neutral-700/50 shadow-inner">
+                    <img 
+                      src={coachAvatar} 
+                      alt="AI Coach" 
+                      className={coachAvatar?.includes('pawn') ? "w-[120%] h-[120%] object-cover object-center translate-y-[10%]" : "w-full h-full object-cover"} 
+                    />
                   </div>
                   <div className="min-w-0 max-w-[85%] rounded-2xl rounded-tl-md border border-[#2a2f3a] bg-[#171b24] px-4 py-2.5">
                     <AILoadingState />
@@ -244,7 +264,7 @@ export function AIPanel({ chatEndRef }: { chatEndRef: React.RefObject<HTMLDivEle
         {/* Input */}
         <div className="shrink-0 border-t border-[#2a2f3a] p-4">
           <PromptInputBox
-            placeholder="Ask ChessFork AI..."
+            placeholder={coachAvatar.includes("coachhikaru") ? "Ask Hikaru anything about chess..." : coachAvatar.includes("coachmagnus") ? "Ask Magnus anything about chess..." : "Ask ChessFork AI..."}
             onSend={(value) => handleSubmit(value)}
             isLoading={streaming}
             autoFocus={open}

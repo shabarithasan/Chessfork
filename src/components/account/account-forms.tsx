@@ -80,11 +80,11 @@ export function ProfileSettingsForm({
         <select
           id="account-coach-persona"
           name="coachPersona"
-          defaultValue={user.coachPersona || "default"}
+          defaultValue={user.coachPersona || "hikaru"}
           className="mt-3 h-13 w-full rounded-[1.2rem] border border-white/10 bg-slate-950/80 px-4 text-sm text-slate-100 outline-none transition focus:border-amber-300/60"
         >
-          <option value="default">Default (Professional)</option>
-          <option value="hikaru">Hikaru (Fast & Energetic)</option>
+          <option value="hikaru">Hikaru (Fast & Energetic) [Default]</option>
+          <option value="default">Classic (Professional Coach)</option>
           <option value="magnus">Magnus (Pragmatic & Calm)</option>
           <option value="levy">GothamChess (Dramatic & Loud)</option>
           <option value="tal">Tal (Bloodthirsty Attacker)</option>

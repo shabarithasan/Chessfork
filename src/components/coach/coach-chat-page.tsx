@@ -14,9 +14,10 @@ export function CoachChatPage({ recentGames = [], playerName }: { recentGames?: 
     sendMessage,
     clearConversation,
     setPageContext,
+    setCoachAvatar,
   } = useAI();
 
-  const [persona, setPersona] = useState<"coach" | "hikaru" | "magnus">("coach");
+  const [persona, setPersona] = useState<"coach" | "hikaru" | "magnus" | "vishy" | "levy">("hikaru");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Inject persona and game history into AI context
@@ -43,13 +44,15 @@ export function CoachChatPage({ recentGames = [], playerName }: { recentGames?: 
        <div className="flex justify-center pt-6 pb-2">
          <div className="bg-black/30 p-1.5 rounded-2xl border border-white/5 flex gap-2 backdrop-blur-md">
            {[
-             { id: "coach", label: "Elite Coach" },
-             { id: "hikaru", label: "Hikaru Nakamura" },
-             { id: "magnus", label: "Magnus Carlsen" },
+             { id: "hikaru", label: "Hikaru Nakamura", url: "https://assets-coaches.chess.com/image/coachhikaru.png?v=28d7093b" },
+             { id: "magnus", label: "Magnus Carlsen", url: "https://assets-coaches.chess.com/image/coachmagnus.png?v=819d9dba" },
+             { id: "vishy", label: "Vishy Anand", url: "https://assets-coaches.chess.com/image/coachvishy.png?v=ea3d532d" },
+             { id: "levy", label: "GothamChess", url: "https://assets-coaches.chess.com/image/coachlevy.png?v=9f98615d" },
+             { id: "coach", label: "Elite Coach", url: "/images/pawn-light.png" },
            ].map((p) => (
              <button
                key={p.id}
-               onClick={() => setPersona(p.id as "coach" | "hikaru" | "magnus")}
+               onClick={() => { setPersona(p.id as any); setCoachAvatar(p.url); }}
                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
                  persona === p.id 
                    ? "bg-amber-500 text-black shadow-lg shadow-amber-500/20" 
@@ -65,14 +68,20 @@ export function CoachChatPage({ recentGames = [], playerName }: { recentGames?: 
        <div className="flex-1 overflow-y-auto py-8 hide-scrollbar">
           {messages.length === 0 ? (
              <div className="h-full flex flex-col items-center justify-center text-center max-w-2xl mx-auto pb-20">
-                <div className="size-20 rounded-3xl bg-amber-500/20 flex items-center justify-center border border-amber-500/30 mb-8 shadow-[0_0_40px_rgba(245,158,11,0.2)]">
-                   <Sparkles className="size-10 text-amber-400" />
+                <div className="size-24 rounded-3xl overflow-hidden bg-neutral-800/50 flex items-center justify-center border border-neutral-700/50 mb-8 shadow-[0_0_40px_rgba(0,0,0,0.5)]">
+                  <img src={
+                    persona === "magnus" ? "https://assets-coaches.chess.com/image/coachmagnus.png?v=819d9dba" :
+                    persona === "vishy" ? "https://assets-coaches.chess.com/image/coachvishy.png?v=ea3d532d" :
+                    persona === "hikaru" ? "https://assets-coaches.chess.com/image/coachhikaru.png?v=28d7093b" :
+                    persona === "levy" ? "https://assets-coaches.chess.com/image/coachlevy.png?v=9f98615d" :
+                    "/images/pawn-light.png"
+                  } alt="AI Coach" className={persona === "coach" ? "w-[120%] h-[120%] object-cover object-center translate-y-[10%]" : "w-full h-full object-cover"} />
                 </div>
                 <h1 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight mb-6">
-                  Master of Chess
+                  {persona === "hikaru" ? "Hikaru Nakamura" : persona === "magnus" ? "Magnus Carlsen" : persona === "vishy" ? "Vishy Anand" : persona === "levy" ? "GothamChess" : "Master of Chess"}
                 </h1>
                 <p className="text-lg text-slate-400 mb-10 leading-relaxed max-w-xl mx-auto">
-                   I am an elite chess assistant. I can analyze your games, explain grandmaster concepts, and guide your training regimen. What would you like to discuss today?
+                   {persona === "hikaru" ? "Grandmaster & 5x US Champion. Let's analyze your games, calculate lines, and find the juice! What position are we looking at today?" : persona === "magnus" ? "Former World Champion. Let's look at your intuition, endgame technique, and practical chess decisions." : persona === "vishy" ? "5-time World Champion. Let's study classical strategy, sharp tactics, and principled opening preparation." : persona === "levy" ? "Internet's chess teacher. Let's fix those terrible blunders, understand danger levels, and find THE ROOOK!" : "I am an elite chess assistant. I can analyze your games, explain grandmaster concepts, and guide your training regimen. What would you like to discuss today?"}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
                    {CONVERSATION_STARTERS.map((s) => (

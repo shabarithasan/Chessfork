@@ -22,7 +22,7 @@ export function CoachGamePage() {
   const [game, setGame] = useState(new Chess());
   const [userColor, setUserColor] = useState<"white" | "black">("white");
   const [difficulty, setDifficulty] = useState<Difficulty>("challenging");
-  const [persona, setPersona] = useState<"coach" | "hikaru" | "magnus">("magnus");
+  const [persona, setPersona] = useState<"coach" | "hikaru" | "magnus">("hikaru");
   const [gameState, setGameState] = useState<"setup" | "playing" | "blunder_review" | "game_over">("setup");
   const [chatLog, setChatLog] = useState<ChatMessage[]>([]);
   const chatLogRef = useRef<ChatMessage[]>([]);
@@ -279,7 +279,7 @@ export function CoachGamePage() {
                 <div className="space-y-3">
                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Select Coach</p>
                    <div className="grid grid-cols-3 gap-2">
-                     {(["coach", "hikaru", "magnus"] as const).map((p) => (
+                     {(["hikaru", "magnus", "coach"] as const).map((p) => (
                        <button
                          key={p}
                          onClick={() => setPersona(p)}

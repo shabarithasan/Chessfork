@@ -38,6 +38,7 @@ import { Fragment, useCallback, useEffect, useState, type ComponentType } from "
 
 import { signOutAction } from "@/app/auth/actions";
 import { ChessforkLogo } from "@/components/brand/chessfork-logo";
+import { CoachPawnIcon } from "@/components/ui/coach-pawn-icon";
 import { BadgeToast } from "@/components/gamification/badge-toast";
 import { StreakRiskBanner } from "@/components/gamification/streak-risk-banner";
 import { GuestUpgradePrompts } from "@/components/guest/guest-upgrade-prompts";
@@ -53,7 +54,7 @@ import { useStablePathname } from "@/components/shell/use-stable-pathname";
 
 type FlyoutItem = {
   href: string;
-  icon: LucideIcon;
+  icon: LucideIcon | ComponentType<{ className?: string }>;
   label: string;
   description?: string;
   badge?: string;
@@ -91,7 +92,7 @@ const navGroups: NavGroup[] = [
       { href: "/board", icon: LayoutGrid, label: "Analysis Board", description: "Free analysis board with engine evaluation." },
       { href: "/editor", icon: PenSquare, label: "Board Editor", description: "Drag-and-drop position editor. Export FEN/PGN." },
       { href: "/next-move", icon: RefreshCw, label: "Next Move", description: "Engine-best continuation from any FEN." },
-      { href: "/coach", icon: Sparkles, label: "AI Coach", description: "Get AI-powered coaching on your games." },
+      { href: "/coach", icon: CoachPawnIcon, label: "AI Coach", description: "Get AI-powered coaching on your games." },
       { href: "/coach/globe", icon: Globe, label: "Chess Globe", description: "Watch live chess games around the world." },
     ],
   },
@@ -130,10 +131,10 @@ const navGroups: NavGroup[] = [
   },
 ];
 
-const bottomNav: { href: string; icon: LucideIcon; label: string }[] = [
+const bottomNav: { href: string; icon: LucideIcon | ComponentType<{ className?: string }>; label: string }[] = [
   { href: "/", icon: Home, label: "Home" },
   { href: "/analyze", icon: Search, label: "Analyze" },
-  { href: "/coach", icon: Sparkles, label: "Coach" },
+  { href: "/coach", icon: CoachPawnIcon, label: "Coach" },
   { href: "/play/local", icon: Gamepad2, label: "Play" },
 ];
 
@@ -451,6 +452,7 @@ export function PremiumSidebar({ pathname, onShowWhatsNew, collapsed, onToggleCo
   const activeLocale = resolveLocaleFromPathname(pathname);
   const homePath = withLocalePrefix("/", activeLocale);
   const authPath = withLocalePrefix("/auth", activeLocale);
+  const accountPath = withLocalePrefix("/account", activeLocale);
   const shopPath = withLocalePrefix("/shop", activeLocale);
   const downloadPath = withLocalePrefix("/download", activeLocale);
   const [gamificationReady, setGamificationReady] = useState(false);
@@ -638,13 +640,28 @@ export function PremiumSidebar({ pathname, onShowWhatsNew, collapsed, onToggleCo
               </div>
             </div>
 
-            <Link
-              href={authPath}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[11px] bg-gradient-to-b from-[#FFB800] to-[#F59E0B] text-sm font-bold text-black shadow-md transition-all duration-150 hover:brightness-110"
-            >
-              <User className="shrink-0 size-[16px]" />
-              <span>Sign in</span>
-            </Link>
+            {viewer ? (
+              <Link
+                href={accountPath}
+                className="flex h-11 w-full items-center gap-3 rounded-[11px] bg-white/[0.03] border border-white/[0.08] px-3 text-sm font-medium text-neutral-300 transition-all duration-150 hover:bg-white/[0.08] hover:text-white"
+              >
+                <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-amber-400 to-amber-600 text-[10px] font-bold text-black">
+                  {viewer.displayName.charAt(0).toUpperCase()}
+                </div>
+                <span className="flex-1 truncate">{viewer.displayName}</span>
+                <span className="text-[10px] font-bold text-amber-400/80 uppercase tracking-wider">
+                  Lv. {viewer.level ?? 1}
+                </span>
+              </Link>
+            ) : (
+              <Link
+                href={authPath}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-[11px] bg-gradient-to-b from-[#FFB800] to-[#F59E0B] text-sm font-bold text-black shadow-md transition-all duration-150 hover:brightness-110"
+              >
+                <User className="shrink-0 size-[16px]" />
+                <span>Sign in</span>
+              </Link>
+            )}
 
           </div>
         )}
@@ -701,7 +718,8 @@ export function SiteShellClient({
       <BadgeToast />
       <StreakRiskBanner />
       {showShellGuestPrompts ? <GuestUpgradePrompts isSignedIn={Boolean(viewer)} pathname={pathname} /> : null}
-      <div className="relative z-10 w-full min-w-0">        <PremiumSidebar
+      <div className="relative z-10 w-full min-w-0">
+        <PremiumSidebar
           pathname={pathname}
           onShowWhatsNew={openWhatsNew}
           collapsed={collapsed}

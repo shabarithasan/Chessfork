@@ -134,6 +134,7 @@ const GRADE_TO_LABEL: Record<string, string> = {
   Mistake: "mistake",
   Blunder: "blunder",
   Miss: "missed_win",
+  "-": "missed_win",
 };
 
 const GRADE_VERB: Record<string, string> = {
@@ -147,6 +148,8 @@ const GRADE_VERB: Record<string, string> = {
   Mistake: "is a mistake",
   Blunder: "is a blunder",
   Book: "is a book move",
+  Miss: "is a missed win",
+  "-": "is a missed win",
 };
 
 function BadgeIcon({ badge, size = 16 }: { badge?: string | null; size?: number }) {
@@ -1026,24 +1029,47 @@ function RightPanel({
                           })()}
                         </p>
                           
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
                           {/* Explain Move Button */}
                           {!isWhatIfSearching && isLiveActive && !llmAnalysis && !llmLoading && (
                             <button
                               onClick={onExplainMove}
-                              className="mt-2 flex items-center gap-1.5 rounded-lg border border-[#f3c53d]/40 bg-[#f3c53d]/10 px-3 py-1.5 text-[12px] font-semibold text-[#b88c10] transition-colors hover:bg-[#f3c53d]/20"
+                              className="flex items-center gap-1.5 rounded-lg border border-[#f3c53d]/40 bg-[#f3c53d]/10 px-3 py-1.5 text-[12px] font-semibold text-[#b88c10] transition-colors hover:bg-[#f3c53d]/20"
                             >
                               <Sparkles size={14} className="text-[#f3c53d]" />
                               Deep Explanation
                             </button>
                           )}
 
-                          {!isWhatIfSearching && isLiveActive && llmLoading && (
-                            <p className="mt-1.5 flex items-center gap-2 text-[12px] leading-[1.4] text-neutral-500">
-                              <Loader2 size={12} className="animate-spin text-[#f3c53d]" />
-                              Consulting AI Coach...
-                            </p>
+                          {!isWhatIfSearching && (
+                            <button type="button" onClick={handleExplain} disabled={explainLoading} className="group/explain relative overflow-hidden rounded-full bg-neutral-900 p-[1px] transition-transform active:scale-[0.98] disabled:active:scale-100 disabled:opacity-60">
+                              <span aria-hidden="true" className="coach-explain-wave-rotor coach-explain-wave-rotor--dark-button" />
+                              <span className="relative z-10 flex items-center justify-center gap-2 rounded-full bg-[#1a1a1a] font-semibold text-white transition-colors duration-150 group-hover/explain:bg-[#111111] px-4 py-1.5 text-[12.5px]">
+                                {explainLoading ? (
+                                  <>
+                                    <Loader2 className="size-4 animate-spin" />
+                                    Explaining...
+                                  </>
+                                ) : explainSections ? (
+                                  "Explain again"
+                                ) : (
+                                  <>
+                                    Explain
+                                    <Sparkles className="size-3.5 text-[#f3c53d]" />
+                                  </>
+                                )}
+                              </span>
+                            </button>
                           )}
-                          {!isWhatIfSearching && isLiveActive && !llmLoading && llmAnalysis && (
+                        </div>
+
+                        {!isWhatIfSearching && isLiveActive && llmLoading && (
+                          <p className="mt-1.5 flex items-center gap-2 text-[12px] leading-[1.4] text-neutral-500">
+                            <Loader2 size={12} className="animate-spin text-[#f3c53d]" />
+                            Consulting AI Coach...
+                          </p>
+                        )}
+                        {!isWhatIfSearching && isLiveActive && !llmLoading && llmAnalysis && (
                           <div className="mt-2 space-y-1 rounded-xl border border-[#f3c53d]/30 bg-[#f3c53d]/5 px-3 py-2.5">
                             <div className="flex items-center gap-1.5">
                               <span className="rounded bg-[#f3c53d]/20 px-1.5 py-0.5 text-[10px] font-bold text-[#f3c53d]">AI</span>
@@ -1059,28 +1085,6 @@ function RightPanel({
                         )}
                       </div>
                     </div>
-                      {!isWhatIfSearching && (
-                        <div className="mt-3 flex">
-                          <button type="button" onClick={handleExplain} disabled={explainLoading} className="group/explain relative overflow-hidden rounded-full bg-neutral-900 p-[1px] transition-transform active:scale-[0.98] disabled:active:scale-100 disabled:opacity-60">
-                            <span aria-hidden="true" className="coach-explain-wave-rotor coach-explain-wave-rotor--dark-button" />
-                            <span className="relative z-10 flex items-center justify-center gap-2 rounded-full bg-[#1a1a1a] font-semibold text-white transition-colors duration-150 group-hover/explain:bg-[#111111] px-4 py-1.5 text-[12.5px]">
-                            {explainLoading ? (
-                              <>
-                                <Loader2 className="size-4 animate-spin" />
-                                Explaining...
-                              </>
-                            ) : explainSections ? (
-                              "Explain again"
-                            ) : (
-                              <>
-                                Explain
-                                <Sparkles className="size-3.5 text-[#f3c53d]" />
-                              </>
-                            )}
-                          </span>
-                        </button>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -2231,7 +2235,8 @@ function GameAnalysisPageInner({ analysis, viewer }: { analysis: AnalysisRun, vi
           topMoves: selectedMove.engineLines?.map(line => ({ san: line.san, eval: line.score })) || [],
           sideToMove: selectedMove.side,
           moveNumber: selectedMove.moveNumber,
-          reasons: []
+          reasons: [],
+          persona: viewer?.coachPersona || "hikaru",
         }),
       });
       

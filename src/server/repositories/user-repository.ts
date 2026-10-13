@@ -96,7 +96,7 @@ function toUserAccount(row: {
     title: row.title,
     gamesAnalyzed: row.gamesAnalyzed,
     puzzlesSolved: row.puzzlesSolved,
-    coachPersona: row.coachPersona ?? "default",
+    coachPersona: row.coachPersona ?? "hikaru",
   };
 }
 

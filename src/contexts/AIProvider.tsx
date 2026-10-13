@@ -25,7 +25,36 @@ export interface Message {
   timestamp: number;
 }
 
+export const COACH_AVATARS = [
+  {
+    "id": "hikaru",
+    "label": "Hikaru Nakamura",
+    "url": "https://assets-coaches.chess.com/image/coachhikaru.png?v=28d7093b"
+  },
+  {
+    "id": "magnus",
+    "label": "Magnus Carlsen",
+    "url": "https://assets-coaches.chess.com/image/coachmagnus.png?v=819d9dba"
+  },
+  {
+    "id": "vishy",
+    "label": "Vishy Anand",
+    "url": "https://assets-coaches.chess.com/image/coachvishy.png?v=ea3d532d"
+  },
+  {
+    "id": "levy",
+    "label": "GothamChess",
+    "url": "https://assets-coaches.chess.com/image/coachlevy.png?v=9f98615d"
+  },
+  {
+    "id": "coach",
+    "label": "Elite Coach",
+    "url": "/images/pawn-light.png"
+  }
+];
+
 interface AIState {
+  coachAvatar: string;
   open: boolean;
   messages: Message[];
   streaming: boolean;
@@ -33,6 +62,8 @@ interface AIState {
 }
 
 interface AIContextValue {
+  coachAvatar: string;
+  setCoachAvatar: (url: string) => void;
   open: boolean;
   messages: Message[];
   streaming: boolean;
@@ -80,6 +111,7 @@ const CONVERSATION_STARTERS = [
 
 export function AIProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AIState>({
+    coachAvatar: COACH_AVATARS[0].url,
     open: false,
     messages: [],
     streaming: false,
@@ -90,7 +122,12 @@ export function AIProvider({ children }: { children: ReactNode }) {
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    setState(prev => ({ ...prev, messages: loadHistory() }));
+    let savedCoach = COACH_AVATARS[0].url;
+    try {
+      const stored = localStorage.getItem('chessfork-ai-coach');
+      if (stored && stored !== "/images/pawn-light.png") savedCoach = stored;
+    } catch {}
+    setState(prev => ({ ...prev, messages: loadHistory(), coachAvatar: savedCoach }));
   }, []);
 
   useEffect(() => {
@@ -117,6 +154,11 @@ export function AIProvider({ children }: { children: ReactNode }) {
 
   const setPageContext = useCallback((ctx: PageContext | null) => {
     setState(prev => ({ ...prev, pageContext: ctx }));
+  }, []);
+
+  const setCoachAvatar = useCallback((url: string) => {
+    setState(prev => ({ ...prev, coachAvatar: url }));
+    try { localStorage.setItem('chessfork-ai-coach', url); } catch {}
   }, []);
 
   const clearConversation = useCallback(() => {
@@ -154,13 +196,27 @@ export function AIProvider({ children }: { children: ReactNode }) {
 
     try {
       const history = [...state.messages, userMsg].slice(-20);
+      const currentPersona = COACH_AVATARS.find(c => c.url === state.coachAvatar)?.id || "hikaru";
+      const effectivePageContext = state.pageContext
+        ? {
+            ...state.pageContext,
+            data: {
+              persona: currentPersona,
+              ...(state.pageContext.data || {}),
+            },
+          }
+        : {
+            type: "coach_chat",
+            label: "AI Assistant",
+            data: { persona: currentPersona },
+          };
 
       const res = await fetch("/api/ai-assistant/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: history.map(m => ({ role: m.role, content: m.content })),
-          pageContext: state.pageContext,
+          pageContext: effectivePageContext,
         }),
         signal: controller.signal,
       });
@@ -228,6 +284,8 @@ export function AIProvider({ children }: { children: ReactNode }) {
         sendMessage,
         setPageContext,
         clearConversation,
+        coachAvatar: state.coachAvatar,
+        setCoachAvatar,
       }}
     >
       {children}
