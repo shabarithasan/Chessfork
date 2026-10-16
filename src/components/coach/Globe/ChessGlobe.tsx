@@ -145,7 +145,6 @@ export default function ChessGlobe() {
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" ? window.innerWidth < 640 : false
   );
-  const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -191,7 +190,6 @@ export default function ChessGlobe() {
 
   /* ---------------- map setup: fog, spin, breathing dots ---------------- */
   const handleLoad = useCallback(() => {
-    setMapLoaded(true);
     setMapError(null);
     const map = mapRef.current?.getMap();
     if (!map) return;
@@ -544,9 +542,9 @@ export default function ChessGlobe() {
           attributionControl={false}
           onLoad={handleLoad}
           onError={(e) => {
-            console.error("[ChessGlobe] Map error:", e);
-            if (!mapLoaded) {
-              setMapError(e.error?.message || "Failed to load 3D globe tiles");
+            console.warn("[ChessGlobe] Map error:", e);
+            if (e.error?.message?.includes("WebGL") || !MAPBOX_TOKEN) {
+              setMapError(e.error?.message || "Failed to initialize 3D globe");
             }
           }}
           interactiveLayerIds={["player-glow"]}
@@ -568,16 +566,6 @@ export default function ChessGlobe() {
           </Source>
         </Map>
       </div>
-
-      {/* Loading Overlay */}
-      {!mapLoaded && !mapError && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 z-20 pointer-events-none transition-opacity duration-500">
-          <div className="size-10 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mb-4" />
-          <p className="text-xs uppercase tracking-[0.25em] text-zinc-400 font-mono">
-            Rendering 3D Chess Globe...
-          </p>
-        </div>
-      )}
 
       {/* Error Fallback */}
       {mapError && (
