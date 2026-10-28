@@ -43,6 +43,9 @@ import { useEngine } from "@/hooks/useEngine";
 import { useWhatIfSessions } from "@/hooks/useWhatIfSessions";
 import type { LLMAnalysis } from "@/types/llm";
 import type { WhatIfSnapshot } from "@/lib/whatif-snapshot";
+import { useKeyMoments, type KeyMoment } from "@/hooks/useKeyMoments";
+import { KeyMomentsOverlay } from "@/components/coach/KeyMomentsOverlay";
+import type { CoachPersona } from "@/components/coach/CoachSnapAvatar";
 interface WhatIfMove {
   san: string;
   from: string;
@@ -1445,6 +1448,18 @@ function BoardWorkspace({
   multiPv = 3,
   engineAnalysis,
   engineDepth,
+  currentKeyMoment,
+  totalKeyMoments,
+  currentKeyMomentIndex,
+  coachPersona,
+  onCoachPersonaChange,
+  onFixKeyMoment,
+  onShowBestMove,
+  onNextKeyMoment,
+  onPrevKeyMoment,
+  onDismissKeyMoment,
+  showKeyMomentsOverlay,
+  onToggleKeyMoments,
 }: {
   analysis: AnalysisRun;
   moves: MoveEvaluation[];
@@ -1479,6 +1494,20 @@ function BoardWorkspace({
   multiPv?: number;
   engineAnalysis?: any;
   engineDepth?: number;
+
+  // Coach & Key Moments Props
+  currentKeyMoment?: KeyMoment | null;
+  totalKeyMoments?: number;
+  currentKeyMomentIndex?: number;
+  coachPersona?: CoachPersona;
+  onCoachPersonaChange?: (p: CoachPersona) => void;
+  onFixKeyMoment?: (m: KeyMoment) => void;
+  onShowBestMove?: () => void;
+  onNextKeyMoment?: () => void;
+  onPrevKeyMoment?: () => void;
+  onDismissKeyMoment?: () => void;
+  showKeyMomentsOverlay?: boolean;
+  onToggleKeyMoments?: () => void;
 }) {
   const { boardColors, pieceThemeId } = useSettings();
   const isLiveActive = !!altFen || (whatIfMoves !== undefined && whatIfMoves.length > 0);
@@ -1878,6 +1907,24 @@ function BoardWorkspace({
                 </div>
               );
             })()}
+            {/* Snapchat-style Coach Avatar Overlay for Key Moments */}
+            {showKeyMomentsOverlay && currentKeyMoment && (
+              <KeyMomentsOverlay
+                moment={currentKeyMoment}
+                totalMoments={totalKeyMoments ?? 0}
+                currentIndex={currentKeyMomentIndex ?? 0}
+                persona={coachPersona ?? "hikaru"}
+                onPersonaChange={onCoachPersonaChange ?? (() => {})}
+                onFixMove={onFixKeyMoment ?? (() => {})}
+                onShowBestMove={onShowBestMove ?? (() => {})}
+                onNextMoment={onNextKeyMoment ?? (() => {})}
+                onPrevMoment={onPrevKeyMoment ?? (() => {})}
+                onDismiss={onDismissKeyMoment ?? (() => {})}
+                bestMoveSan={currentKeyMoment.bestMove}
+                isBestMoveRevealed={showBestMoveArrow}
+              />
+            )}
+
             {legalMoves.length > 0 && selectedSquare && (
               <div className="pointer-events-none absolute inset-0 z-15 animate-[fadeIn_150ms_ease-out]">
                 <style>{`@keyframes fadeIn{from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}}`}</style>
@@ -2053,25 +2100,63 @@ function BoardWorkspace({
             <ChevronRight className="h-5 w-5" strokeWidth={2.4} />
           </button>
         </div>
-        <div className="mt-2 flex items-center justify-center gap-2">
-          {autoPlay && (
-            <span className="flex items-center gap-1.5 rounded bg-green-500/15 px-2 py-1 text-[9px] font-semibold text-green-400">
-              <span className="size-1.5 animate-pulse rounded-full bg-green-400" />
-              Auto-playing
-            </span>
-          )}
-          <span className="flex items-center gap-2 text-[9px] text-stone-500">
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 px-1">
+          <div className="flex items-center gap-2">
+            {(totalKeyMoments ?? 0) > 0 && (
+              <button
+                type="button"
+                onClick={onToggleKeyMoments}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-black transition-all active:scale-95 shadow-sm",
+                  showKeyMomentsOverlay && currentKeyMoment
+                    ? "bg-[#fffc00] text-black shadow-[#fffc00]/20"
+                    : "border border-[#fffc00]/40 bg-[#fffc00]/10 text-[#fffc00] hover:bg-[#fffc00]/20"
+                )}
+              >
+                <Sparkles className="size-3" />
+                <span>⚡ Key Moments ({totalKeyMoments})</span>
+              </button>
+            )}
+
+            {/* Quick Coach Persona Switcher */}
+            <div className="flex items-center rounded-full bg-black/40 p-0.5 border border-white/10 text-[10px]">
+              <button
+                type="button"
+                onClick={() => onCoachPersonaChange?.("hikaru")}
+                className={cn(
+                  "px-2 py-0.5 rounded-full font-bold transition-colors",
+                  coachPersona === "hikaru" ? "bg-[#fffc00] text-black font-black" : "text-zinc-400 hover:text-white"
+                )}
+              >
+                Hikaru ⚡
+              </button>
+              <button
+                type="button"
+                onClick={() => onCoachPersonaChange?.("magnus")}
+                className={cn(
+                  "px-2 py-0.5 rounded-full font-bold transition-colors",
+                  coachPersona === "magnus" ? "bg-[#fffc00] text-black font-black" : "text-zinc-400 hover:text-white"
+                )}
+              >
+                Magnus 👑
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-[9px] text-stone-500">
+            {autoPlay && (
+              <span className="flex items-center gap-1.5 rounded bg-green-500/15 px-2 py-0.5 font-semibold text-green-400">
+                <span className="size-1.5 animate-pulse rounded-full bg-green-400" />
+                Auto-playing
+              </span>
+            )}
             <kbd className="rounded border border-stone-600 bg-stone-800 px-1 py-px font-mono text-[8px]">←</kbd>
             <kbd className="rounded border border-stone-600 bg-stone-800 px-1 py-px font-mono text-[8px]">→</kbd>
             <span>Navigate</span>
             <span className="text-stone-600">|</span>
-            <kbd className="rounded border border-stone-600 bg-stone-800 px-1 py-px font-mono text-[8px]">Space</kbd>
-            <span>Play</span>
-            <span className="text-stone-600">|</span>
-            <kbd className="rounded border border-stone-600 bg-stone-800 px-1 py-px font-mono text-[8px]">J</kbd>
-            <kbd className="rounded border border-stone-600 bg-stone-800 px-1 py-px font-mono text-[8px]">K</kbd>
-            <span>Critical</span>
-          </span>
+            <kbd className="rounded border border-stone-600 bg-stone-800 px-1 py-px font-mono text-[8px]">M</kbd>
+            <span>Key Moment</span>
+          </div>
         </div>
         </div>
 
@@ -2202,6 +2287,50 @@ function GameAnalysisPageInner({ analysis, viewer }: { analysis: AnalysisRun, vi
     return result;
   }, [whatIfSessionList, isLiveActive, pendingMoveData]);
 
+  // ── Coach Persona & Key Moments State ──
+  const [coachPersona, setCoachPersona] = useState<CoachPersona>(
+    viewer?.coachPersona === "magnus" ? "magnus" : "hikaru"
+  );
+  const [showKeyMomentsOverlay, setShowKeyMomentsOverlay] = useState(true);
+
+  const {
+    keyMoments,
+    currentKeyMoment,
+    activeIndex: keyMomentIndex,
+    nextMoment,
+    prevMoment,
+    hasKeyMoments,
+  } = useKeyMoments(moves, selectedPly, (analysis.subjectColor ?? "white") as "white" | "black");
+
+  const handleFixKeyMoment = useCallback((moment: KeyMoment) => {
+    setSelectedPly(Math.max(0, moment.ply - 1));
+    playSound("move-self");
+    setShowBestMoveArrow(true);
+  }, [setSelectedPly]);
+
+  const handleNextKeyMoment = useCallback(() => {
+    if (nextMoment) {
+      setSelectedPly(nextMoment.ply);
+      setShowKeyMomentsOverlay(true);
+    }
+  }, [nextMoment, setSelectedPly]);
+
+  const handlePrevKeyMoment = useCallback(() => {
+    if (prevMoment) {
+      setSelectedPly(prevMoment.ply);
+      setShowKeyMomentsOverlay(true);
+    }
+  }, [prevMoment, setSelectedPly]);
+
+  const handleToggleKeyMoments = useCallback(() => {
+    if (!currentKeyMoment && keyMoments.length > 0) {
+      setSelectedPly(keyMoments[0].ply);
+      setShowKeyMomentsOverlay(true);
+    } else {
+      setShowKeyMomentsOverlay(v => !v);
+    }
+  }, [currentKeyMoment, keyMoments, setSelectedPly]);
+
   const [llmAnalysis, setLlmAnalysis] = useState<LLMAnalysis | null>(null);
   const [llmLoading, setLlmLoading] = useState(false);
   const [explainedPly, setExplainedPly] = useState<number | null>(null);
@@ -2236,7 +2365,7 @@ function GameAnalysisPageInner({ analysis, viewer }: { analysis: AnalysisRun, vi
           sideToMove: selectedMove.side,
           moveNumber: selectedMove.moveNumber,
           reasons: [],
-          persona: viewer?.coachPersona || "hikaru",
+          persona: coachPersona || viewer?.coachPersona || "hikaru",
         }),
       });
       
@@ -2521,6 +2650,11 @@ function GameAnalysisPageInner({ analysis, viewer }: { analysis: AnalysisRun, vi
         e.preventDefault();
         setAutoPlay((prev) => !prev);
         break;
+      case "m":
+      case "M":
+        e.preventDefault();
+        handleNextKeyMoment();
+        break;
       case "j":
         e.preventDefault();
         {
@@ -2625,6 +2759,18 @@ function GameAnalysisPageInner({ analysis, viewer }: { analysis: AnalysisRun, vi
               console.error("[WhatIf] Failed to start analysis for dropped move", { fen, san, error });
             }
           }}
+          currentKeyMoment={currentKeyMoment}
+          totalKeyMoments={keyMoments.length}
+          currentKeyMomentIndex={keyMomentIndex}
+          coachPersona={coachPersona}
+          onCoachPersonaChange={setCoachPersona}
+          onFixKeyMoment={handleFixKeyMoment}
+          onShowBestMove={() => setShowBestMoveArrow(true)}
+          onNextKeyMoment={handleNextKeyMoment}
+          onPrevKeyMoment={handlePrevKeyMoment}
+          onDismissKeyMoment={() => setShowKeyMomentsOverlay(false)}
+          showKeyMomentsOverlay={showKeyMomentsOverlay}
+          onToggleKeyMoments={handleToggleKeyMoments}
           avatarUrls={avatarUrls}
           whatIfMoves={whatIfMoves}
           whatIfSelectedIdx={whatIfSelectedIdx}
