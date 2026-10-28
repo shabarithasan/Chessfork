@@ -181,8 +181,8 @@ export function ReportTab({
   );
   const reportAnnotations: Record<number, string> = {};
   (gameHistory ?? []).forEach((p, i) => {
-    const key = p.status;
-    if (["brilliant", "excellent", "blunder", "mistake"].includes(key)) {
+    const key = p.status?.toLowerCase();
+    if (["brilliant", "excellent", "blunder", "mistake", "inaccuracy", "miss", "missed_win", "-", "minus"].includes(key)) {
       reportAnnotations[i] = key;
     }
   });

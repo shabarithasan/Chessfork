@@ -26,8 +26,17 @@ const BADGE_TO_SVG: Record<string, string> = {
   inaccuracy: "inaccuracy",
   brilliant: "brilliant",
   excellent: "excellent",
+  nice: "excellent",
   great: "great_find",
+  great_find: "great_find",
   best: "best",
+  good: "good",
+  book: "book",
+  miss: "missed_win",
+  "-": "missed_win",
+  minus: "missed_win",
+  missed_win: "missed_win",
+  forced: "forced",
 };
 
 function smoothPath(pts: { x: number; y: number }[]): string {

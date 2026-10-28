@@ -677,9 +677,14 @@ function RightPanel({
   const reportAnnotations = useMemo(() => {
     const ann: Record<number, string> = {};
     gameHistory.forEach((p, i) => {
-      const key = p.status.charAt(0).toUpperCase() + p.status.slice(1);
-      if (["Brilliant", "Great", "Best", "Excellent", "Good", "Book", "Inaccuracy", "Mistake", "Blunder", "Miss"].includes(key)) {
-        ann[i] = key;
+      const raw = p.status.toLowerCase();
+      if (raw === "-" || raw === "minus" || raw === "miss" || raw === "missed_win") {
+        ann[i] = "missed_win";
+      } else {
+        const key = p.status.charAt(0).toUpperCase() + p.status.slice(1);
+        if (["Brilliant", "Great", "Best", "Excellent", "Good", "Book", "Inaccuracy", "Mistake", "Blunder"].includes(key)) {
+          ann[i] = key;
+        }
       }
     });
     return ann;
