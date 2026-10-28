@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Sparkles, ChevronRight, ChevronLeft, Volume2, VolumeX, X, RotateCcw, Eye, Check } from "lucide-react";
 import { CoachSnapAvatar, CoachPersona } from "@/components/coach/CoachSnapAvatar";
+import { Dynamic3DCoachStage } from "@/components/coach/Dynamic3DCoachStage";
 import type { KeyMoment } from "@/hooks/useKeyMoments";
 import { playSound } from "@/lib/sounds";
 import { cn } from "@/lib/utils";
@@ -275,14 +276,14 @@ export function KeyMomentsOverlay({
           </div>
         </div>
 
-        {/* 3D Full-Body Bitmoji Avatar Character standing proudly */}
+        {/* Dynamic 3D Interactive Coach Stage */}
         <div className="shrink-0 flex flex-col items-center justify-end">
-          <CoachSnapAvatar
+          <Dynamic3DCoachStage
             persona={persona}
             emotion={moment.emotion}
-            variant="fullbody"
-            size="full"
-            showStickerBadge={true}
+            onPersonaChange={onPersonaChange}
+            onPointToBoard={onShowBestMove}
+            isBlunder={moment.type === "blunder"}
           />
         </div>
       </div>
