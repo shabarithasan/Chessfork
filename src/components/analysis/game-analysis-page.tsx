@@ -1907,23 +1907,7 @@ function BoardWorkspace({
                 </div>
               );
             })()}
-            {/* Snapchat-style Coach Avatar Overlay for Key Moments */}
-            {showKeyMomentsOverlay && currentKeyMoment && (
-              <KeyMomentsOverlay
-                moment={currentKeyMoment}
-                totalMoments={totalKeyMoments ?? 0}
-                currentIndex={currentKeyMomentIndex ?? 0}
-                persona={coachPersona ?? "hikaru"}
-                onPersonaChange={onCoachPersonaChange ?? (() => {})}
-                onFixMove={onFixKeyMoment ?? (() => {})}
-                onShowBestMove={onShowBestMove ?? (() => {})}
-                onNextMoment={onNextKeyMoment ?? (() => {})}
-                onPrevMoment={onPrevKeyMoment ?? (() => {})}
-                onDismiss={onDismissKeyMoment ?? (() => {})}
-                bestMoveSan={currentKeyMoment.bestMove}
-                isBestMoveRevealed={showBestMoveArrow}
-              />
-            )}
+
 
             {legalMoves.length > 0 && selectedSquare && (
               <div className="pointer-events-none absolute inset-0 z-15 animate-[fadeIn_150ms_ease-out]">
@@ -2876,6 +2860,22 @@ function GameAnalysisPageInner({ analysis, viewer }: { analysis: AnalysisRun, vi
         <span className="ml-2 text-xs text-stone-500">{resultLabel(analysis.result)}</span>
       </div>
       {showWhatsNew && <WhatsNewDialog onClose={() => setShowWhatsNew(false)} />}
+      {showKeyMomentsOverlay && currentKeyMoment && (
+        <KeyMomentsOverlay
+          moment={currentKeyMoment}
+          totalMoments={keyMoments.length}
+          currentIndex={keyMomentIndex}
+          persona={coachPersona}
+          onPersonaChange={setCoachPersona}
+          onFixMove={handleFixKeyMoment}
+          onShowBestMove={() => setShowBestMoveArrow(true)}
+          onNextMoment={handleNextKeyMoment}
+          onPrevMoment={handlePrevKeyMoment}
+          onDismiss={() => setShowKeyMomentsOverlay(false)}
+          bestMoveSan={currentKeyMoment.bestMove}
+          isBestMoveRevealed={showBestMoveArrow}
+        />
+      )}
     </div>
   );
 }
