@@ -2,7 +2,8 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import * as THREE from "three";
-import { Sparkles, Rotate3d, Zap, Flame, Crown, Volume2, VolumeX, Eye } from "lucide-react";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { Sparkles, Rotate3d, Zap, Flame, Crown, Volume2, VolumeX, Eye, Loader2 } from "lucide-react";
 import { playSound } from "@/lib/sounds";
 import { cn } from "@/lib/utils";
 import type { CoachPersona, CoachEmotion } from "@/components/coach/CoachSnapAvatar";
@@ -25,98 +26,80 @@ export function Dynamic3DCoachStage({
   isBlunder = false,
 }: Dynamic3DCoachStageProps) {
   // ── 3D Interaction States ──
-  const [rotationY, setRotationY] = useState(0);
-  const [rotationX, setRotationX] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [activeStunt, setActiveStunt] = useState<string | null>(null);
-  const [showLaser, setShowLaser] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeStunt, setActiveStunt] = useState<"idle" | "facepalm" | "flex" | "point" | "spin">("idle");
   const [burstParticles, setBurstParticles] = useState<Array<{ id: number; text: string; x: number; y: number }>>([]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const dragStartRef = useRef<{ x: number; y: number; rotY: number; rotX: number }>({ x: 0, y: 0, rotY: 0, rotX: 0 });
 
-  // 3D image source based on persona and emotion
-  const imageSrc = (() => {
-    if (persona === "hikaru") {
-      return emotion === "blunder"
-        ? "/images/coaches/hikaru_blunder.png"
-        : "/images/coaches/hikaru_standing.png";
-    }
-    return emotion === "blunder"
-      ? "/images/coaches/magnus_blunder.png"
-      : "/images/coaches/magnus_standing.png";
-  })();
+  // References for live 3D controls inside Three.js loop
+  const mouseTargetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const modelRotationYRef = useRef<number>(0);
+  const isDraggingRef = useRef<boolean>(false);
+  const dragStartRef = useRef<{ x: number; rotY: number }>({ x: 0, rotY: 0 });
+  const stuntRef = useRef<"idle" | "facepalm" | "flex" | "point" | "spin">("idle");
+  const emotionRef = useRef<CoachEmotion>(emotion);
+  const personaRef = useRef<CoachPersona>(persona);
 
-  // ── 1. Interactive Mouse Tracking Parallax ──
+  stuntRef.current = activeStunt;
+  emotionRef.current = emotion;
+  personaRef.current = persona;
+
+  // ── 1. Mouse Tracking for 3D Head Look-At ──
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (isDragging || !containerRef.current) return;
+    if (isDraggingRef.current || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-
-    // Subtle natural head/body turn towards cursor
-    const deltaX = (e.clientX - centerX) / (rect.width / 2);
-    const deltaY = (e.clientY - centerY) / (rect.height / 2);
-
-    setRotationY(deltaX * 18); // Max 18 deg horizontal turn
-    setRotationX(-deltaY * 12); // Max 12 deg vertical tilt
-  }, [isDragging]);
+    const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    const ny = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
+    mouseTargetRef.current = { x: nx, y: ny };
+  }, []);
 
   const handleMouseLeave = useCallback(() => {
-    if (!isDragging) {
-      setRotationY(0);
-      setRotationX(0);
+    if (!isDraggingRef.current) {
+      mouseTargetRef.current = { x: 0, y: 0 };
     }
-  }, [isDragging]);
+  }, []);
 
   // ── 2. Click & Drag 360° 3D Orbit ──
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    setIsDragging(true);
+    isDraggingRef.current = true;
     dragStartRef.current = {
       x: e.clientX,
-      y: e.clientY,
-      rotY: rotationY,
-      rotX: rotationX,
+      rotY: modelRotationYRef.current,
     };
-  }, [rotationY, rotationX]);
+  }, []);
 
   useEffect(() => {
     function onWindowMouseMove(e: MouseEvent) {
-      if (!isDragging) return;
+      if (!isDraggingRef.current) return;
       const dx = e.clientX - dragStartRef.current.x;
-      const dy = e.clientY - dragStartRef.current.y;
-      setRotationY(dragStartRef.current.rotY + dx * 0.6);
-      setRotationX(Math.max(-30, Math.min(30, dragStartRef.current.rotX - dy * 0.4)));
+      modelRotationYRef.current = dragStartRef.current.rotY + dx * 0.015;
     }
 
     function onWindowMouseUp() {
-      if (isDragging) {
-        setIsDragging(false);
-      }
+      isDraggingRef.current = false;
     }
 
-    if (isDragging) {
-      window.addEventListener("mousemove", onWindowMouseMove);
-      window.addEventListener("mouseup", onWindowMouseUp);
-    }
+    window.addEventListener("mousemove", onWindowMouseMove);
+    window.addEventListener("mouseup", onWindowMouseUp);
     return () => {
       window.removeEventListener("mousemove", onWindowMouseMove);
       window.removeEventListener("mouseup", onWindowMouseUp);
     };
-  }, [isDragging]);
+  }, []);
 
-  // ── 3. Three.js WebGL Hologram Scene (Orbiting 3D Chess Piece & Aura) ──
+  // ── 3. Three.js Full 3D Character & Stage Setup ──
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const width = canvas.clientWidth || 450;
-    const height = canvas.clientHeight || 550;
+    const width = 480;
+    const height = 620;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.set(0, 0, 7.5);
+    const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
+    camera.position.set(0, 0.2, 5.2);
 
     const renderer = new THREE.WebGLRenderer({
       canvas,
@@ -126,144 +109,272 @@ export function Dynamic3DCoachStage({
     });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.35;
 
-    // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+    // ── Vibrant Brawl Stars Style Studio Lights ──
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
     scene.add(ambientLight);
 
-    const goldPointLight = new THREE.PointLight(0xffd700, 3.5, 10);
-    goldPointLight.position.set(2, 1, 3);
-    scene.add(goldPointLight);
+    const mainKeyLight = new THREE.DirectionalLight(0xfff5e6, 3.2);
+    mainKeyLight.position.set(2.5, 4.5, 3.5);
+    scene.add(mainKeyLight);
 
-    const cyanPointLight = new THREE.PointLight(0x00f0ff, 2.5, 8);
-    cyanPointLight.position.set(-2, -1, 2);
-    scene.add(cyanPointLight);
+    const goldRimLight = new THREE.PointLight(0xffcc00, 4.0, 10);
+    goldRimLight.position.set(-2.5, 2.5, -2);
+    scene.add(goldRimLight);
 
-    // ── Real 3D Golden Chess Piece (Orbiting Mesh) ──
+    const cyanFillLight = new THREE.PointLight(0x38bdf8, 2.8, 8);
+    cyanFillLight.position.set(2, -1.5, 2);
+    scene.add(cyanFillLight);
+
+    // ── Real 3D Golden Chess Piece Orbiting ──
     const pieceGroup = new THREE.Group();
-
-    // Procedural Chess Knight / Pawn Geometry
-    const baseGeo = new THREE.CylinderGeometry(0.55, 0.65, 0.25, 24);
-    const bodyGeo = new THREE.ConeGeometry(0.45, 1.1, 24);
-    const headGeo = new THREE.SphereGeometry(0.35, 24, 24);
-    const crownGeo = new THREE.TorusGeometry(0.25, 0.08, 16, 24);
+    const baseGeo = new THREE.CylinderGeometry(0.35, 0.45, 0.2, 24);
+    const bodyGeo = new THREE.ConeGeometry(0.3, 0.8, 24);
+    const headGeo = new THREE.SphereGeometry(0.24, 24, 24);
+    const crownGeo = new THREE.TorusGeometry(0.18, 0.05, 16, 24);
 
     const goldMaterial = new THREE.MeshStandardMaterial({
-      color: 0xffcc33,
-      metalness: 0.9,
-      roughness: 0.18,
-      emissive: 0x443300,
-      emissiveIntensity: 0.2,
+      color: 0xffcc22,
+      metalness: 0.92,
+      roughness: 0.16,
+      emissive: 0x553300,
+      emissiveIntensity: 0.25,
     });
 
     const baseMesh = new THREE.Mesh(baseGeo, goldMaterial);
-    baseMesh.position.y = -0.5;
-
+    baseMesh.position.y = -0.4;
     const bodyMesh = new THREE.Mesh(bodyGeo, goldMaterial);
-    bodyMesh.position.y = 0.15;
-
+    bodyMesh.position.y = 0.1;
     const headMesh = new THREE.Mesh(headGeo, goldMaterial);
-    headMesh.position.y = 0.85;
-
+    headMesh.position.y = 0.65;
     const crownMesh = new THREE.Mesh(crownGeo, goldMaterial);
-    crownMesh.position.y = 1.15;
+    crownMesh.position.y = 0.88;
     crownMesh.rotation.x = Math.PI / 2;
 
     pieceGroup.add(baseMesh, bodyMesh, headMesh, crownMesh);
-    pieceGroup.scale.set(0.65, 0.65, 0.65);
+    pieceGroup.scale.set(0.7, 0.7, 0.7);
     scene.add(pieceGroup);
 
-    // ── 3D Holographic Ground Rings ──
-    const ringGeo1 = new THREE.RingGeometry(1.6, 1.7, 48);
-    const ringGeo2 = new THREE.RingGeometry(2.1, 2.18, 48);
-    const ringMat = new THREE.MeshBasicMaterial({
-      color: 0xffd700,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.5,
-    });
-    const ringMat2 = new THREE.MeshBasicMaterial({
-      color: 0x38bdf8,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.4,
-    });
+    // ── 3D Ground Holographic Arena Rings ──
+    const ringGeo1 = new THREE.RingGeometry(1.2, 1.3, 48);
+    const ringGeo2 = new THREE.RingGeometry(1.6, 1.66, 48);
+    const ringMat1 = new THREE.MeshBasicMaterial({ color: 0xffd700, side: THREE.DoubleSide, transparent: true, opacity: 0.65 });
+    const ringMat2 = new THREE.MeshBasicMaterial({ color: 0x00f0ff, side: THREE.DoubleSide, transparent: true, opacity: 0.45 });
 
-    const ring1 = new THREE.Mesh(ringGeo1, ringMat);
+    const ring1 = new THREE.Mesh(ringGeo1, ringMat1);
     ring1.rotation.x = Math.PI / 2.3;
-    ring1.position.y = -2.6;
+    ring1.position.y = -2.1;
     scene.add(ring1);
 
     const ring2 = new THREE.Mesh(ringGeo2, ringMat2);
     ring2.rotation.x = Math.PI / 2.3;
-    ring2.position.y = -2.65;
+    ring2.position.y = -2.15;
     scene.add(ring2);
 
-    // ── 3D Floating Particle Spark System ──
+    // ── Glowing Laser Beam ──
+    const laserGeo = new THREE.CylinderGeometry(0.04, 0.04, 5.5, 16);
+    laserGeo.rotateZ(Math.PI / 2);
+    const laserMat = new THREE.MeshBasicMaterial({ color: 0xff2244, transparent: true, opacity: 0 });
+    const laserMesh = new THREE.Mesh(laserGeo, laserMat);
+    laserMesh.position.set(-2.5, 0.2, 0);
+    scene.add(laserMesh);
+
+    // ── 3D Floating Particle Sparks ──
     const particleCount = 45;
     const particleGeo = new THREE.BufferGeometry();
     const particlePos = new Float32Array(particleCount * 3);
-
     for (let i = 0; i < particleCount; i++) {
-      particlePos[i * 3] = (Math.random() - 0.5) * 6;
-      particlePos[i * 3 + 1] = (Math.random() - 0.5) * 6;
-      particlePos[i * 3 + 2] = (Math.random() - 0.5) * 4;
+      particlePos[i * 3] = (Math.random() - 0.5) * 5;
+      particlePos[i * 3 + 1] = (Math.random() - 0.5) * 5;
+      particlePos[i * 3 + 2] = (Math.random() - 0.5) * 3;
     }
     particleGeo.setAttribute("position", new THREE.BufferAttribute(particlePos, 3));
-
-    const particleMat = new THREE.PointsMaterial({
-      color: 0xfff077,
-      size: 0.08,
-      transparent: true,
-      opacity: 0.85,
-    });
+    const particleMat = new THREE.PointsMaterial({ color: 0xfff077, size: 0.07, transparent: true, opacity: 0.8 });
     const particles = new THREE.Points(particleGeo, particleMat);
     scene.add(particles);
 
-    // ── Animation Loop ──
-    let animationId: number;
-    let clock = new THREE.Clock();
+    // ── Load 3D Character Model (ReadyPlayerMe GLB) ──
+    let characterModel: THREE.Group | null = null;
+    let headBone: THREE.Bone | null = null;
+    let neckBone: THREE.Bone | null = null;
+    let spineBone: THREE.Bone | null = null;
+    let rightArmBone: THREE.Bone | null = null;
+    let rightForeArmBone: THREE.Bone | null = null;
+    let leftArmBone: THREE.Bone | null = null;
+    let leftForeArmBone: THREE.Bone | null = null;
 
-    function animate() {
-      animationId = requestAnimationFrame(animate);
+    const loader = new GLTFLoader();
+    loader.load(
+      "/models/readyplayer.me.glb",
+      (gltf) => {
+        const model = gltf.scene;
+        characterModel = model;
+
+        // Position & Scale character like Brawl Stars hero
+        model.scale.set(1.95, 1.95, 1.95);
+        model.position.set(0, -2.1, 0);
+
+        // Find and store key bones for dynamic animation
+        model.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+
+            // Tailor clothing colors for Hikaru vs Magnus
+            if (child.material) {
+              const mat = child.material as THREE.MeshStandardMaterial;
+              mat.roughness = 0.35;
+              mat.metalness = 0.1;
+
+              if (child.name.includes("Outfit_Top")) {
+                if (personaRef.current === "hikaru") {
+                  mat.color.setHex(0x181a24); // Dark streamer hoodie
+                } else {
+                  mat.color.setHex(0x1e3a5f); // Magnus navy jacket
+                }
+              }
+              if (child.name.includes("Headwear")) {
+                child.visible = personaRef.current === "hikaru"; // Glasses on Hikaru
+              }
+              if (child.name.includes("Beard")) {
+                child.visible = personaRef.current === "hikaru"; // Beard on Hikaru
+              }
+            }
+          }
+
+          if (child instanceof THREE.Bone) {
+            const name = child.name.toLowerCase();
+            if (name === "head") headBone = child;
+            if (name === "neck") neckBone = child;
+            if (name === "spine2" || name === "spine1" || name === "spine") spineBone = child;
+            if (name === "rightarm") rightArmBone = child;
+            if (name === "rightforearm") rightForeArmBone = child;
+            if (name === "leftarm") leftArmBone = child;
+            if (name === "leftforearm") leftForeArmBone = child;
+          }
+        });
+
+        scene.add(model);
+        setIsLoading(false);
+      },
+      undefined,
+      (err) => {
+        console.error("Failed to load 3D character:", err);
+        setIsLoading(false);
+      }
+    );
+
+    // ── Real-Time 60/120 FPS Animation Loop ──
+    let animationId: number;
+    const clock = new THREE.Clock();
+
+    function renderLoop() {
+      animationId = requestAnimationFrame(renderLoop);
       const time = clock.getElapsedTime();
 
-      // Orbit 3D chess piece around coach's hand
-      pieceGroup.position.x = Math.cos(time * 1.5) * 1.8 + 0.3;
-      pieceGroup.position.z = Math.sin(time * 1.5) * 0.9;
-      pieceGroup.position.y = Math.sin(time * 3) * 0.25 - 0.2;
-      pieceGroup.rotation.y = time * 2;
+      // 1. Orbit Golden 3D Chess Piece
+      pieceGroup.position.x = Math.cos(time * 1.6) * 1.4 + 0.4;
+      pieceGroup.position.z = Math.sin(time * 1.6) * 0.7;
+      pieceGroup.position.y = Math.sin(time * 3.2) * 0.18 + 0.3;
+      pieceGroup.rotation.y = time * 2.2;
       pieceGroup.rotation.z = Math.sin(time) * 0.15;
 
-      // Rotate hologram rings
-      ring1.rotation.z = time * 0.6;
-      ring2.rotation.z = -time * 0.4;
+      // 2. Holographic Ground Rings
+      ring1.rotation.z = time * 0.8;
+      ring2.rotation.z = -time * 0.5;
 
-      // Particle drift
+      // 3. Floating Dust Particles
       const positions = particleGeo.attributes.position.array as Float32Array;
       for (let i = 0; i < particleCount; i++) {
-        positions[i * 3 + 1] += 0.008;
-        if (positions[i * 3 + 1] > 3) positions[i * 3 + 1] = -3;
+        positions[i * 3 + 1] += 0.007;
+        if (positions[i * 3 + 1] > 2.5) positions[i * 3 + 1] = -2.5;
       }
       particleGeo.attributes.position.needsUpdate = true;
 
+      // 4. Animate 3D Rigged Character
+      if (characterModel) {
+        // Continuous smooth rotation (mouse drag or auto idle)
+        characterModel.rotation.y = THREE.MathUtils.lerp(
+          characterModel.rotation.y,
+          modelRotationYRef.current,
+          0.12
+        );
+
+        // Idle bounce & breathing (Brawl Stars style bouncy idle)
+        const breathe = Math.sin(time * 2.8) * 0.035;
+        characterModel.position.y = -2.1 + breathe;
+
+        if (spineBone) {
+          spineBone.rotation.x = Math.sin(time * 2.8) * 0.04;
+          spineBone.rotation.z = Math.cos(time * 1.4) * 0.02;
+        }
+
+        // Head tracking mouse cursor
+        if (headBone && neckBone) {
+          const targetRotY = mouseTargetRef.current.x * 0.65;
+          const targetRotX = -mouseTargetRef.current.y * 0.45;
+          headBone.rotation.y = THREE.MathUtils.lerp(headBone.rotation.y, targetRotY, 0.1);
+          headBone.rotation.x = THREE.MathUtils.lerp(headBone.rotation.x, targetRotX, 0.1);
+          neckBone.rotation.y = THREE.MathUtils.lerp(neckBone.rotation.y, targetRotY * 0.4, 0.1);
+        }
+
+        // Dynamic Stunts & Poses
+        const currentStunt = stuntRef.current;
+        const currentEmotion = emotionRef.current;
+
+        if (currentStunt === "facepalm" || currentEmotion === "blunder") {
+          // Hand-to-forehead facepalm pose!
+          if (rightArmBone && rightForeArmBone) {
+            rightArmBone.rotation.x = THREE.MathUtils.lerp(rightArmBone.rotation.x, -1.8, 0.15);
+            rightArmBone.rotation.z = THREE.MathUtils.lerp(rightArmBone.rotation.z, 0.4, 0.15);
+            rightForeArmBone.rotation.x = THREE.MathUtils.lerp(rightForeArmBone.rotation.x, -1.3, 0.15);
+          }
+          if (headBone) {
+            headBone.rotation.x = THREE.MathUtils.lerp(headBone.rotation.x, 0.35, 0.1);
+          }
+        } else if (currentStunt === "flex" || currentEmotion === "brilliant") {
+          // Triumphant fist pump / victory flex!
+          if (rightArmBone && rightForeArmBone) {
+            rightArmBone.rotation.x = THREE.MathUtils.lerp(rightArmBone.rotation.x, -2.6, 0.15);
+            rightArmBone.rotation.z = THREE.MathUtils.lerp(rightArmBone.rotation.z, -0.4, 0.15);
+            rightForeArmBone.rotation.x = THREE.MathUtils.lerp(rightForeArmBone.rotation.x, -0.6, 0.15);
+          }
+          if (leftArmBone) {
+            leftArmBone.rotation.z = THREE.MathUtils.lerp(leftArmBone.rotation.z, 0.8, 0.15);
+          }
+        } else if (currentStunt === "point") {
+          // Arm straight pointing horizontally towards the chessboard
+          if (rightArmBone && rightForeArmBone) {
+            rightArmBone.rotation.x = THREE.MathUtils.lerp(rightArmBone.rotation.x, -1.3, 0.2);
+            rightArmBone.rotation.z = THREE.MathUtils.lerp(rightArmBone.rotation.z, -1.5, 0.2);
+            rightArmBone.rotation.y = THREE.MathUtils.lerp(rightArmBone.rotation.y, 0.4, 0.2);
+          }
+          // Laser beam animation
+          laserMat.opacity = Math.min(1, laserMat.opacity + 0.1);
+        } else {
+          // Normal natural idle posture with relaxed arms
+          if (rightArmBone && rightForeArmBone) {
+            rightArmBone.rotation.x = THREE.MathUtils.lerp(rightArmBone.rotation.x, 0.2 + Math.sin(time * 2.8) * 0.05, 0.1);
+            rightArmBone.rotation.z = THREE.MathUtils.lerp(rightArmBone.rotation.z, 0.2, 0.1);
+            rightForeArmBone.rotation.x = THREE.MathUtils.lerp(rightForeArmBone.rotation.x, 0.4, 0.1);
+          }
+          if (leftArmBone && leftForeArmBone) {
+            leftArmBone.rotation.x = THREE.MathUtils.lerp(leftArmBone.rotation.x, 0.2 - Math.sin(time * 2.8) * 0.05, 0.1);
+            leftArmBone.rotation.z = THREE.MathUtils.lerp(leftArmBone.rotation.z, -0.2, 0.1);
+            leftForeArmBone.rotation.x = THREE.MathUtils.lerp(leftForeArmBone.rotation.x, 0.4, 0.1);
+          }
+          laserMat.opacity = Math.max(0, laserMat.opacity - 0.1);
+        }
+      }
+
       renderer.render(scene, camera);
     }
-    animate();
-
-    function onResize() {
-      if (!canvas) return;
-      const w = canvas.clientWidth;
-      const h = canvas.clientHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    }
-    window.addEventListener("resize", onResize);
+    renderLoop();
 
     return () => {
       cancelAnimationFrame(animationId);
-      window.removeEventListener("resize", onResize);
       renderer.dispose();
       baseGeo.dispose();
       bodyGeo.dispose();
@@ -272,32 +383,33 @@ export function Dynamic3DCoachStage({
       goldMaterial.dispose();
       ringGeo1.dispose();
       ringGeo2.dispose();
-      ringMat.dispose();
+      ringMat1.dispose();
       ringMat2.dispose();
+      laserGeo.dispose();
+      laserMat.dispose();
       particleGeo.dispose();
       particleMat.dispose();
     };
   }, []);
 
-  // ── 4. Out-of-the-Box Stunts & Dynamic Actions ──
+  // ── 4. Interactive Stunt Triggers ──
   const trigger3DSpin = () => {
-    setActiveStunt("spin");
     playSound("achievement");
+    setActiveStunt("spin");
     let startTime = performance.now();
-    const duration = 1000;
-    const startRot = rotationY;
+    const startRot = modelRotationYRef.current;
+    const duration = 900;
 
     function spinFrame(now: number) {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      // Easing out cubic
       const ease = 1 - Math.pow(1 - progress, 3);
-      setRotationY(startRot + ease * 360);
+      modelRotationYRef.current = startRot + ease * (Math.PI * 2);
       if (progress < 1) {
         requestAnimationFrame(spinFrame);
       } else {
-        setRotationY(0);
-        setActiveStunt(null);
+        modelRotationYRef.current = 0;
+        setActiveStunt("idle");
       }
     }
     requestAnimationFrame(spinFrame);
@@ -305,29 +417,40 @@ export function Dynamic3DCoachStage({
 
   const triggerTakesBurst = () => {
     playSound("notify");
-    setActiveStunt("takes");
+    setActiveStunt("flex");
     const phrases = persona === "hikaru"
-      ? ["TAKES TAKES TAKES!", "200 IQ 🔥", "CHAT?!", "LITERALLY WINNING", "THE JUICE ⚡", "BOOM!"]
-      : ["HONESTLY...", "PURE CHESS 👑", "COMPLETELY LOST", "SIMPLE & CLEAN", "ROOK SAC!"];
+      ? ["TAKES TAKES TAKES!", "200 IQ 🔥", "CHAT?!", "THE JUICE ⚡", "BOOM!"]
+      : ["PURE CHESS 👑", "COMPLETELY WON", "SIMPLE & CLEAN", "MASTERMIND"];
 
-    const newBursts = Array.from({ length: 6 }).map((_, i) => ({
+    const newBursts = Array.from({ length: 5 }).map((_, i) => ({
       id: Date.now() + i,
       text: phrases[i % phrases.length],
       x: (Math.random() - 0.5) * 220,
-      y: (Math.random() - 0.5) * 180 - 60,
+      y: (Math.random() - 0.5) * 160 - 70,
     }));
     setBurstParticles(newBursts);
+
     setTimeout(() => {
       setBurstParticles([]);
-      setActiveStunt(null);
+      setActiveStunt("idle");
     }, 1800);
   };
 
   const triggerLaserPointer = () => {
-    setShowLaser(true);
     playSound("shoutout");
+    setActiveStunt("point");
     onPointToBoard?.();
-    setTimeout(() => setShowLaser(false), 2400);
+    setTimeout(() => {
+      setActiveStunt("idle");
+    }, 2200);
+  };
+
+  const triggerFacepalm = () => {
+    playSound("incorrect");
+    setActiveStunt("facepalm");
+    setTimeout(() => {
+      setActiveStunt("idle");
+    }, 2500);
   };
 
   return (
@@ -339,21 +462,22 @@ export function Dynamic3DCoachStage({
         "relative flex flex-col items-center justify-center select-none cursor-grab active:cursor-grabbing",
         className
       )}
-      style={{ perspective: 1200 }}
     >
-      {/* ── Background Three.js WebGL Hologram Scene ── */}
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full pointer-events-none z-0"
-      />
+      {/* ── Loading Spinner ── */}
+      {isLoading && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[#fffc00]">
+          <Loader2 className="size-10 animate-spin" />
+          <span className="text-xs font-black uppercase tracking-wider">Loading 3D Coach...</span>
+        </div>
+      )}
 
-      {/* ── Floating Out-of-the-Box Stunt Particles ── */}
+      {/* ── Floating Stunt Particle Badges ── */}
       {burstParticles.map((burst) => (
         <div
           key={burst.id}
-          className="absolute z-40 pointer-events-none font-black text-sm sm:text-base px-3 py-1.5 rounded-2xl bg-[#fffc00] text-black shadow-[0_10px_25px_rgba(255,252,0,0.5)] border-2 border-black animate-out zoom-out fade-out duration-1000"
+          className="absolute z-40 pointer-events-none font-black text-xs sm:text-sm px-3 py-1.5 rounded-2xl bg-[#fffc00] text-black shadow-[0_10px_25px_rgba(255,252,0,0.6)] border-2 border-black animate-out zoom-out fade-out duration-1000"
           style={{
-            transform: `translate(${burst.x}px, ${burst.y}px) rotate(${(burst.x / 10).toFixed(0)}deg) scale(1.1)`,
+            transform: `translate(${burst.x}px, ${burst.y}px) scale(1.15)`,
             transition: "all 1.4s cubic-bezier(0.16, 1, 0.3, 1)",
           }}
         >
@@ -361,57 +485,20 @@ export function Dynamic3DCoachStage({
         </div>
       ))}
 
-      {/* ── Dynamic Laser Pointer Hologram ── */}
-      {showLaser && (
-        <div className="absolute top-1/3 -left-32 z-50 pointer-events-none flex items-center">
-          <div className="h-2 w-48 bg-gradient-to-l from-red-500 via-amber-400 to-transparent rounded-full blur-[1px] shadow-[0_0_20px_#ef4444] animate-pulse" />
-          <div className="size-6 rounded-full bg-red-500 animate-ping border-2 border-white" />
-        </div>
-      )}
-
-      {/* ── Main 3D Avatar Body with Perspective Tracking ── */}
-      <div
+      {/* ── Real WebGL 3D Canvas (Full 3D Character) ── */}
+      <canvas
+        ref={canvasRef}
         onMouseDown={handleMouseDown}
-        className={cn(
-          "relative z-10 transition-transform duration-100 ease-out flex flex-col items-center",
-          activeStunt === "spin" && "scale-105"
-        )}
-        style={{
-          transform: `rotateY(${rotationY}deg) rotateX(${rotationX}deg) translateZ(40px)`,
-          transformStyle: "preserve-3d",
-        }}
-      >
-        {/* Full-Body 3D Character Cutout */}
-        <img
-          src={imageSrc}
-          alt={persona === "hikaru" ? "3D Hikaru Nakamura" : "3D Magnus Carlsen"}
-          draggable={false}
-          className="h-[390px] sm:h-[480px] md:h-[540px] lg:h-[580px] w-auto max-w-none object-contain drop-shadow-[0_25px_40px_rgba(0,0,0,0.85)] filter hover:brightness-105 transition-all"
-        />
+        className="w-[340px] sm:w-[420px] md:w-[460px] h-[480px] sm:h-[560px] md:h-[620px] object-contain drop-shadow-[0_25px_40px_rgba(0,0,0,0.8)] filter hover:brightness-105 transition-all"
+      />
 
-        {/* 3D Contact Shadow */}
-        <div
-          className="w-56 h-6 bg-black/75 rounded-[100%] blur-md -mt-5"
-          style={{ transform: "rotateX(75deg)" }}
-        />
-
-        {/* 3D Floating Nameplate Badge */}
-        <div
-          className="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded-full border-2 border-[#fffc00] bg-black/80 px-3.5 py-1 backdrop-blur-md shadow-xl text-white font-black text-xs uppercase tracking-wider whitespace-nowrap"
-          style={{ transform: "translateZ(60px)" }}
-        >
-          <span className="size-2 rounded-full bg-[#fffc00] animate-ping" />
-          <span>{persona === "hikaru" ? "GM Hikaru ⚡" : "GM Magnus 👑"}</span>
-        </div>
-      </div>
-
-      {/* ── Out-of-the-Box 3D Interactive Control Bar ── */}
-      <div className="relative z-30 mt-3 flex items-center gap-1.5 rounded-2xl bg-black/60 p-1.5 backdrop-blur-md border border-white/10 shadow-2xl">
+      {/* ── 3D Interactive Controls Bar (Brawl Stars Style) ── */}
+      <div className="relative z-30 -mt-6 flex flex-wrap items-center justify-center gap-1.5 rounded-2xl bg-black/75 p-2 backdrop-blur-xl border border-white/15 shadow-2xl">
         <button
           type="button"
           onClick={trigger3DSpin}
-          className="flex items-center gap-1 rounded-xl bg-white/10 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-white/20 transition-all active:scale-95"
-          title="Make Coach Spin 360 in 3D"
+          className="flex items-center gap-1 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-black text-white hover:bg-white/20 transition-all active:scale-95 shadow-sm"
+          title="Make 3D Coach Spin 360°"
         >
           <Rotate3d className="size-3.5 text-[#fffc00]" />
           <span>Spin 360°</span>
@@ -420,18 +507,18 @@ export function Dynamic3DCoachStage({
         <button
           type="button"
           onClick={triggerTakesBurst}
-          className="flex items-center gap-1 rounded-xl bg-white/10 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-white/20 transition-all active:scale-95"
-          title="Streamer Burst Reaction"
+          className="flex items-center gap-1 rounded-xl bg-amber-400/20 border border-amber-400/30 px-3 py-1.5 text-xs font-black text-amber-300 hover:bg-amber-400/30 transition-all active:scale-95 shadow-sm"
+          title="Trigger Streamer Reaction"
         >
-          <Zap className="size-3.5 text-amber-400" />
+          <Zap className="size-3.5" />
           <span>{persona === "hikaru" ? "Takes Takes!" : "GM Flex!"}</span>
         </button>
 
         <button
           type="button"
           onClick={triggerLaserPointer}
-          className="flex items-center gap-1 rounded-xl bg-red-500/20 border border-red-500/30 px-2.5 py-1 text-[11px] font-bold text-red-400 hover:bg-red-500/30 transition-all active:scale-95"
-          title="Shoot Laser Beam at Board"
+          className="flex items-center gap-1 rounded-xl bg-red-500/20 border border-red-500/30 px-3 py-1.5 text-xs font-black text-red-400 hover:bg-red-500/30 transition-all active:scale-95 shadow-sm"
+          title="Shoot Laser Beam at Chessboard"
         >
           <Flame className="size-3.5" />
           <span>Laser Point</span>
@@ -439,20 +526,29 @@ export function Dynamic3DCoachStage({
 
         <button
           type="button"
+          onClick={triggerFacepalm}
+          className="flex items-center gap-1 rounded-xl bg-purple-500/20 border border-purple-500/30 px-2.5 py-1.5 text-xs font-black text-purple-300 hover:bg-purple-500/30 transition-all active:scale-95 shadow-sm"
+          title="Facepalm Reaction"
+        >
+          <span>🤦‍♂️ Facepalm</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => {
-            setRotationY(0);
-            setRotationX(0);
+            modelRotationYRef.current = 0;
           }}
-          className="rounded-xl p-1 text-zinc-400 hover:text-white transition"
-          title="Reset 3D Rotation"
+          className="rounded-xl p-1.5 text-zinc-400 hover:text-white transition"
+          title="Reset 3D Front View"
         >
           <Eye className="size-3.5" />
         </button>
       </div>
 
-      {/* Drag Hint */}
-      <span className="text-[10px] font-semibold text-zinc-400 mt-1 flex items-center gap-1">
-        <span>✨ Move cursor or drag to turn in 3D</span>
+      {/* Drag & Tilt Hint */}
+      <span className="text-[11px] font-bold text-zinc-400 mt-2 flex items-center gap-1.5">
+        <Sparkles className="size-3 text-[#fffc00]" />
+        <span>Click & drag to rotate 3D character in 360°</span>
       </span>
     </div>
   );
